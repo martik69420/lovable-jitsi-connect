@@ -47,11 +47,13 @@ const VideoCall = ({ roomName, onClose }: VideoCallProps) => {
         
         <iframe
           ref={iframeRef}
-          src={`https://meet.jit.si/${roomName}?config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableWelcomePage=false&config.prejoinPageEnabled=false`}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
+          src={`https://meet.jit.si/${roomName}?config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableWelcomePage=false&config.prejoinPageEnabled=false&config.requireDisplayName=false&config.hideDisplayName=false`}
+          allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write; encrypted-media"
           allowFullScreen
+          sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-presentation allow-pointer-lock"
+          referrerPolicy="strict-origin-when-cross-origin"
           className="w-full h-[calc(100%-80px)] border-0"
-          title={`Video call room: ${roomName}`}
+          title={`Secure Video call room: ${roomName}`}
         />
       </div>
     </div>
