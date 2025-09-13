@@ -4,7 +4,7 @@ import VideoCallLanding from '../components/VideoCallLanding';
 
 const Index = () => {
   const [isInCall, setIsInCall] = useState(false);
-  const roomName = 'lovableRoom';
+  const roomName = 'lovableRoom123';
 
   const handleJoinCall = () => {
     setIsInCall(true);

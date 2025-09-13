@@ -46,7 +46,7 @@ const VideoCallLanding = ({ onJoinCall }: VideoCallLandingProps) => {
                   Ready to start your call?
                 </h3>
                 <p className="text-muted-foreground">
-                  Room: <span className="font-mono text-primary">lovableRoom</span>
+                  Room: <span className="font-mono text-primary">lovableRoom123</span>
                 </p>
               </div>
             </div>
