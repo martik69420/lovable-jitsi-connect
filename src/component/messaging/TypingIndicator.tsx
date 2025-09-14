@@ -62,14 +62,15 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
       typingTimeoutRef.current = null;
     }
     
+    // Only show typing indicator when there's actual content
     if (hasContent) {
       updateTypingStatus(true);
       
-      // Set timeout to stop typing after 2 seconds of inactivity
+      // Set timeout to stop typing after 1.5 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         updateTypingStatus(false);
         typingTimeoutRef.current = null;
-      }, 2000);
+      }, 1500);
     } else {
       // Stop typing immediately if input is empty
       updateTypingStatus(false);
