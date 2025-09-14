@@ -54,7 +54,8 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
 
   // Handle typing trigger
   const handleTyping = useCallback((inputValue: string = '') => {
-    const hasContent = inputValue.trim().length > 0;
+    // Only consider it "typing" if there are actual non-whitespace characters
+    const hasContent = inputValue.replace(/\s/g, '').length > 0;
     
     // Clear existing timeout
     if (typingTimeoutRef.current) {
