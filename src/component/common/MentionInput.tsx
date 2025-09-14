@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, AtSign, Search, Shield, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMentions, MentionUser } from '@/components/common/MentionsProvider';
+import { useMentions, MentionUser } from '@/component/common/MentionsProvider';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/auth';
 

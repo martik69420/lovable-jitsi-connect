@@ -6,7 +6,7 @@ import TopBar from "./TopBar";
 import Navbar from "./Navbar";
 import MobileNavBar from "./MobileNavBar";
 import { useAuth } from "@/context/auth";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/component/ui/toaster";
 import { AnimatePresence, motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 

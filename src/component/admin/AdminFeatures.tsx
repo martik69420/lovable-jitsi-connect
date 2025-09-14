@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/component/ui/card';
+import { Button } from '@/component/ui/button';
 import { Shield, Users, Flag, BarChart, Settings, Zap } from 'lucide-react';
 import { useAuth } from '@/context/auth';
 import { AdminFeature } from '@/types/user';

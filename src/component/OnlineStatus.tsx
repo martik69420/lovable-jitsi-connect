@@ -1,7 +1,7 @@
 
 import React from 'react';
 import useOnlineStatus from '@/hooks/use-online-status';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/component/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 import { Wifi, WifiOff, Clock } from 'lucide-react';
 

@@ -6,9 +6,9 @@ import { LanguageProvider } from './context/LanguageContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { PostProvider } from './context/PostContext';
 import { GameProvider } from './context/GameContext';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from './component/ui/toaster';
 import { AuthProvider } from './context/auth';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/component/ui/tooltip';
 
 // Import your pages
 import Home from './pages/Home';

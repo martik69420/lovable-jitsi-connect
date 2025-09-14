@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { motion } from 'framer-motion';
-import OnlineStatus from '@/components/OnlineStatus';
+import OnlineStatus from '@/component/OnlineStatus';
 import useOnlineStatus from '@/hooks/use-online-status';
 import { Friend } from './types';
 

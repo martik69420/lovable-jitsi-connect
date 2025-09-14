@@ -1,18 +1,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/component/ui/button';
+import { Textarea } from '@/component/ui/textarea';
 import { Send, Smile, Paperclip, Loader2, Image, X, FileImage, Zap } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/component/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/component/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/component/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/component/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import EmojiPicker from '@/components/messaging/EmojiPicker';
-import GifPicker from '@/components/messaging/GifPicker';
-import PrebuiltGifs from '@/components/messaging/PrebuiltGifs';
-import GifCreator from '@/components/messaging/GifCreator';
-import { TypingIndicator } from '@/components/messaging/TypingIndicator';
+import EmojiPicker from '@/component/messaging/EmojiPicker';
+import GifPicker from '@/component/messaging/GifPicker';
+import PrebuiltGifs from '@/component/messaging/PrebuiltGifs';
+import GifCreator from '@/component/messaging/GifCreator';
+import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 
 interface MessageInputProps {
   onSendMessage: (message: string, imageFile?: File, gifUrl?: string) => Promise<void>;

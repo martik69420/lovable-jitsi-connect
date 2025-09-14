@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/component/ui/button';
+import { Card } from '@/component/ui/card';
 import { Pause, Play, RotateCcw, Trophy, ArrowDown, ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 
 type TetrisShape = number[][];

@@ -6,15 +6,15 @@ import { useAuth } from "@/context/auth";
 import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/component/ui/button";
+import { Input } from "@/component/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/component/ui/avatar";
+import { Badge } from "@/component/ui/badge";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/component/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/component/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import NotificationMenu from "@/components/notifications/NotificationMenu";
+import NotificationMenu from "@/component/notifications/NotificationMenu";
 
 const TopBar: React.FC = () => {
   const { user, logout, updateUser } = useAuth();

@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/component/ui/button';
+import { Alert, AlertDescription } from '@/component/ui/alert';
+import { toast } from '@/hooks/use-toast';
 
 const GoogleAuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);

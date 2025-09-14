@@ -1,10 +1,10 @@
 import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import OnlineStatus from '@/components/OnlineStatus';
+import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
+import { Badge } from '@/component/ui/badge';
+import { Button } from '@/component/ui/button';
+import { Input } from '@/component/ui/input';
+import { Skeleton } from '@/component/ui/skeleton';
+import OnlineStatus from '@/component/OnlineStatus';
 import { Search, PlusCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
