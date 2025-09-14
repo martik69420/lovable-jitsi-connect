@@ -9,13 +9,14 @@ export const useUnreadMessages = () => {
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.id) {
       setUnreadCount(0);
+      updateDocumentTitle(0);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('messages')
-        .select('id', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('receiver_id', user.id)
         .eq('is_read', false);
 
@@ -24,11 +25,9 @@ export const useUnreadMessages = () => {
         return;
       }
 
-      const count = data?.length || 0;
-      setUnreadCount(count);
-      
-      // Update document title
-      updateDocumentTitle(count);
+      const safeCount = count || 0;
+      setUnreadCount(safeCount);
+      updateDocumentTitle(safeCount);
     } catch (error) {
       console.error('Error fetching unread messages count:', error);
     }
@@ -45,7 +44,10 @@ export const useUnreadMessages = () => {
 
   // Subscribe to real-time message updates
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      updateDocumentTitle(0);
+      return;
+    }
 
     // Initial fetch
     fetchUnreadCount();
