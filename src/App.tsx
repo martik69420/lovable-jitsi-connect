@@ -9,7 +9,7 @@ import { GameProvider } from './context/GameContext';
 import { Toaster } from './component/ui/toaster';
 import { AuthProvider } from './context/auth';
 import { TooltipProvider } from '@/component/ui/tooltip';
-import UnreadMessagesTitle from '@/components/system/UnreadMessagesTitle';
+import UnreadMessagesTitle from '@/component/system/UnreadMessagesTitle';
 
 // Import your pages
 import Home from './pages/Home';
