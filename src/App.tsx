@@ -9,7 +9,7 @@ import { GameProvider } from './context/GameContext';
 import { Toaster } from './component/ui/toaster';
 import { AuthProvider } from './context/auth';
 import { TooltipProvider } from '@/component/ui/tooltip';
-import { useUnreadMessages } from './hooks/use-unread-messages';
+import UnreadMessagesTitle from '@/components/system/UnreadMessagesTitle';
 
 // Import your pages
 import Home from './pages/Home';
@@ -45,9 +45,6 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  // Initialize unread messages tracking
-  useUnreadMessages();
-  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -57,6 +54,7 @@ function App() {
               <GameProvider>
                 <NotificationProvider>
                   <PostProvider>
+                    <UnreadMessagesTitle />
                     <Routes>
                       <Route path="/" element={<Home />} />
                       <Route path="/login" element={<Login />} />
