@@ -147,9 +147,9 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isSending, d
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
     
-    // Trigger typing indicator
+    // Trigger typing indicator with current input value
     if (typingIndicatorRef.current && receiverId) {
-      typingIndicatorRef.current.handleTyping();
+      typingIndicatorRef.current.handleTyping(e.target.value);
     }
   };
 

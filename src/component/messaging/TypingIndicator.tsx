@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
+import React, { useEffect, useState, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
@@ -17,6 +17,7 @@ interface TypingUser {
 const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onTypingChange }, ref) => {
   const { user } = useAuth();
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Function to update typing status
   const updateTypingStatus = useCallback(async (isTyping: boolean) => {
@@ -52,15 +53,27 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
   }, [user, receiverId, onTypingChange]);
 
   // Handle typing trigger
-  const handleTyping = useCallback(() => {
-    updateTypingStatus(true);
+  const handleTyping = useCallback((inputValue: string = '') => {
+    const hasContent = inputValue.trim().length > 0;
     
-    // Set timeout to stop typing after 3 seconds
-    const timeout = setTimeout(() => {
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    
+    if (hasContent) {
+      updateTypingStatus(true);
+      
+      // Set timeout to stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        updateTypingStatus(false);
+        typingTimeoutRef.current = null;
+      }, 2000);
+    } else {
+      // Stop typing immediately if input is empty
       updateTypingStatus(false);
-    }, 3000);
-    
-    return () => clearTimeout(timeout);
+    }
   }, [updateTypingStatus]);
 
   // Expose handleTyping method to parent
