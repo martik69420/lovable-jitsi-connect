@@ -6,7 +6,7 @@ class PushNotificationService {
   private isPermissionGranted = false;
   private sendAutomaticNotifications = false; 
   private lastNotificationTime: Record<string, number> = {};
-  private notificationCooldown = 60000; // 1 minute cooldown between similar notifications
+  private notificationCooldown = 60000; // 1 minute cooldown between similar notifications (except messages)
 
   private constructor() {
     this.checkPermission();
@@ -189,15 +189,17 @@ class PushNotificationService {
       return;
     }
     
-    // Check cooldown for this notification type
-    const now = Date.now();
-    const lastShown = this.lastNotificationTime[notification.type] || 0;
-    if (now - lastShown < this.notificationCooldown) {
-      return;
+    // Check cooldown for this notification type (skip cooldown for messages)
+    if (notification.type !== 'message') {
+      const now = Date.now();
+      const lastShown = this.lastNotificationTime[notification.type] || 0;
+      if (now - lastShown < this.notificationCooldown) {
+        return;
+      }
+      
+      // Update last notification time
+      this.lastNotificationTime[notification.type] = now;
     }
-    
-    // Update last notification time
-    this.lastNotificationTime[notification.type] = now;
 
     const icon = notification.sender?.avatar || '/favicon.ico';
     const title = this.getNotificationTitle(notification);
@@ -207,8 +209,8 @@ class PushNotificationService {
     const notificationOptions: NotificationOptions = {
       body,
       icon,
-      tag: `${notification.type}-${notification.id}`, // Group similar notifications
-      requireInteraction: notification.type === 'mention' || notification.type === 'friend', // Keep important notifications visible
+      tag: `${notification.type}-${notification.id}-${Date.now()}`, // Unique tag for each notification
+      requireInteraction: notification.type === 'mention' || notification.type === 'friend' || notification.type === 'message', // Keep important notifications visible
       vibrate: [200, 100, 200], // Vibration pattern for mobile devices
       badge: '/favicon.ico',
       timestamp: Date.now(),
