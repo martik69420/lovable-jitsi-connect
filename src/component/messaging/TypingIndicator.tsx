@@ -18,39 +18,35 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
   const { user } = useAuth();
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const channelRef = useRef<any>(null);
+  const lastTypingStateRef = useRef(false);
   
   // Function to update typing status
   const updateTypingStatus = useCallback(async (isTyping: boolean) => {
-    if (!user || !receiverId) return;
+    if (!user || !receiverId || !channelRef.current) return;
 
     try {
-      const channelName = `typing_indicators_${[user.id, receiverId].sort().join('_')}`;
-      const channel = supabase.channel(channelName);
-      
+      // Avoid redundant track/untrack calls
+      if (isTyping === lastTypingStateRef.current) return;
+      lastTypingStateRef.current = isTyping;
+
       if (isTyping) {
-        // Start typing
-        channel.subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await channel.track({
-              user_id: user.id,
-              username: user.username || user.email?.split('@')[0] || '',
-              display_name: user.displayName || user.username || user.email?.split('@')[0] || '',
-              typing_to: receiverId,
-              updated_at: new Date().toISOString()
-            });
-          }
+        await channelRef.current.track({
+          user_id: user.id,
+          username: (user as any).username || user.email?.split('@')[0] || '',
+          display_name: (user as any).displayName || (user as any).username || user.email?.split('@')[0] || '',
+          typing_to: receiverId,
+          updated_at: new Date().toISOString()
         });
       } else {
-        // Stop typing
-        await channel.untrack();
-        supabase.removeChannel(channel);
+        await channelRef.current.untrack();
       }
-      
+
       onTypingChange?.(isTyping);
     } catch (error) {
       console.error('Error updating typing status:', error);
     }
-  }, [user, receiverId, onTypingChange]);
+  }, [user?.id, receiverId, onTypingChange]);
 
   // Handle typing trigger
   const handleTyping = useCallback((inputValue: string = '') => {
@@ -88,13 +84,22 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
     if (!user || !receiverId) return;
 
     const channelName = `typing_indicators_${[user.id, receiverId].sort().join('_')}`;
+
+    // Clean up any previous channel
+    if (channelRef.current) {
+      channelRef.current.untrack().catch(() => {});
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase.channel(channelName);
+    channelRef.current = channel;
 
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         const typing: TypingUser[] = [];
-        
+
         Object.values(state).forEach((presences: any) => {
           presences.forEach((presence: any) => {
             if (presence.user_id === receiverId && presence.typing_to === user.id) {
@@ -107,24 +112,21 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
             }
           });
         });
-        
+
         setTypingUsers(typing);
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         const relevantUsers = newPresences
-          .filter((presence: any) => 
-            presence.user_id === receiverId && presence.typing_to === user.id
-          )
+          .filter((presence: any) => presence.user_id === receiverId && presence.typing_to === user.id)
           .map((presence: any) => ({
             user_id: presence.user_id,
             username: presence.username,
             display_name: presence.display_name,
             updated_at: presence.updated_at
           }));
-        
+
         if (relevantUsers.length > 0) {
           setTypingUsers(prev => {
-            // Prevent duplicates
             const filtered = prev.filter(u => !relevantUsers.some(r => r.user_id === u.user_id));
             return [...filtered, ...relevantUsers];
           });
@@ -137,7 +139,12 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      lastTypingStateRef.current = false;
+      if (channelRef.current) {
+        channelRef.current.untrack().catch(() => {});
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [user?.id, receiverId]);
 
