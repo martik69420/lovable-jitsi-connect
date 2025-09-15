@@ -74,6 +74,7 @@ function App() {
                       
                       <Route path="/achievements" element={<Achievements />} />
                       <Route path="/post/:postId" element={<Post />} />
+                      <Route path="/profile/:username" element={<Profile />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

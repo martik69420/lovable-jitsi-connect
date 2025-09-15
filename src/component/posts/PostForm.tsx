@@ -6,6 +6,7 @@ import { Loader2, Image as ImageIcon, AtSign, X } from 'lucide-react';
 import { useAuth } from '@/context/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import TwitterMentionInput from '@/components/mentions/TwitterMentionInput';
+import { useMentions } from '@/components/common/MentionsProvider';
 import { supabase } from '@/integrations/supabase/client';
 
 const PostForm: React.FC = () => {

@@ -7,6 +7,7 @@ import { Skeleton } from '@/component/ui/skeleton';
 import OnlineStatus from '@/component/OnlineStatus';
 import { Search, PlusCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import GroupChatCreator from './GroupChatCreator';
 
 interface Contact {
   id: string;
@@ -76,8 +77,8 @@ const ContactsList: React.FC<ContactsListProps> = ({
   });
 
   return (
-    <>
-      <div className="border-b p-3 dark:border-gray-800">
+    <div className="h-full flex flex-col">
+      <div className="border-b p-3 dark:border-gray-800 sticky top-0 bg-background z-10">
         <h2 className="text-xl font-bold mb-3">Messages</h2>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -89,6 +90,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <GroupChatCreator />
           <Button variant="outline" size="icon" onClick={onNewChat}>
             <PlusCircle className="h-5 w-5" />
             <span className="sr-only">New message</span>
@@ -96,7 +98,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto chat-scrollbar">
+      <div className="flex-1 overflow-y-auto chat-scrollbar max-h-[calc(100vh-180px)]">
         {isLoading ? (
           // Loading skeletons
           <>
@@ -181,7 +183,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
           ))
         )}
       </div>
-    </>
+    </div>
   );
 };
 
