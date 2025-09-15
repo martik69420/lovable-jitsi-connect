@@ -11,6 +11,7 @@ import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
 import useMessages from '@/hooks/use-messages';
 import { MessageCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ const Messages = () => {
     }
   }, [user?.id, fetchFriends]);
 
-  // Fetch messages when selectedUserId changes
+  // Fetch messages and user data when selectedUserId changes
   useEffect(() => {
     if (selectedUserId && user?.id) {
       console.log('Fetching messages for selected user:', selectedUserId);
@@ -57,8 +58,31 @@ const Messages = () => {
       const loadMessages = async () => {
         await fetchMessages(selectedUserId);
         
-        // Find the selected user from friends list
-        const friend = friends.find(f => f.id === selectedUserId);
+        // Find the selected user from friends list first
+        let friend = friends.find(f => f.id === selectedUserId);
+        
+        // If not found in friends (friends might not be loaded yet), fetch user directly
+        if (!friend) {
+          try {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, username, display_name, avatar_url')
+              .eq('id', selectedUserId)
+              .single();
+              
+            if (data) {
+              friend = {
+                id: data.id,
+                username: data.username,
+                displayName: data.display_name || data.username,
+                avatar: data.avatar_url
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+          }
+        }
+        
         setSelectedUser(friend);
         
         // Mark messages as read after fetching

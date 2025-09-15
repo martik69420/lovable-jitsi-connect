@@ -8,10 +8,12 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
-import { Shield, Star, Award, BookMarked, Heart, Sparkles } from 'lucide-react';
+import { Shield, Star, Award, BookMarked, Heart, Sparkles, Users, Calendar, MapPin } from 'lucide-react';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import { supabase } from '@/integrations/supabase/client';
+import { motion } from 'framer-motion';
 
 const Profile: React.FC = () => {
   const { username } = useParams<{ username: string }>();
@@ -205,21 +207,73 @@ const Profile: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="mb-8">
+          <motion.div 
+            className="mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <Card className="overflow-hidden border border-border/50 shadow-xl rounded-3xl backdrop-blur-sm bg-gradient-to-br from-background via-background to-muted/30">
               <div className="h-40 md:h-48 bg-gradient-to-br from-primary/40 via-primary/20 to-accent/30 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent"></div>
                 <div className="absolute inset-0">
-                  <div className="absolute top-8 right-8 w-32 h-32 bg-primary/10 rounded-full blur-2xl animate-pulse"></div>
-                  <div className="absolute bottom-4 left-8 w-24 h-24 bg-accent/20 rounded-full blur-xl"></div>
+                  <motion.div 
+                    className="absolute top-8 right-8 w-32 h-32 bg-primary/10 rounded-full blur-2xl"
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      opacity: [0.3, 0.6, 0.3]
+                    }}
+                    transition={{ 
+                      duration: 3, 
+                      repeat: Infinity 
+                    }}
+                  />
+                  <motion.div 
+                    className="absolute bottom-4 left-8 w-24 h-24 bg-accent/20 rounded-full blur-xl"
+                    animate={{ 
+                      scale: [1.1, 1, 1.1],
+                      opacity: [0.4, 0.2, 0.4]
+                    }}
+                    transition={{ 
+                      duration: 2, 
+                      repeat: Infinity 
+                    }}
+                  />
                 </div>
-                <div className="absolute top-6 right-6">
-                  <div className="flex gap-3">
-                    <div className="p-3 rounded-2xl bg-background/90 backdrop-blur-md shadow-lg border border-white/20">
-                      <Award className="h-5 w-5 text-primary" />
+                
+                {/* Stats Bar */}
+                <div className="absolute top-6 left-6 right-6">
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      {profileUser?.class && (
+                        <Badge variant="secondary" className="bg-background/90 text-foreground backdrop-blur-md">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {profileUser.class}
+                        </Badge>
+                      )}
+                      {profileUser?.location && (
+                        <Badge variant="secondary" className="bg-background/90 text-foreground backdrop-blur-md">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {profileUser.location}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="p-3 rounded-2xl bg-background/90 backdrop-blur-md shadow-lg border border-white/20">
-                      <Sparkles className="h-5 w-5 text-accent" />
+                    
+                    <div className="flex gap-3">
+                      <motion.div 
+                        className="p-3 rounded-2xl bg-background/90 backdrop-blur-md shadow-lg border border-white/20"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Award className="h-5 w-5 text-primary" />
+                      </motion.div>
+                      <motion.div 
+                        className="p-3 rounded-2xl bg-background/90 backdrop-blur-md shadow-lg border border-white/20"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Sparkles className="h-5 w-5 text-accent" />
+                      </motion.div>
                     </div>
                   </div>
                 </div>
@@ -240,7 +294,7 @@ const Profile: React.FC = () => {
                 />
               </div>
             </Card>
-          </div>
+          </motion.div>
         )}
 
         <Card className="border border-border/50 shadow-xl rounded-3xl backdrop-blur-sm bg-gradient-to-br from-background to-muted/20">

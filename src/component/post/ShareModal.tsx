@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
+import PostPreview from "./PostPreview";
 
 interface ShareModalProps {
   open: boolean;
@@ -91,7 +92,11 @@ const ShareModal: React.FC<ShareModalProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-6 py-4">
+          <div className="flex justify-center">
+            <PostPreview postId={postId} compact={true} />
+          </div>
+          
           <Textarea
             placeholder="Add a message (optional)"
             className="resize-none"
