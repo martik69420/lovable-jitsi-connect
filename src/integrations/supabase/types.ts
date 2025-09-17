@@ -863,6 +863,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_group_member: {
+        Args: { group_uuid: string }
+        Returns: boolean
+      }
       validate_password: {
         Args: { password: string } | { password: string; username: string }
         Returns: boolean
