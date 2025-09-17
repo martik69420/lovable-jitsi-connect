@@ -299,7 +299,7 @@ export type Database = {
           image_url: string | null
           is_read: boolean | null
           reactions: Json | null
-          receiver_id: string
+          receiver_id: string | null
           sender_id: string
         }
         Insert: {
@@ -310,7 +310,7 @@ export type Database = {
           image_url?: string | null
           is_read?: boolean | null
           reactions?: Json | null
-          receiver_id: string
+          receiver_id?: string | null
           sender_id: string
         }
         Update: {
@@ -321,7 +321,7 @@ export type Database = {
           image_url?: string | null
           is_read?: boolean | null
           reactions?: Json | null
-          receiver_id?: string
+          receiver_id?: string | null
           sender_id?: string
         }
         Relationships: [
