@@ -1,11 +1,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
+import { Skeleton } from '@/component/ui/skeleton';
+import { Button } from '@/component/ui/button';
 import { Check, CheckCheck, Clock, Trash2, Heart, ThumbsUp, Laugh } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/component/ui/dropdown-menu';
+import { ScrollArea } from '@/component/ui/scroll-area';
 import { format, isToday, isYesterday } from 'date-fns';
 
 interface Message {
@@ -13,7 +13,8 @@ interface Message {
   content: string;
   created_at: string;
   sender_id: string;
-  receiver_id: string;
+  receiver_id?: string;
+  group_id?: string;
   is_read: boolean;
   sender?: {
     username: string;

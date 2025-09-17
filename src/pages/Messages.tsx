@@ -9,9 +9,40 @@ import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 import { Card } from '@/component/ui/card';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
-import useMessages from '@/hooks/use-messages';
+import useMessages, { Friend, Group } from '@/hooks/use-messages';
 import { MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Contact interface that works with both friends and groups
+interface Contact {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount?: number;
+  isGroup?: boolean;
+}
+
+// Message interface for MessagesList component
+interface Message {
+  id: string;
+  content: string;
+  created_at: string;
+  sender_id: string;
+  receiver_id?: string;
+  group_id?: string;
+  is_read: boolean;
+  sender?: {
+    username: string;
+    display_name: string;
+    avatar_url?: string;
+  };
+  image_url?: string;
+  reactions?: Record<string, string[]>;
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
+}
 
 const Messages = () => {
   const { user } = useAuth();
@@ -23,8 +54,8 @@ const Messages = () => {
   const [isSending, setIsSending] = useState(false);
   
   const {
-    contacts,
-    messages,
+    contacts: rawContacts,
+    messages: rawMessages,
     loading,
     sendMessage,
     fetchMessages,
@@ -34,6 +65,42 @@ const Messages = () => {
     deleteMessage,
     reactToMessage
   } = useMessages();
+
+  // Transform contacts to match ContactsList interface
+  const contacts: Contact[] = rawContacts.map((contact) => {
+    if ('isGroup' in contact) {
+      // Group contact
+      return {
+        id: contact.id,
+        username: contact.name,
+        displayName: contact.name,
+        avatar: contact.avatar_url || null,
+        isGroup: true
+      };
+    } else {
+      // Friend contact
+      return {
+        id: contact.id,
+        username: contact.username,
+        displayName: contact.displayName,
+        avatar: contact.avatar
+      };
+    }
+  });
+
+  // Transform messages to match MessagesList interface
+  const messages: Message[] = rawMessages.map((msg) => ({
+    id: msg.id,
+    content: msg.content,
+    created_at: msg.created_at,
+    sender_id: msg.sender_id,
+    receiver_id: msg.receiver_id,
+    group_id: msg.group_id,
+    is_read: msg.is_read,
+    image_url: msg.image_url,
+    reactions: msg.reactions,
+    status: msg.status
+  }));
 
   // Check for userId in URL params
   useEffect(() => {
