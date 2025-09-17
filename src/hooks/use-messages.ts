@@ -302,15 +302,20 @@ const useMessages = (): UseMessagesResult => {
                   return prev;
                 }
                 
-                const updatedMessages = [...prev, {
-                  ...newMessage,
-                  reactions: (newMessage.reactions || {}) as Record<string, string[]>
-                }].sort((a, b) => 
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
+                // Only add if we're currently viewing this conversation
+                if (currentContactId === (isCurrentContactGroup ? newMessage.group_id : newMessage.sender_id === user.id ? newMessage.receiver_id : newMessage.sender_id)) {
+                  const updatedMessages = [...prev, {
+                    ...newMessage,
+                    reactions: (newMessage.reactions || {}) as Record<string, string[]>
+                  }].sort((a, b) => 
+                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                  );
+                  
+                  console.log('✅ Message added to conversation');
+                  return updatedMessages;
+                }
                 
-                console.log('✅ Message added to conversation');
-                return updatedMessages;
+                return prev;
               });
               
               // Auto-mark as read if user is receiving the message

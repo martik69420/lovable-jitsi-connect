@@ -90,7 +90,7 @@ const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated }) =
     setLoading(true);
     
     try {
-      // Create the group
+      // Create the group - the trigger will automatically set created_by
       const { data: group, error: groupError } = await supabase
         .from('groups')
         .insert({
