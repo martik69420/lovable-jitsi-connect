@@ -175,14 +175,33 @@ const Messages = () => {
   const handleSelectUser = (userId: string) => {
     console.log('Selecting user:', userId);
     setSelectedUserId(userId);
-    const contact = contacts.find(c => c.id === userId);
-    setSelectedUser(contact);
+    const contact = rawContacts.find(c => c.id === userId);
+    
+    // Transform contact for selectedUser state
+    if (contact) {
+      if ('isGroup' in contact) {
+        setSelectedUser({
+          id: contact.id,
+          username: contact.name,
+          displayName: contact.name,
+          avatar: contact.avatar_url || null,
+          isGroup: true
+        });
+      } else {
+        setSelectedUser({
+          id: contact.id,
+          username: contact.username,
+          displayName: contact.displayName,
+          avatar: contact.avatar
+        });
+      }
+    }
   };
 
   const handleSendMessage = async (content: string, imageFile?: File, gifUrl?: string) => {
     if (selectedUserId && selectedUser) {
       setIsSending(true);
-      const isGroup = 'isGroup' in selectedUser;
+      const isGroup = selectedUser.isGroup || false;
       try {
         await sendMessage(selectedUserId, content, imageFile, gifUrl, isGroup);
       } finally {
@@ -191,7 +210,7 @@ const Messages = () => {
     }
   };
 
-  const setActiveContact = (contact: any) => {
+  const setActiveContact = (contact: Contact) => {
     console.log('Setting active contact:', contact);
     setSelectedUserId(contact.id);
     setSelectedUser(contact);
