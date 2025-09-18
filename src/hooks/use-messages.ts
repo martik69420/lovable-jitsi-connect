@@ -1,12 +1,12 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Message {
   id: string;
   created_at: string;
   sender_id: string;
-  receiver_id?: string;
-  group_id?: string;
+  receiver_id: string;
   content: string;
   is_read: boolean;
   image_url?: string;
@@ -21,39 +21,23 @@ export interface Friend {
   avatar: string | null;
 }
 
-export interface Group {
-  id: string;
-  name: string;
-  description?: string;
-  avatar_url?: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  isGroup: true;
-}
-
 interface UseMessagesResult {
   friends: Friend[];
-  groups: Group[];
-  contacts: (Friend | Group)[];
   messages: Message[];
   loading: boolean;
-  sendMessage: (contactId: string, content: string, imageFile?: File, gifUrl?: string, isGroup?: boolean) => Promise<void>;
-  fetchMessages: (contactId: string, isGroup?: boolean) => Promise<void>;
+  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string) => Promise<void>;
+  fetchMessages: (contactId: string) => Promise<void>;
   fetchFriends: () => Promise<void>;
-  fetchGroups: () => Promise<void>;
-  markMessagesAsRead: (contactId: string, isGroup?: boolean) => Promise<void>;
+  markMessagesAsRead: (senderId: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   reactToMessage: (messageId: string, emoji: string) => Promise<void>;
 }
 
 const useMessages = (): UseMessagesResult => {
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentContactId, setCurrentContactId] = useState<string | null>(null);
-  const [isCurrentContactGroup, setIsCurrentContactGroup] = useState(false);
 
   const fetchFriends = useCallback(async () => {
     setLoading(true);
@@ -130,41 +114,10 @@ const useMessages = (): UseMessagesResult => {
     }
   }, []);
 
-  // Fetch groups for the current user
-  const fetchGroups = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('group_members')
-        .select(`
-          group_id,
-          groups!group_members_group_id_fkey (
-            id, name, description, avatar_url, created_by, created_at, updated_at
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      const groupsData = data?.map(gm => ({
-        ...gm.groups,
-        isGroup: true as const
-      })) || [];
-
-      setGroups(groupsData);
-      console.log('Fetched groups:', groupsData);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-    }
-  }, []);
-
-  const fetchMessages = useCallback(async (contactId: string, isGroup = false) => {
+  const fetchMessages = useCallback(async (contactId: string) => {
     setLoading(true);
     setCurrentContactId(contactId);
-    setIsCurrentContactGroup(isGroup);
-    console.log('Setting current contact ID to:', contactId, 'isGroup:', isGroup);
+    console.log('Setting current contact ID to:', contactId);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -173,22 +126,17 @@ const useMessages = (): UseMessagesResult => {
         return;
       }
 
-      console.log('Fetching messages for contact:', contactId, 'isGroup:', isGroup);
+      console.log('Fetching messages between', user.id, 'and', contactId);
 
-      let query = supabase.from('messages').select(`
-        *,
-        sender:profiles!messages_sender_id_fkey(id, username, display_name, avatar_url)
-      `);
-      
-      if (isGroup) {
-        query = query.eq('group_id', contactId);
-      } else {
-        query = query
-          .is('group_id', null)
-          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${user.id})`);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: true });
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!messages_sender_id_fkey(id, username, display_name, avatar_url),
+          receiver:profiles!messages_receiver_id_fkey(id, username, display_name, avatar_url)
+        `)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching messages:', error);
@@ -212,44 +160,29 @@ const useMessages = (): UseMessagesResult => {
     }
   }, []);
 
-  // Mark messages as read
-  const markMessagesAsRead = useCallback(async (contactId: string, isGroup = false) => {
+  const markMessagesAsRead = useCallback(async (senderId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      let query = supabase.from('messages').update({ is_read: true });
-      
-      if (isGroup) {
-        query = query
-          .eq('group_id', contactId)
-          .neq('sender_id', user.id)
-          .eq('is_read', false);
-      } else {
-        query = query
-          .eq('sender_id', contactId)
-          .eq('receiver_id', user.id)
-          .eq('is_read', false);
-      }
+      const { error } = await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('sender_id', senderId)
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
 
-      const { error } = await query;
       if (error) {
         console.error('Error marking messages as read:', error);
         return;
       }
 
       // Update local state
-      setMessages(prev => prev.map(msg => {
-        if (isGroup) {
-          return msg.group_id === contactId && msg.sender_id !== user.id && !msg.is_read
-            ? { ...msg, is_read: true }
-            : msg;
-        } else {
-          return msg.sender_id === contactId && msg.receiver_id === user.id && !msg.is_read
-            ? { ...msg, is_read: true }
-            : msg;
-        }
-      }));
+      setMessages(prev => prev.map(msg => 
+        msg.sender_id === senderId && msg.receiver_id === user.id && !msg.is_read
+          ? { ...msg, is_read: true }
+          : msg
+      ));
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
@@ -280,17 +213,13 @@ const useMessages = (): UseMessagesResult => {
           const newMessage = payload.new as Message;
           
           // Check if this user is involved in this message
-          const isInvolvedUser = isCurrentContactGroup
-            ? !!newMessage.group_id // User is in group (we'll verify this through group membership)
-            : newMessage.sender_id === user.id || newMessage.receiver_id === user.id;
+          const isInvolvedUser = newMessage.sender_id === user.id || newMessage.receiver_id === user.id;
           
           if (isInvolvedUser) {
             // Check if this message belongs to current conversation
             const belongsToCurrentConversation = !currentContactId || 
-              (isCurrentContactGroup && newMessage.group_id === currentContactId) ||
-              (!isCurrentContactGroup && 
-                ((newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
-                (newMessage.sender_id === user.id && newMessage.receiver_id === currentContactId)));
+              (newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
+              (newMessage.sender_id === user.id && newMessage.receiver_id === currentContactId);
             
             if (belongsToCurrentConversation) {
               console.log('➡️ Adding message to current conversation');
@@ -302,28 +231,22 @@ const useMessages = (): UseMessagesResult => {
                   return prev;
                 }
                 
-                // Only add if we're currently viewing this conversation
-                if (currentContactId === (isCurrentContactGroup ? newMessage.group_id : newMessage.sender_id === user.id ? newMessage.receiver_id : newMessage.sender_id)) {
-                  const updatedMessages = [...prev, {
-                    ...newMessage,
-                    reactions: (newMessage.reactions || {}) as Record<string, string[]>
-                  }].sort((a, b) => 
-                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                  );
-                  
-                  console.log('✅ Message added to conversation');
-                  return updatedMessages;
-                }
+                const updatedMessages = [...prev, {
+                  ...newMessage,
+                  reactions: (newMessage.reactions || {}) as Record<string, string[]>
+                }].sort((a, b) => 
+                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                );
                 
-                return prev;
+                console.log('✅ Message added to conversation');
+                return updatedMessages;
               });
               
               // Auto-mark as read if user is receiving the message
-              if ((isCurrentContactGroup && newMessage.sender_id !== user.id) || 
-                  (!isCurrentContactGroup && newMessage.receiver_id === user.id && currentContactId === newMessage.sender_id)) {
+              if (newMessage.receiver_id === user.id && currentContactId === newMessage.sender_id) {
                 console.log('📖 Auto-marking message as read');
                 setTimeout(() => {
-                  markMessagesAsRead(currentContactId!, isCurrentContactGroup);
+                  markMessagesAsRead(newMessage.sender_id);
                 }, 300);
               }
             } else {
@@ -348,16 +271,12 @@ const useMessages = (): UseMessagesResult => {
           const updatedMessage = payload.new as Message;
           
           // Check if this user is involved in this message
-          const isInvolvedUser = isCurrentContactGroup
-            ? !!updatedMessage.group_id
-            : updatedMessage.sender_id === user.id || updatedMessage.receiver_id === user.id;
+          const isInvolvedUser = updatedMessage.sender_id === user.id || updatedMessage.receiver_id === user.id;
           
           if (isInvolvedUser) {
             const belongsToCurrentConversation = !currentContactId || 
-              (isCurrentContactGroup && updatedMessage.group_id === currentContactId) ||
-              (!isCurrentContactGroup && 
-                ((updatedMessage.sender_id === currentContactId && updatedMessage.receiver_id === user.id) ||
-                (updatedMessage.sender_id === user.id && updatedMessage.receiver_id === currentContactId)));
+              (updatedMessage.sender_id === currentContactId && updatedMessage.receiver_id === user.id) ||
+              (updatedMessage.sender_id === user.id && updatedMessage.receiver_id === currentContactId);
             
             if (belongsToCurrentConversation) {
               console.log('🔄 Updating message in current conversation');
@@ -385,16 +304,12 @@ const useMessages = (): UseMessagesResult => {
           const deletedMessage = payload.old as Message;
           
           // Check if this user is involved in this message
-          const isInvolvedUser = isCurrentContactGroup
-            ? !!deletedMessage.group_id
-            : deletedMessage.sender_id === user.id || deletedMessage.receiver_id === user.id;
+          const isInvolvedUser = deletedMessage.sender_id === user.id || deletedMessage.receiver_id === user.id;
           
           if (isInvolvedUser) {
             const belongsToCurrentConversation = !currentContactId || 
-              (isCurrentContactGroup && deletedMessage.group_id === currentContactId) ||
-              (!isCurrentContactGroup && 
-                ((deletedMessage.sender_id === currentContactId && deletedMessage.receiver_id === user.id) ||
-                (deletedMessage.sender_id === user.id && deletedMessage.receiver_id === currentContactId)));
+              (deletedMessage.sender_id === currentContactId && deletedMessage.receiver_id === user.id) ||
+              (deletedMessage.sender_id === user.id && deletedMessage.receiver_id === currentContactId);
             
             if (belongsToCurrentConversation) {
               console.log('🗑️ Removing message from current conversation');
@@ -425,7 +340,7 @@ const useMessages = (): UseMessagesResult => {
     return () => {
       cleanup.then(cleanupFn => cleanupFn?.());
     };
-  }, [currentContactId, isCurrentContactGroup, markMessagesAsRead]);
+  }, [currentContactId, markMessagesAsRead]);
 
   const uploadImage = async (imageFile: File): Promise<string | null> => {
     try {
@@ -450,14 +365,7 @@ const useMessages = (): UseMessagesResult => {
     }
   };
 
-  // Send a message
-  const sendMessage = useCallback(async (
-    contactId: string,
-    content: string,
-    imageFile?: File,
-    gifUrl?: string,
-    isGroup = false
-  ) => {
+  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -465,15 +373,14 @@ const useMessages = (): UseMessagesResult => {
       // Prevent sending empty messages without content, image, or gif
       if (!content.trim() && !imageFile && !gifUrl) return;
 
-      console.log('Sending message from', user.id, 'to', contactId, ':', content, 'isGroup:', isGroup);
+      console.log('Sending message from', user.id, 'to', receiverId, ':', content);
 
       // Create optimistic message for immediate UI feedback
       const tempId = `temp-${Date.now()}`;
       const optimisticMessage: Message = {
         id: tempId,
         sender_id: user.id,
-        receiver_id: isGroup ? undefined : contactId,
-        group_id: isGroup ? contactId : undefined,
+        receiver_id: receiverId,
         content: content || (imageFile ? '[Image]' : (gifUrl ? '[GIF]' : '')),
         created_at: new Date().toISOString(),
         is_read: false,
@@ -491,15 +398,10 @@ const useMessages = (): UseMessagesResult => {
 
       const messageData: any = {
         sender_id: user.id,
+        receiver_id: receiverId,
         content: content || (imageUrl ? '[Image]' : (gifUrl ? '[GIF]' : '')),
         is_read: false
       };
-
-      if (isGroup) {
-        messageData.group_id = contactId;
-      } else {
-        messageData.receiver_id = contactId;
-      }
 
       if (imageUrl) {
         messageData.image_url = imageUrl;
@@ -604,21 +506,13 @@ const useMessages = (): UseMessagesResult => {
     }
   }, [messages]);
 
-  // Combined contacts list (friends + groups)
-  const contacts = useMemo(() => {
-    return [...friends, ...groups];
-  }, [friends, groups]);
-
   return {
     friends,
-    groups,
-    contacts,
     messages,
     loading,
     sendMessage,
     fetchMessages,
     fetchFriends,
-    fetchGroups,
     markMessagesAsRead,
     deleteMessage,
     reactToMessage

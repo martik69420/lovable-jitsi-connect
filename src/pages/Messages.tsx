@@ -9,40 +9,9 @@ import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 import { Card } from '@/component/ui/card';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
-import useMessages, { Friend, Group } from '@/hooks/use-messages';
+import useMessages from '@/hooks/use-messages';
 import { MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-// Contact interface that works with both friends and groups
-interface Contact {
-  id: string;
-  username: string;
-  displayName: string;
-  avatar: string | null;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  isGroup?: boolean;
-}
-
-// Message interface for MessagesList component
-interface Message {
-  id: string;
-  content: string;
-  created_at: string;
-  sender_id: string;
-  receiver_id?: string;
-  group_id?: string;
-  is_read: boolean;
-  sender?: {
-    username: string;
-    display_name: string;
-    avatar_url?: string;
-  };
-  image_url?: string;
-  reactions?: Record<string, string[]>;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
-}
 
 const Messages = () => {
   const { user } = useAuth();
@@ -54,53 +23,16 @@ const Messages = () => {
   const [isSending, setIsSending] = useState(false);
   
   const {
-    contacts: rawContacts,
-    messages: rawMessages,
+    friends,
+    messages,
     loading,
     sendMessage,
     fetchMessages,
     fetchFriends,
-    fetchGroups,
     markMessagesAsRead,
     deleteMessage,
     reactToMessage
   } = useMessages();
-
-  // Transform contacts to match ContactsList interface
-  const contacts: Contact[] = rawContacts.map((contact) => {
-    if ('isGroup' in contact) {
-      // Group contact
-      return {
-        id: contact.id,
-        username: contact.name,
-        displayName: contact.name,
-        avatar: contact.avatar_url || null,
-        isGroup: true
-      };
-    } else {
-      // Friend contact
-      return {
-        id: contact.id,
-        username: contact.username,
-        displayName: contact.displayName,
-        avatar: contact.avatar
-      };
-    }
-  });
-
-  // Transform messages to match MessagesList interface
-  const messages: Message[] = rawMessages.map((msg) => ({
-    id: msg.id,
-    content: msg.content,
-    created_at: msg.created_at,
-    sender_id: msg.sender_id,
-    receiver_id: msg.receiver_id,
-    group_id: msg.group_id,
-    is_read: msg.is_read,
-    image_url: msg.image_url,
-    reactions: msg.reactions,
-    status: msg.status
-  }));
 
   // Check for userId in URL params
   useEffect(() => {
@@ -110,14 +42,13 @@ const Messages = () => {
     }
   }, [searchParams]);
 
-  // Fetch friends and groups on mount
+  // Fetch friends on mount
   useEffect(() => {
     if (user?.id) {
-      console.log('User authenticated, fetching friends and groups...');
+      console.log('User authenticated, fetching friends...');
       fetchFriends();
-      fetchGroups();
     }
-  }, [user?.id, fetchFriends, fetchGroups]);
+  }, [user?.id, fetchFriends]);
 
   // Fetch messages and user data when selectedUserId changes
   useEffect(() => {
@@ -127,12 +58,11 @@ const Messages = () => {
       const loadMessages = async () => {
         await fetchMessages(selectedUserId);
         
-        // Find the selected contact (friend or group)
-        let contact = contacts.find(c => c.id === selectedUserId);
-        const isGroup = contact && 'isGroup' in contact;
+        // Find the selected user from friends list first
+        let friend = friends.find(f => f.id === selectedUserId);
         
-        // If not found in contacts (might not be loaded yet), fetch user directly
-        if (!contact) {
+        // If not found in friends (friends might not be loaded yet), fetch user directly
+        if (!friend) {
           try {
             const { data } = await supabase
               .from('profiles')
@@ -141,76 +71,49 @@ const Messages = () => {
               .single();
               
             if (data) {
-              contact = {
+              friend = {
                 id: data.id,
-                username: data.username || 'Unknown',
-                displayName: data.display_name || data.username || 'Unknown User',
-                avatar: data.avatar_url || '/placeholder.svg'
+                username: data.username,
+                displayName: data.display_name || data.username,
+                avatar: data.avatar_url
               };
             }
           } catch (error) {
             console.error('Error fetching user profile:', error);
-            // Create fallback contact for unknown users
-            contact = {
-              id: selectedUserId,
-              username: 'unknown',
-              displayName: 'Unknown User',
-              avatar: '/placeholder.svg'
-            };
           }
         }
         
-        setSelectedUser(contact);
+        setSelectedUser(friend);
         
         // Mark messages as read after fetching
         setTimeout(() => {
-          markMessagesAsRead(selectedUserId, isGroup);
+          markMessagesAsRead(selectedUserId);
         }, 300);
       };
       
       loadMessages();
     }
-  }, [selectedUserId, user?.id, fetchMessages, contacts, markMessagesAsRead]);
+  }, [selectedUserId, user?.id, fetchMessages, friends, markMessagesAsRead]);
 
   const handleSelectUser = (userId: string) => {
     console.log('Selecting user:', userId);
     setSelectedUserId(userId);
-    const contact = rawContacts.find(c => c.id === userId);
-    
-    // Transform contact for selectedUser state
-    if (contact) {
-      if ('isGroup' in contact) {
-        setSelectedUser({
-          id: contact.id,
-          username: contact.name,
-          displayName: contact.name,
-          avatar: contact.avatar_url || null,
-          isGroup: true
-        });
-      } else {
-        setSelectedUser({
-          id: contact.id,
-          username: contact.username,
-          displayName: contact.displayName,
-          avatar: contact.avatar
-        });
-      }
-    }
+    const friend = friends.find(f => f.id === userId);
+    setSelectedUser(friend);
   };
 
   const handleSendMessage = async (content: string, imageFile?: File, gifUrl?: string) => {
-    if (selectedUserId && selectedUser) {
+    if (selectedUserId) {
       setIsSending(true);
-      const isGroup = selectedUser.isGroup || false;
       try {
-        await sendMessage(selectedUserId, content, imageFile, gifUrl, isGroup);
+        await sendMessage(selectedUserId, content, imageFile, gifUrl);
       } finally {
         setIsSending(false);
       }
     }
   };
 
-  const setActiveContact = (contact: Contact) => {
+  const setActiveContact = (contact: any) => {
     console.log('Setting active contact:', contact);
     setSelectedUserId(contact.id);
     setSelectedUser(contact);
@@ -233,7 +136,7 @@ const Messages = () => {
           <div className={`lg:col-span-4 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card className="h-full">
               <ContactsList
-                contacts={contacts}
+                contacts={friends}
                 activeContactId={selectedUserId || ''}
                 setActiveContact={setActiveContact}
                 isLoading={loading}
@@ -288,9 +191,9 @@ const Messages = () => {
                     <p className="text-muted-foreground mt-1">
                       {t('messages.selectContact')}
                     </p>
-                    {contacts.length === 0 && !loading && (
+                    {friends.length === 0 && !loading && (
                       <p className="text-sm text-muted-foreground mt-2">
-                        You don't have any contacts yet. Add some friends or create a group to start messaging!
+                        You don't have any friends yet. Add some friends to start messaging!
                       </p>
                     )}
                   </div>
