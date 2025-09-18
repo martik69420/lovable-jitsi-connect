@@ -127,12 +127,12 @@ const Messages = () => {
     <AppLayout>
       <div className="h-[calc(100vh-80px)] flex">
         {/* Fixed Contacts Sidebar */}
-        <div className={`w-80 border-r bg-card flex-shrink-0 ${selectedUser ? 'hidden lg:flex' : 'flex'} flex-col`}>
+        <div className={`w-80 border-r bg-card flex-shrink-0 ${selectedUser ? 'hidden lg:flex' : 'flex'} flex-col fixed left-0 top-20 h-[calc(100vh-80px)] z-10`}>
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold">{t('messages.title')}</h1>
             <p className="text-sm text-muted-foreground">{t('messages.chatWithFriends')}</p>
           </div>
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ContactsList
               contacts={friends}
               activeContactId={selectedUserId || ''}
@@ -146,7 +146,7 @@ const Messages = () => {
         </div>
 
         {/* Chat Area */}
-        <div className={`flex-1 bg-background ${!selectedUser ? 'hidden lg:flex' : 'flex'} flex-col`}>
+        <div className={`flex-1 bg-background ${!selectedUser ? 'hidden lg:flex' : 'flex'} flex-col lg:ml-80`}>
           {selectedUser ? (
             <>
               <div className="border-b bg-card">
