@@ -208,31 +208,14 @@ const useMessages = (): UseMessagesResult => {
           schema: 'public',
           table: 'messages',
         },
-        async (payload) => {
+        (payload) => {
           console.log('🆕 New message received via realtime:', payload);
-          const newMessage = payload.new as any;
+          const newMessage = payload.new as Message;
           
           // Check if this user is involved in this message
           const isInvolvedUser = newMessage.sender_id === user.id || newMessage.receiver_id === user.id;
           
           if (isInvolvedUser) {
-            // Fetch sender profile information if missing
-            if (!newMessage.sender) {
-              try {
-                const { data: senderProfile } = await supabase
-                  .from('profiles')
-                  .select('id, username, display_name, avatar_url')
-                  .eq('id', newMessage.sender_id)
-                  .single();
-                
-                if (senderProfile) {
-                  newMessage.sender = senderProfile;
-                }
-              } catch (error) {
-                console.error('Error fetching sender profile:', error);
-              }
-            }
-            
             // Check if this message belongs to current conversation
             const belongsToCurrentConversation = !currentContactId || 
               (newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
@@ -283,31 +266,14 @@ const useMessages = (): UseMessagesResult => {
           schema: 'public',
           table: 'messages',
         },
-        async (payload) => {
+        (payload) => {
           console.log('🔄 Message updated via realtime:', payload);
-          const updatedMessage = payload.new as any;
+          const updatedMessage = payload.new as Message;
           
           // Check if this user is involved in this message
           const isInvolvedUser = updatedMessage.sender_id === user.id || updatedMessage.receiver_id === user.id;
           
           if (isInvolvedUser) {
-            // Fetch sender profile information if missing
-            if (!updatedMessage.sender && updatedMessage.sender_id) {
-              try {
-                const { data: senderProfile } = await supabase
-                  .from('profiles')
-                  .select('id, username, display_name, avatar_url')
-                  .eq('id', updatedMessage.sender_id)
-                  .single();
-                
-                if (senderProfile) {
-                  updatedMessage.sender = senderProfile;
-                }
-              } catch (error) {
-                console.error('Error fetching sender profile:', error);
-              }
-            }
-            
             const belongsToCurrentConversation = !currentContactId || 
               (updatedMessage.sender_id === currentContactId && updatedMessage.receiver_id === user.id) ||
               (updatedMessage.sender_id === user.id && updatedMessage.receiver_id === currentContactId);

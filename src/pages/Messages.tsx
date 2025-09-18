@@ -125,79 +125,82 @@ const Messages = () => {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-80px)] flex">
-        {/* Fixed Contacts Sidebar */}
-        <div className={`w-80 border-r bg-card flex-shrink-0 ${selectedUser ? 'hidden lg:flex' : 'flex'} flex-col fixed left-0 top-20 h-[calc(100vh-80px)] z-10`}>
-          <div className="p-4 border-b">
-            <h1 className="text-2xl font-bold">{t('messages.title')}</h1>
-            <p className="text-sm text-muted-foreground">{t('messages.chatWithFriends')}</p>
-          </div>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <ContactsList
-              contacts={friends}
-              activeContactId={selectedUserId || ''}
-              setActiveContact={setActiveContact}
-              isLoading={loading}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              onNewChat={handleNewChat}
-            />
-          </div>
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">{t('messages.title')}</h1>
+          <p className="text-muted-foreground">{t('messages.chatWithFriends')}</p>
         </div>
 
-        {/* Chat Area */}
-        <div className={`flex-1 bg-background ${!selectedUser ? 'hidden lg:flex' : 'flex'} flex-col lg:ml-80 h-[calc(100vh-80px)]`}>
-          {selectedUser ? (
-            <>
-              <div className="border-b bg-card">
-                <ChatHeader 
-                  contact={selectedUser} 
-                  onOpenUserActions={() => console.log('Open user actions')}
-                  onBack={() => {
-                    setSelectedUserId(null);
-                    setSelectedUser(null);
-                  }}
-                />
-              </div>
-              <div className="flex-1 min-h-0 flex flex-col">
-                <div className="flex-1">
-                  <MessagesList
-                    messages={messages}
-                    optimisticMessages={[]}
-                    currentUserId={user?.id || ''}
-                    isLoading={loading}
-                    onDeleteMessage={deleteMessage}
-                    onReactToMessage={reactToMessage}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
+          {/* Contacts List - Hidden on mobile when chat is active */}
+          <div className={`lg:col-span-4 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
+            <Card className="h-full">
+              <ContactsList
+                contacts={friends}
+                activeContactId={selectedUserId || ''}
+                setActiveContact={setActiveContact}
+                isLoading={loading}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                onNewChat={handleNewChat}
+              />
+            </Card>
+          </div>
+
+          {/* Chat Area - Hidden on mobile when no chat selected */}
+          <div className={`lg:col-span-8 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
+            <Card className="h-full flex flex-col">
+              {selectedUser ? (
+                <>
+                  <div className="border-b">
+                    <ChatHeader 
+                      contact={selectedUser} 
+                      onOpenUserActions={() => console.log('Open user actions')}
+                      onBack={() => {
+                        setSelectedUserId(null);
+                        setSelectedUser(null);
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    <div className="flex-1">
+                      <MessagesList
+                        messages={messages}
+                        optimisticMessages={[]}
+                        currentUserId={user?.id || ''}
+                        isLoading={loading}
+                        onDeleteMessage={deleteMessage}
+                        onReactToMessage={reactToMessage}
+                      />
+                    </div>
+                    {selectedUserId && (
+                      <TypingIndicator receiverId={selectedUserId} />
+                    )}
+                  </div>
+                  <MessageInput 
+                    onSendMessage={handleSendMessage}
+                    isSending={isSending}
+                    receiverId={selectedUserId || undefined}
                   />
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium">{t('messages.noConversation')}</h3>
+                    <p className="text-muted-foreground mt-1">
+                      {t('messages.selectContact')}
+                    </p>
+                    {friends.length === 0 && !loading && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        You don't have any friends yet. Add some friends to start messaging!
+                      </p>
+                    )}
+                  </div>
                 </div>
-                {selectedUserId && (
-                  <TypingIndicator receiverId={selectedUserId} />
-                )}
-              </div>
-              <div className="border-t bg-card">
-                <MessageInput 
-                  onSendMessage={handleSendMessage}
-                  isSending={isSending}
-                  receiverId={selectedUserId || undefined}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">{t('messages.noConversation')}</h3>
-                <p className="text-muted-foreground mt-1">
-                  {t('messages.selectContact')}
-                </p>
-                {friends.length === 0 && !loading && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    You don't have any friends yet. Add some friends to start messaging!
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </AppLayout>

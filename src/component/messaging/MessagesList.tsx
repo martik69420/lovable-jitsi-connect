@@ -157,7 +157,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      <div className="flex-1 overflow-y-auto p-4 space-y-1 scroll-smooth" onScroll={handleScroll}>
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-1" onScroll={handleScroll}>
         {allMessages.map((message, index) => {
           const isOwn = message.sender_id === currentUserId;
           const showAvatar = !isOwn && (
@@ -295,7 +296,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
           );
         })}
         <div ref={messagesEndRef} />
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   );
 };
