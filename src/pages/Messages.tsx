@@ -146,7 +146,7 @@ const Messages = () => {
         </div>
 
         {/* Chat Area */}
-        <div className={`flex-1 bg-background ${!selectedUser ? 'hidden lg:flex' : 'flex'} flex-col lg:ml-80`}>
+        <div className={`flex-1 bg-background ${!selectedUser ? 'hidden lg:flex' : 'flex'} flex-col lg:ml-80 h-[calc(100vh-80px)]`}>
           {selectedUser ? (
             <>
               <div className="border-b bg-card">
