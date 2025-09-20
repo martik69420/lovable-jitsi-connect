@@ -131,9 +131,9 @@ const Messages = () => {
           <p className="text-muted-foreground">{t('messages.chatWithFriends')}</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
-          {/* Contacts List - Hidden on mobile when chat is active */}
-          <div className={`lg:col-span-4 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
+        <div className="flex h-[calc(100vh-200px)]">
+          {/* Contacts List - Fixed sidebar */}
+          <div className={`w-80 flex-shrink-0 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card className="h-full">
               <ContactsList
                 contacts={friends}
@@ -148,7 +148,7 @@ const Messages = () => {
           </div>
 
           {/* Chat Area - Hidden on mobile when no chat selected */}
-          <div className={`lg:col-span-8 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
+          <div className={`flex-1 ml-6 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card className="h-full flex flex-col">
               {selectedUser ? (
                 <>
