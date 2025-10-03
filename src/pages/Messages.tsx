@@ -148,8 +148,8 @@ const Messages = () => {
           </div>
 
           {/* Chat Area - Hidden on mobile when no chat selected */}
-          <div className={`flex-1 ml-6 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
-            <Card className="h-full flex flex-col">
+          <div className={`flex-1 min-h-0 ml-6 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
+            <Card className="h-full flex flex-col overflow-hidden">
               {selectedUser ? (
                 <>
                   <div className="border-b">
@@ -163,7 +163,7 @@ const Messages = () => {
                     />
                   </div>
                   <div className="flex-1 min-h-0 flex flex-col">
-                    <div className="flex-1">
+                    <div className="flex-1 min-h-0">
                       <MessagesList
                         messages={messages}
                         optimisticMessages={[]}
