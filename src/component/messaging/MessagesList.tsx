@@ -156,7 +156,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto chat-scrollbar" onScroll={handleScroll}>
         <div className="p-4 space-y-1">
         {allMessages.map((message, index) => {
