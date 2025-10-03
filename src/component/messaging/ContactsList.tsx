@@ -82,7 +82,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto chat-scrollbar max-h-[calc(100vh-180px)]">
+      <div className="flex-1 overflow-y-auto chat-scrollbar">
         {isLoading ?
       // Loading skeletons
       <>
