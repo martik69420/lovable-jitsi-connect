@@ -5,36 +5,50 @@ import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { Skeleton } from '@/component/ui/skeleton';
 import OnlineStatus from '@/component/OnlineStatus';
-import { Search, PlusCircle, User } from 'lucide-react';
+import { Search, PlusCircle, User, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import GroupChatCreator from './GroupChatCreator';
+
 interface Contact {
   id: string;
-  username: string;
-  displayName: string;
-  avatar: string | null;
+  username?: string;
+  displayName?: string;
+  name?: string;
+  avatar?: string | null;
+  avatar_url?: string | null;
   lastMessage?: string;
   lastMessageTime?: string;
   unreadCount?: number;
+  isGroup?: boolean;
+  memberCount?: number;
 }
+
 interface ContactsListProps {
   contacts: Contact[];
+  groups: Contact[];
   activeContactId: string;
-  setActiveContact: (contact: Contact) => void;
+  setActiveContact: (contact: Contact, isGroup?: boolean) => void;
   isLoading: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onNewChat: () => void;
+  createGroup: (name: string, description: string, memberIds: string[]) => Promise<any>;
+  onGroupCreated?: (groupId: string) => void;
 }
 const ContactsList: React.FC<ContactsListProps> = ({
   contacts,
+  groups,
   activeContactId,
   setActiveContact,
   isLoading,
   searchQuery,
   setSearchQuery,
-  onNewChat
+  onNewChat,
+  createGroup,
+  onGroupCreated
 }) => {
+  const allContacts = [...groups.map(g => ({ ...g, isGroup: true })), ...contacts];
+
   const formatLastMessageTime = (dateString?: string) => {
     if (!dateString) return '';
     const messageDate = new Date(dateString);
@@ -64,10 +78,12 @@ const ContactsList: React.FC<ContactsListProps> = ({
   };
 
   // Filter contacts based on search query
-  const filteredContacts = contacts.filter(contact => {
+  const filteredContacts = allContacts.filter(contact => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
-    return contact.displayName.toLowerCase().includes(query) || contact.username.toLowerCase().includes(query);
+    const name = contact.name || contact.displayName || contact.username || '';
+    const username = contact.username || '';
+    return name.toLowerCase().includes(query) || username.toLowerCase().includes(query);
   });
   return <div className="h-full flex flex-col">
       <div className="border-b p-3 dark:border-gray-800 sticky top-0 bg-background z-10">
@@ -77,7 +93,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search contacts" className="pl-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
-          <GroupChatCreator />
+          <GroupChatCreator createGroup={createGroup} onGroupCreated={onGroupCreated} />
           
         </div>
       </div>
@@ -114,38 +130,64 @@ const ContactsList: React.FC<ContactsListProps> = ({
               </>}
           </div> :
       // Contact list
-      filteredContacts.map(contact => <button key={contact.id} className={cn('flex items-center gap-3 p-3 hover:bg-muted/50 w-full text-left border-b relative transition-colors dark:border-gray-800', contact.id === activeContactId && 'bg-muted')} onClick={() => setActiveContact(contact)}>
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={contact.avatar || "/placeholder.svg"} alt={contact.displayName || contact.username} />
-                  <AvatarFallback>
-                    {contact.displayName?.charAt(0) || contact.username.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <OnlineStatus userId={contact.id} className="absolute -bottom-1 -right-1" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium truncate">
-                    {contact.displayName}
+      filteredContacts.map(contact => {
+        const isGroup = contact.isGroup || false;
+        const displayName = contact.name || contact.displayName || contact.username || 'Unknown';
+        const avatar = contact.avatar_url || contact.avatar;
+        
+        return (
+          <button 
+            key={contact.id} 
+            className={cn(
+              'flex items-center gap-3 p-3 hover:bg-muted/50 w-full text-left border-b relative transition-colors dark:border-gray-800',
+              contact.id === activeContactId && 'bg-muted'
+            )} 
+            onClick={() => setActiveContact(contact, isGroup)}
+          >
+            <div className="relative">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={avatar || "/placeholder.svg"} alt={displayName} />
+                <AvatarFallback className={isGroup ? 'bg-primary/10' : ''}>
+                  {isGroup ? <Users className="h-6 w-6" /> : displayName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {!isGroup && <OnlineStatus userId={contact.id} className="absolute -bottom-1 -right-1" />}
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium truncate">
+                  {displayName}
+                  {!isGroup && contact.username && (
                     <span className="font-normal text-muted-foreground text-sm ml-1">
                       @{contact.username}
                     </span>
-                  </h3>
-                  {contact.lastMessageTime && <span className="text-xs text-muted-foreground">
-                      {formatLastMessageTime(contact.lastMessageTime)}
-                    </span>}
-                </div>
-                <p className="text-sm text-muted-foreground truncate">
-                  {contact.lastMessage || "Start a conversation"}
-                </p>
+                  )}
+                  {isGroup && contact.memberCount && (
+                    <span className="font-normal text-muted-foreground text-sm ml-1">
+                      {contact.memberCount} members
+                    </span>
+                  )}
+                </h3>
+                {contact.lastMessageTime && (
+                  <span className="text-xs text-muted-foreground">
+                    {formatLastMessageTime(contact.lastMessageTime)}
+                  </span>
+                )}
               </div>
-              
-              {(contact.unreadCount || 0) > 0 && <span className="absolute top-3 right-3 bg-primary text-white h-5 min-w-5 flex items-center justify-center text-xs px-1.5 rounded-full font-medium">
-                  {contact.unreadCount}
-                </span>}
-            </button>)}
+              <p className="text-sm text-muted-foreground truncate">
+                {contact.lastMessage || (isGroup ? "New group chat" : "Start a conversation")}
+              </p>
+            </div>
+            
+            {(contact.unreadCount || 0) > 0 && (
+              <span className="absolute top-3 right-3 bg-primary text-white h-5 min-w-5 flex items-center justify-center text-xs px-1.5 rounded-full font-medium">
+                {contact.unreadCount}
+              </span>
+            )}
+          </button>
+        );
+      })}
       </div>
     </div>;
 };

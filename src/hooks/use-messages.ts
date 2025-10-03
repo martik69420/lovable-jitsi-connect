@@ -21,23 +21,39 @@ export interface Friend {
   avatar: string | null;
 }
 
+export interface Group {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  description: string | null;
+  memberCount?: number;
+  isGroup: true;
+}
+
+export type Contact = Friend | Group;
+
 interface UseMessagesResult {
   friends: Friend[];
+  groups: Group[];
   messages: Message[];
   loading: boolean;
-  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string) => Promise<void>;
-  fetchMessages: (contactId: string) => Promise<void>;
+  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string) => Promise<void>;
+  fetchMessages: (contactId: string, isGroup?: boolean) => Promise<void>;
   fetchFriends: () => Promise<void>;
+  fetchGroups: () => Promise<void>;
   markMessagesAsRead: (senderId: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   reactToMessage: (messageId: string, emoji: string) => Promise<void>;
+  createGroup: (name: string, description: string, memberIds: string[]) => Promise<Group | null>;
 }
 
 const useMessages = (): UseMessagesResult => {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentContactId, setCurrentContactId] = useState<string | null>(null);
+  const [isGroupChat, setIsGroupChat] = useState(false);
 
   const fetchFriends = useCallback(async () => {
     setLoading(true);
@@ -114,10 +130,65 @@ const useMessages = (): UseMessagesResult => {
     }
   }, []);
 
-  const fetchMessages = useCallback(async (contactId: string) => {
+  const fetchGroups = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: memberData, error: memberError } = await supabase
+        .from('group_members' as any)
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      if (memberError || !memberData) {
+        console.error('Error fetching group memberships:', memberError);
+        return;
+      }
+
+      const groupIds = memberData.map((m: any) => m.group_id);
+      if (groupIds.length === 0) {
+        setGroups([]);
+        return;
+      }
+
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('groups' as any)
+        .select('id, name, avatar_url, description')
+        .in('id', groupIds);
+
+      if (groupsError) {
+        console.error('Error fetching groups:', groupsError);
+        return;
+      }
+
+      // Count members for each group
+      const groupsList = await Promise.all((groupsData || []).map(async (group: any) => {
+        const { count } = await supabase
+          .from('group_members' as any)
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', group.id);
+
+        return {
+          id: group.id,
+          name: group.name,
+          avatar_url: group.avatar_url,
+          description: group.description,
+          memberCount: count || 0,
+          isGroup: true as const
+        };
+      }));
+
+      setGroups(groupsList);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    }
+  }, []);
+
+  const fetchMessages = useCallback(async (contactId: string, isGroup = false) => {
     setLoading(true);
     setCurrentContactId(contactId);
-    console.log('Setting current contact ID to:', contactId);
+    setIsGroupChat(isGroup);
+    console.log('Setting current contact ID to:', contactId, 'isGroup:', isGroup);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -126,32 +197,70 @@ const useMessages = (): UseMessagesResult => {
         return;
       }
 
-      console.log('Fetching messages between', user.id, 'and', contactId);
+      if (isGroup) {
+        console.log('Fetching group messages for group:', contactId);
 
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles!messages_sender_id_fkey(id, username, display_name, avatar_url),
-          receiver:profiles!messages_receiver_id_fkey(id, username, display_name, avatar_url)
-        `)
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${user.id})`)
-        .order('created_at', { ascending: true });
+        const { data, error } = await supabase
+          .from('messages' as any)
+          .select('*')
+          .eq('group_id', contactId)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-        setLoading(false);
-        return;
+        if (error) {
+          console.error('Error fetching group messages:', error);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch sender profiles for all messages
+        const messagesWithProfiles = await Promise.all((data || []).map(async (msg: any) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .eq('id', msg.sender_id)
+            .single();
+
+          return {
+            ...msg,
+            sender: profile,
+            reactions: (msg.reactions || {}) as Record<string, string[]>
+          };
+        }));
+
+        setMessages(messagesWithProfiles as Message[]);
+      } else {
+        console.log('Fetching messages between', user.id, 'and', contactId);
+
+        const { data, error } = await supabase
+          .from('messages' as any)
+          .select('*')
+          .is('group_id', null)
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${user.id})`)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching messages:', error);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch sender profiles for all messages
+        const messagesWithProfiles = await Promise.all((data || []).map(async (msg: any) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .eq('id', msg.sender_id)
+            .single();
+
+          return {
+            ...msg,
+            sender: profile,
+            reactions: (msg.reactions || {}) as Record<string, string[]>
+          };
+        }));
+
+        setMessages(messagesWithProfiles as Message[]);
       }
-
-      console.log('Messages fetched:', data?.length || 0, 'messages');
-      const typedMessages = (data || []).map(msg => ({
-        ...msg,
-        reactions: (msg.reactions || {}) as Record<string, string[]>
-      })) as Message[];
-      
-      console.log('Setting messages:', typedMessages);
-      setMessages(typedMessages);
       
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -365,7 +474,7 @@ const useMessages = (): UseMessagesResult => {
     }
   };
 
-  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string) => {
+  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -373,14 +482,14 @@ const useMessages = (): UseMessagesResult => {
       // Prevent sending empty messages without content, image, or gif
       if (!content.trim() && !imageFile && !gifUrl) return;
 
-      console.log('Sending message from', user.id, 'to', receiverId, ':', content);
+      console.log('Sending message from', user.id, groupId ? `to group ${groupId}` : `to ${receiverId}`, ':', content);
 
       // Create optimistic message for immediate UI feedback
       const tempId = `temp-${Date.now()}`;
       const optimisticMessage: Message = {
         id: tempId,
         sender_id: user.id,
-        receiver_id: receiverId,
+        receiver_id: groupId ? '' : receiverId,
         content: content || (imageFile ? '[Image]' : (gifUrl ? '[GIF]' : '')),
         created_at: new Date().toISOString(),
         is_read: false,
@@ -398,10 +507,15 @@ const useMessages = (): UseMessagesResult => {
 
       const messageData: any = {
         sender_id: user.id,
-        receiver_id: receiverId,
         content: content || (imageUrl ? '[Image]' : (gifUrl ? '[GIF]' : '')),
         is_read: false
       };
+
+      if (groupId) {
+        messageData.group_id = groupId;
+      } else {
+        messageData.receiver_id = receiverId;
+      }
 
       if (imageUrl) {
         messageData.image_url = imageUrl;
@@ -437,6 +551,59 @@ const useMessages = (): UseMessagesResult => {
     }
   }, []);
 
+  const createGroup = useCallback(async (name: string, description: string, memberIds: string[]): Promise<Group | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Create the group
+      const { data: groupData, error: groupError } = await supabase
+        .from('groups' as any)
+        .insert({
+          name,
+          description,
+          created_by: user.id
+        })
+        .select('*')
+        .single() as any;
+
+      if (groupError || !groupData) {
+        console.error('Error creating group:', groupError);
+        return null;
+      }
+
+      // Add creator as admin member
+      const membersToAdd = [
+        { group_id: groupData.id as string, user_id: user.id, role: 'admin' },
+        ...memberIds.map(id => ({ group_id: groupData.id as string, user_id: id, role: 'member' }))
+      ];
+
+      const { error: membersError } = await supabase
+        .from('group_members' as any)
+        .insert(membersToAdd);
+
+      if (membersError) {
+        console.error('Error adding group members:', membersError);
+        return null;
+      }
+
+      const newGroup: Group = {
+        id: groupData.id as string,
+        name: groupData.name as string,
+        avatar_url: groupData.avatar_url as string | null,
+        description: groupData.description as string | null,
+        memberCount: membersToAdd.length,
+        isGroup: true
+      };
+
+      setGroups(prev => [...prev, newGroup]);
+      return newGroup;
+    } catch (error) {
+      console.error('Error creating group:', error);
+      return null;
+    }
+  }, []);
+
   const deleteMessage = useCallback(async (messageId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -446,14 +613,13 @@ const useMessages = (): UseMessagesResult => {
         .from('messages')
         .delete()
         .eq('id', messageId)
-        .eq('sender_id', user.id); // Only allow deleting own messages
+        .eq('sender_id', user.id);
 
       if (error) {
         console.error('Error deleting message:', error);
         return;
       }
 
-      // Remove from local state
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
     } catch (error) {
       console.error('Error deleting message:', error);
@@ -465,7 +631,6 @@ const useMessages = (): UseMessagesResult => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get current message
       const message = messages.find(m => m.id === messageId);
       if (!message) return;
 
@@ -474,7 +639,6 @@ const useMessages = (): UseMessagesResult => {
       
       let updatedReactions;
       if (userReactions.includes(user.id)) {
-        // Remove reaction
         const filteredUsers = userReactions.filter(id => id !== user.id);
         if (filteredUsers.length === 0) {
           updatedReactions = { ...currentReactions };
@@ -483,7 +647,6 @@ const useMessages = (): UseMessagesResult => {
           updatedReactions = { ...currentReactions, [emoji]: filteredUsers };
         }
       } else {
-        // Add reaction
         updatedReactions = { ...currentReactions, [emoji]: [...userReactions, user.id] };
       }
 
@@ -497,7 +660,6 @@ const useMessages = (): UseMessagesResult => {
         return;
       }
 
-      // Update local state
       setMessages(prev => prev.map(msg => 
         msg.id === messageId ? { ...msg, reactions: updatedReactions } : msg
       ));
@@ -508,14 +670,17 @@ const useMessages = (): UseMessagesResult => {
 
   return {
     friends,
+    groups,
     messages,
     loading,
     sendMessage,
     fetchMessages,
     fetchFriends,
+    fetchGroups,
     markMessagesAsRead,
     deleteMessage,
-    reactToMessage
+    reactToMessage,
+    createGroup
   };
 };
 

@@ -1,22 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Users, X } from 'lucide-react';
+import { Checkbox } from '@/component/ui/checkbox';
+import { Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/component/ui/scroll-area';
 
-interface GroupChatCreatorProps {
-  onGroupCreated?: (groupData: { name: string; members: string[] }) => void;
+interface Friend {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
 }
 
-const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated }) => {
+interface GroupChatCreatorProps {
+  onGroupCreated?: (groupId: string) => void;
+  createGroup: (name: string, description: string, memberIds: string[]) => Promise<any>;
+}
+
+const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated, createGroup }) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
 
-  const handleCreateGroup = () => {
+  useEffect(() => {
+    if (open) {
+      fetchFriends();
+    }
+  }, [open]);
+
+  const fetchFriends = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: friendsData, error } = await supabase
+        .from('friends')
+        .select('user_id, friend_id')
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      if (error) {
+        console.error('Error fetching friends:', error);
+        return;
+      }
+
+      const friendIds = friendsData?.map(f => 
+        f.user_id === user.id ? f.friend_id : f.user_id
+      ).filter(id => id !== user.id) || [];
+
+      if (friendIds.length === 0) {
+        setFriends([]);
+        return;
+      }
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .in('id', friendIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+
+      const friendsList = profilesData?.map(profile => ({
+        id: profile.id,
+        username: profile.username || 'unknown',
+        displayName: profile.display_name || profile.username || 'User',
+        avatar: profile.avatar_url
+      })) || [];
+
+      setFriends(friendsList);
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+    }
+  };
+
+  const toggleFriend = (friendId: string) => {
+    const newSelected = new Set(selectedFriends);
+    if (newSelected.has(friendId)) {
+      newSelected.delete(friendId);
+    } else {
+      newSelected.add(friendId);
+    }
+    setSelectedFriends(newSelected);
+  };
+
+  const handleCreateGroup = async () => {
     if (!groupName.trim()) {
       toast({
         title: "Error",
@@ -26,19 +104,49 @@ const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated }) =
       return;
     }
 
-    // For now, just show a message that group chats will be available soon
-    toast({
-      title: "Coming Soon!",
-      description: "Group chats feature will be available in the next update. Stay tuned!",
-    });
+    if (selectedFriends.size === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one friend",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    setOpen(false);
-    setGroupName('');
-    setDescription('');
+    setLoading(true);
+    try {
+      const group = await createGroup(
+        groupName,
+        description,
+        Array.from(selectedFriends)
+      );
 
-    // If callback provided, call it with placeholder data
-    if (onGroupCreated) {
-      onGroupCreated({ name: groupName, members: [] });
+      if (group) {
+        toast({
+          title: "Success!",
+          description: `Group "${groupName}" created successfully`,
+        });
+        
+        setOpen(false);
+        setGroupName('');
+        setDescription('');
+        setSelectedFriends(new Set());
+        
+        if (onGroupCreated) {
+          onGroupCreated(group.id);
+        }
+      } else {
+        throw new Error('Failed to create group');
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create group. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,33 +166,55 @@ const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated }) =
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="text-center p-4 bg-muted/50 rounded-lg">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-            <h3 className="font-semibold mb-1">Group Chats Coming Soon!</h3>
-            <p className="text-sm text-muted-foreground">
-              We're working on bringing group chat functionality to the platform. 
-              This feature will allow you to chat with multiple friends at once.
-            </p>
+          <div>
+            <label className="text-sm font-medium">Group Name</label>
+            <Input
+              placeholder="Enter group name"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Description (Optional)</label>
+            <Textarea
+              placeholder="What's this group about?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+            />
           </div>
 
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Group Name (Preview)</label>
-              <Input
-                placeholder="Enter group name"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Description (Preview)</label>
-              <Input
-                placeholder="What's this group about?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Select Friends ({selectedFriends.size} selected)
+            </label>
+            <ScrollArea className="h-64 border rounded-md">
+              <div className="p-3 space-y-2">
+                {friends.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No friends to add. Add friends first!
+                  </p>
+                ) : (
+                  friends.map((friend) => (
+                    <div
+                      key={friend.id}
+                      className="flex items-center space-x-3 p-2 hover:bg-muted rounded-md cursor-pointer"
+                      onClick={() => toggleFriend(friend.id)}
+                    >
+                      <Checkbox
+                        checked={selectedFriends.has(friend.id)}
+                        onCheckedChange={() => toggleFriend(friend.id)}
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{friend.displayName}</p>
+                        <p className="text-xs text-muted-foreground">@{friend.username}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </div>
 
           <div className="flex gap-2">
@@ -92,15 +222,16 @@ const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated }) =
               variant="outline"
               onClick={() => setOpen(false)}
               className="flex-1"
+              disabled={loading}
             >
               Cancel
             </Button>
             <Button
               onClick={handleCreateGroup}
-              disabled={!groupName.trim()}
+              disabled={!groupName.trim() || selectedFriends.size === 0 || loading}
               className="flex-1"
             >
-              Preview Feature
+              {loading ? 'Creating...' : 'Create Group'}
             </Button>
           </div>
         </div>

@@ -19,19 +19,23 @@ const Messages = () => {
   const [searchParams] = useSearchParams();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isGroupChat, setIsGroupChat] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
   
   const {
     friends,
+    groups,
     messages,
     loading,
     sendMessage,
     fetchMessages,
     fetchFriends,
+    fetchGroups,
     markMessagesAsRead,
     deleteMessage,
-    reactToMessage
+    reactToMessage,
+    createGroup
   } = useMessages();
 
   // Check for userId in URL params
@@ -39,61 +43,69 @@ const Messages = () => {
     const userIdFromParams = searchParams.get('userId') || searchParams.get('user');
     if (userIdFromParams) {
       setSelectedUserId(userIdFromParams);
+      setIsGroupChat(false);
     }
   }, [searchParams]);
 
-  // Fetch friends on mount
+  // Fetch friends and groups on mount
   useEffect(() => {
     if (user?.id) {
-      console.log('User authenticated, fetching friends...');
+      console.log('User authenticated, fetching friends and groups...');
       fetchFriends();
+      fetchGroups();
     }
-  }, [user?.id, fetchFriends]);
+  }, [user?.id, fetchFriends, fetchGroups]);
 
-  // Fetch messages and user data when selectedUserId changes
+  // Fetch messages and user/group data when selectedUserId changes
   useEffect(() => {
     if (selectedUserId && user?.id) {
-      console.log('Fetching messages for selected user:', selectedUserId);
+      console.log('Fetching messages for selected contact:', selectedUserId, 'isGroup:', isGroupChat);
       
       const loadMessages = async () => {
-        await fetchMessages(selectedUserId);
+        await fetchMessages(selectedUserId, isGroupChat);
         
-        // Find the selected user from friends list first
-        let friend = friends.find(f => f.id === selectedUserId);
-        
-        // If not found in friends (friends might not be loaded yet), fetch user directly
-        if (!friend) {
-          try {
-            const { data } = await supabase
-              .from('profiles')
-              .select('id, username, display_name, avatar_url')
-              .eq('id', selectedUserId)
-              .single();
-              
-            if (data) {
-              friend = {
-                id: data.id,
-                username: data.username,
-                displayName: data.display_name || data.username,
-                avatar: data.avatar_url
-              };
+        if (isGroupChat) {
+          // Find the group
+          const group = groups.find(g => g.id === selectedUserId);
+          setSelectedUser(group);
+        } else {
+          // Find the friend
+          let friend = friends.find(f => f.id === selectedUserId);
+          
+          // If not found in friends list, fetch user directly
+          if (!friend) {
+            try {
+              const { data } = await supabase
+                .from('profiles')
+                .select('id, username, display_name, avatar_url')
+                .eq('id', selectedUserId)
+                .single();
+                
+              if (data) {
+                friend = {
+                  id: data.id,
+                  username: data.username,
+                  displayName: data.display_name || data.username,
+                  avatar: data.avatar_url
+                };
+              }
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
             }
-          } catch (error) {
-            console.error('Error fetching user profile:', error);
           }
+          
+          setSelectedUser(friend);
+          
+          // Mark messages as read after fetching
+          setTimeout(() => {
+            markMessagesAsRead(selectedUserId);
+          }, 300);
         }
-        
-        setSelectedUser(friend);
-        
-        // Mark messages as read after fetching
-        setTimeout(() => {
-          markMessagesAsRead(selectedUserId);
-        }, 300);
       };
       
       loadMessages();
     }
-  }, [selectedUserId, user?.id, fetchMessages, friends, markMessagesAsRead]);
+  }, [selectedUserId, isGroupChat, user?.id, fetchMessages, friends, groups, markMessagesAsRead]);
 
   const handleSelectUser = (userId: string) => {
     console.log('Selecting user:', userId);
@@ -106,17 +118,32 @@ const Messages = () => {
     if (selectedUserId) {
       setIsSending(true);
       try {
-        await sendMessage(selectedUserId, content, imageFile, gifUrl);
+        if (isGroupChat) {
+          await sendMessage('', content, imageFile, gifUrl, selectedUserId);
+        } else {
+          await sendMessage(selectedUserId, content, imageFile, gifUrl);
+        }
       } finally {
         setIsSending(false);
       }
     }
   };
 
-  const setActiveContact = (contact: any) => {
-    console.log('Setting active contact:', contact);
+  const setActiveContact = (contact: any, isGroup = false) => {
+    console.log('Setting active contact:', contact, 'isGroup:', isGroup);
     setSelectedUserId(contact.id);
     setSelectedUser(contact);
+    setIsGroupChat(isGroup);
+  };
+
+  const handleGroupCreated = async (groupId: string) => {
+    // Refresh groups list
+    await fetchGroups();
+    // Select the newly created group
+    const newGroup = groups.find(g => g.id === groupId);
+    if (newGroup) {
+      setActiveContact(newGroup, true);
+    }
   };
 
   const handleNewChat = () => {
@@ -137,12 +164,15 @@ const Messages = () => {
             <Card className="h-full">
               <ContactsList
                 contacts={friends}
+                groups={groups}
                 activeContactId={selectedUserId || ''}
                 setActiveContact={setActiveContact}
                 isLoading={loading}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 onNewChat={handleNewChat}
+                createGroup={createGroup}
+                onGroupCreated={handleGroupCreated}
               />
             </Card>
           </div>
