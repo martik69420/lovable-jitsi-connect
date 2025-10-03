@@ -133,7 +133,7 @@ const Messages = () => {
 
         <div className="flex h-[calc(100vh-200px)] overflow-hidden">
           {/* Contacts List - Fixed sidebar */}
-          <div className={`w-80 flex-shrink-0 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
+          <div className={`w-64 flex-shrink-0 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card className="h-full">
               <ContactsList
                 contacts={friends}
