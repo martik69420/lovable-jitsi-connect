@@ -12,6 +12,13 @@ export interface Message {
   image_url?: string;
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
+  group_id?: string;
+  sender?: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url?: string;
+  };
 }
 
 export interface Friend {
@@ -317,52 +324,57 @@ const useMessages = (): UseMessagesResult => {
           schema: 'public',
           table: 'messages',
         },
-        (payload) => {
+        async (payload) => {
           console.log('🆕 New message received via realtime:', payload);
           const newMessage = payload.new as Message;
           
-          // Check if this user is involved in this message
-          const isInvolvedUser = newMessage.sender_id === user.id || newMessage.receiver_id === user.id;
+          // Check if this message belongs to a group or direct message
+          const isGroupMessage = !!newMessage.group_id;
+          const belongsToGroup = isGroupMessage && isGroupChat && newMessage.group_id === currentContactId;
+          const isDirectMessage = !isGroupMessage && (newMessage.sender_id === user.id || newMessage.receiver_id === user.id);
+          const belongsToCurrentDirectChat = isDirectMessage && !isGroupChat &&
+            ((newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
+             (newMessage.sender_id === user.id && newMessage.receiver_id === currentContactId));
           
-          if (isInvolvedUser) {
-            // Check if this message belongs to current conversation
-            const belongsToCurrentConversation = !currentContactId || 
-              (newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
-              (newMessage.sender_id === user.id && newMessage.receiver_id === currentContactId);
+          if (belongsToGroup || belongsToCurrentDirectChat) {
+            console.log('➡️ Adding message to current conversation');
             
-            if (belongsToCurrentConversation) {
-              console.log('➡️ Adding message to current conversation');
-              setMessages(prev => {
-                // Prevent duplicates
-                const exists = prev.some(msg => msg.id === newMessage.id);
-                if (exists) {
-                  console.log('⚠️ Message already exists, skipping');
-                  return prev;
-                }
-                
-                const updatedMessages = [...prev, {
-                  ...newMessage,
-                  reactions: (newMessage.reactions || {}) as Record<string, string[]>
-                }].sort((a, b) => 
-                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
-                
-                console.log('✅ Message added to conversation');
-                return updatedMessages;
-              });
-              
-              // Auto-mark as read if user is receiving the message
-              if (newMessage.receiver_id === user.id && currentContactId === newMessage.sender_id) {
-                console.log('📖 Auto-marking message as read');
-                setTimeout(() => {
-                  markMessagesAsRead(newMessage.sender_id);
-                }, 300);
+            // Fetch sender profile
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id, username, display_name, avatar_url')
+              .eq('id', newMessage.sender_id)
+              .single();
+            
+            setMessages(prev => {
+              // Prevent duplicates
+              const exists = prev.some(msg => msg.id === newMessage.id);
+              if (exists) {
+                console.log('⚠️ Message already exists, skipping');
+                return prev;
               }
-            } else {
-              console.log('📝 Message for different conversation');
+              
+              const updatedMessages = [...prev, {
+                ...newMessage,
+                sender: profile,
+                reactions: (newMessage.reactions || {}) as Record<string, string[]>
+              }].sort((a, b) => 
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              );
+              
+              console.log('✅ Message added to conversation');
+              return updatedMessages;
+            });
+            
+            // Auto-mark as read if user is receiving the message (direct messages only)
+            if (!isGroupMessage && newMessage.receiver_id === user.id && currentContactId === newMessage.sender_id) {
+              console.log('📖 Auto-marking message as read');
+              setTimeout(() => {
+                markMessagesAsRead(newMessage.sender_id);
+              }, 300);
             }
           } else {
-            console.log('👤 Message not for this user');
+            console.log('📝 Message for different conversation');
           }
         }
       );
@@ -484,6 +496,13 @@ const useMessages = (): UseMessagesResult => {
 
       console.log('Sending message from', user.id, groupId ? `to group ${groupId}` : `to ${receiverId}`, ':', content);
 
+      // Fetch current user profile for optimistic message
+      const { data: currentUserProfile } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
       // Create optimistic message for immediate UI feedback
       const tempId = `temp-${Date.now()}`;
       const optimisticMessage: Message = {
@@ -494,7 +513,9 @@ const useMessages = (): UseMessagesResult => {
         created_at: new Date().toISOString(),
         is_read: false,
         reactions: {},
-        status: 'sending'
+        status: 'sending',
+        group_id: groupId,
+        sender: currentUserProfile || undefined
       };
 
       // Add optimistic message to UI

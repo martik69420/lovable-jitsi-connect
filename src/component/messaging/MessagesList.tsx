@@ -16,6 +16,7 @@ interface Message {
   receiver_id: string;
   is_read: boolean;
   sender?: {
+    id?: string;
     username: string;
     display_name: string;
     avatar_url?: string;
@@ -23,6 +24,7 @@ interface Message {
   image_url?: string;
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
+  group_id?: string;
 }
 
 interface MessagesListProps {
@@ -32,6 +34,7 @@ interface MessagesListProps {
   isLoading: boolean;
   onDeleteMessage?: (messageId: string) => void;
   onReactToMessage?: (messageId: string, emoji: string) => void;
+  isGroupChat?: boolean;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({
@@ -40,7 +43,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
   currentUserId,
   isLoading,
   onDeleteMessage,
-  onReactToMessage
+  onReactToMessage,
+  isGroupChat
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -161,23 +165,34 @@ const MessagesList: React.FC<MessagesListProps> = ({
         <div className="p-4 space-y-1">
         {allMessages.map((message, index) => {
           const isOwn = message.sender_id === currentUserId;
-          const showAvatar = !isOwn && (
+          // In group chats, always show avatar and name for different senders
+          const showAvatar = isGroupChat ? (
             index === allMessages.length - 1 || 
             allMessages[index + 1]?.sender_id !== message.sender_id
+          ) : (
+            !isOwn && (
+              index === allMessages.length - 1 || 
+              allMessages[index + 1]?.sender_id !== message.sender_id
+            )
           );
-          const showName = !isOwn && (
+          const showName = isGroupChat ? (
             index === 0 || 
             allMessages[index - 1]?.sender_id !== message.sender_id
+          ) : (
+            !isOwn && (
+              index === 0 || 
+              allMessages[index - 1]?.sender_id !== message.sender_id
+            )
           );
 
           return (
             <div
               key={message.id || `temp-${index}`}
               className={`flex gap-3 group hover:bg-muted/30 rounded-lg p-2 transition-colors ${
-                isOwn ? 'justify-end' : 'justify-start'
+                isGroupChat ? 'justify-start' : (isOwn ? 'justify-end' : 'justify-start')
               }`}
             >
-              {!isOwn && (
+              {(isGroupChat || !isOwn) && (
                 <div className="w-10 flex justify-center items-end">
                   {showAvatar ? (
                     <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
@@ -193,18 +208,22 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </div>
               )}
               
-              <div className={`max-w-[70%] space-y-1 ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
-                {showName && !isOwn && (
+              <div className={`max-w-[70%] space-y-1 ${isGroupChat ? 'items-start' : (isOwn ? 'items-end' : 'items-start')} flex flex-col`}>
+                {showName && (isGroupChat || !isOwn) && (
                   <span className="text-sm font-semibold text-foreground px-4">
-                    {message.sender?.username || message.sender?.display_name || 'Unknown'}
+                    {message.sender?.display_name || message.sender?.username || 'Unknown'}
                   </span>
                 )}
                 
                 <div
                   className={`relative group/message ${
-                    isOwn
-                      ? 'bg-primary text-primary-foreground ml-auto rounded-[20px] rounded-br-md shadow-md'
-                      : 'bg-muted text-foreground rounded-[20px] rounded-bl-md border border-border/50'
+                    isGroupChat
+                      ? (isOwn 
+                          ? 'bg-primary text-primary-foreground rounded-[20px] rounded-bl-md shadow-md' 
+                          : 'bg-muted text-foreground rounded-[20px] rounded-bl-md border border-border/50')
+                      : (isOwn
+                          ? 'bg-primary text-primary-foreground ml-auto rounded-[20px] rounded-br-md shadow-md'
+                          : 'bg-muted text-foreground rounded-[20px] rounded-bl-md border border-border/50')
                   } ${getMessageStatus(message, isOwn) === 'sending' ? 'opacity-70' : 'opacity-100'}
                   px-4 py-3 max-w-full break-words transition-all duration-200 hover:shadow-lg`}
                 >
@@ -291,7 +310,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </div>
               </div>
               
-              {isOwn && <div className="w-10" />}
+              {!isGroupChat && isOwn && <div className="w-10" />}
             </div>
           );
         })}

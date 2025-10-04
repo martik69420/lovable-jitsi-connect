@@ -190,6 +190,7 @@ const Messages = () => {
                         setSelectedUserId(null);
                         setSelectedUser(null);
                       }}
+                      isGroupChat={isGroupChat}
                     />
                   </div>
                   <div className="flex-1 min-h-0 flex flex-col">
@@ -201,6 +202,7 @@ const Messages = () => {
                         isLoading={loading}
                         onDeleteMessage={deleteMessage}
                         onReactToMessage={reactToMessage}
+                        isGroupChat={isGroupChat}
                       />
                     </div>
                     {selectedUserId && (

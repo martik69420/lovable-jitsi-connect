@@ -16,22 +16,29 @@ import {
 
 interface Contact {
   id: string;
-  username: string;
-  displayName: string;
+  username?: string;
+  displayName?: string;
   avatar: string | null;
+  name?: string;
+  memberCount?: number;
+  isGroup?: boolean;
 }
 
 interface ChatHeaderProps {
   contact: Contact | null;
   onOpenUserActions: () => void;
   onBack?: () => void;
+  isGroupChat?: boolean;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onBack }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onBack, isGroupChat }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
   if (!contact) return null;
+
+  const displayName = contact.name || contact.displayName || contact.username || 'Unknown';
+  const isGroup = isGroupChat || contact.isGroup;
 
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 flex justify-between items-center dark:border-gray-800 sticky top-0 z-10">
@@ -46,23 +53,31 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onB
         </Button>
         <div className="relative">
           <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-            <AvatarImage src={contact.avatar || "/placeholder.svg"} alt={contact.displayName || contact.username} />
+            <AvatarImage src={contact.avatar || "/placeholder.svg"} alt={displayName} />
             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
-              {(contact.displayName || contact.username).charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="absolute -bottom-1 -right-1">
-            <OnlineStatus userId={contact.id} size="md" />
-          </div>
+          {!isGroup && (
+            <div className="absolute -bottom-1 -right-1">
+              <OnlineStatus userId={contact.id} size="md" />
+            </div>
+          )}
         </div>
         <div>
           <h3 className="font-semibold text-lg line-clamp-1">
-            {contact.displayName}
+            {displayName}
           </h3>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>@{contact.username}</span>
-            <span>•</span>
-            <OnlineStatus userId={contact.id} showLastActive showLabel />
+            {isGroup ? (
+              <span>{contact.memberCount || 0} members</span>
+            ) : (
+              <>
+                <span>@{contact.username}</span>
+                <span>•</span>
+                <OnlineStatus userId={contact.id} showLastActive showLabel />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -75,22 +90,28 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onB
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => navigate(`/profile/${contact.username}`)}>
-              {t('messages.viewProfile')}
-            </DropdownMenuItem>
+            {!isGroup && contact.username && (
+              <DropdownMenuItem onClick={() => navigate(`/profile/${contact.username}`)}>
+                {t('messages.viewProfile')}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem>
               {t('messages.muteNotifications')}
             </DropdownMenuItem>
             <DropdownMenuItem>
               {t('messages.clearChat')}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={onOpenUserActions}
-              className="text-destructive focus:text-destructive"
-            >
-              {t('messages.reportUser')}
-            </DropdownMenuItem>
+            {!isGroup && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={onOpenUserActions}
+                  className="text-destructive focus:text-destructive"
+                >
+                  {t('messages.reportUser')}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
