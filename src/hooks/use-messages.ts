@@ -461,7 +461,7 @@ const useMessages = (): UseMessagesResult => {
     return () => {
       cleanup.then(cleanupFn => cleanupFn?.());
     };
-  }, [currentContactId, markMessagesAsRead]);
+  }, [currentContactId, markMessagesAsRead, isGroupChat]);
 
   const uploadImage = async (imageFile: File): Promise<string | null> => {
     try {
@@ -593,11 +593,8 @@ const useMessages = (): UseMessagesResult => {
         return null;
       }
 
-      // Add creator as admin member
-      const membersToAdd = [
-        { group_id: groupData.id as string, user_id: user.id, role: 'admin' },
-        ...memberIds.map(id => ({ group_id: groupData.id as string, user_id: id, role: 'member' }))
-      ];
+      // Add members (creator is auto-added by DB trigger)
+      const membersToAdd = memberIds.map(id => ({ group_id: groupData.id as string, user_id: id, role: 'member' }));
 
       const { error: membersError } = await supabase
         .from('group_members' as any)
@@ -613,7 +610,7 @@ const useMessages = (): UseMessagesResult => {
         name: groupData.name as string,
         avatar_url: groupData.avatar_url as string | null,
         description: groupData.description as string | null,
-        memberCount: membersToAdd.length,
+        memberCount: (membersToAdd.length + 1),
         isGroup: true
       };
 

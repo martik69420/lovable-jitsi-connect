@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from '@/component/ui/checkbox';
 import { Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -164,6 +164,9 @@ const GroupChatCreator: React.FC<GroupChatCreatorProps> = ({ onGroupCreated, cre
             <Users className="h-5 w-5" />
             Create Group Chat
           </DialogTitle>
+          <DialogDescription>
+            Create a new group and select friends to add as members.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
