@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
-import { ArrowLeft, MoreVertical } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/component/ui/dropdown-menu';
+import GroupMembersManager from './GroupMembersManager';
 
 interface Contact {
   id: string;
@@ -29,11 +30,13 @@ interface ChatHeaderProps {
   onOpenUserActions: () => void;
   onBack?: () => void;
   isGroupChat?: boolean;
+  onMembersUpdated?: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onBack, isGroupChat }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onBack, isGroupChat, onMembersUpdated }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [showMembersManager, setShowMembersManager] = useState(false);
 
   if (!contact) return null;
 
@@ -90,6 +93,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onB
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            {isGroup && (
+              <>
+                <DropdownMenuItem onClick={() => setShowMembersManager(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Manage Members
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {!isGroup && contact.username && (
               <DropdownMenuItem onClick={() => navigate(`/profile/${contact.username}`)}>
                 {t('messages.viewProfile')}
@@ -115,6 +127,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onB
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {isGroup && contact && (
+        <GroupMembersManager
+          groupId={contact.id}
+          open={showMembersManager}
+          onOpenChange={setShowMembersManager}
+          onMembersUpdated={onMembersUpdated}
+        />
+      )}
     </div>
   );
 };

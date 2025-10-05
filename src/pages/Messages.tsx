@@ -191,6 +191,14 @@ const Messages = () => {
                         setSelectedUser(null);
                       }}
                       isGroupChat={isGroupChat}
+                      onMembersUpdated={() => {
+                        fetchGroups();
+                        if (selectedUserId && isGroupChat) {
+                          // Refresh the selected group data
+                          const group = groups.find(g => g.id === selectedUserId);
+                          if (group) setSelectedUser(group as any);
+                        }
+                      }}
                     />
                   </div>
                   <div className="flex-1 min-h-0 flex flex-col">
