@@ -13,6 +13,10 @@ export interface Message {
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
   group_id?: string;
+  edited_at?: string;
+  reply_to?: string;
+  is_pinned?: boolean;
+  reply_message?: Message;
   sender?: {
     id: string;
     username: string;
@@ -35,6 +39,8 @@ export interface Group {
   description: string | null;
   memberCount?: number;
   isGroup: true;
+  announcement_message?: string | null;
+  announcement_updated_at?: string | null;
 }
 
 export type Contact = Friend | Group;
@@ -44,7 +50,7 @@ interface UseMessagesResult {
   groups: Group[];
   messages: Message[];
   loading: boolean;
-  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string) => Promise<void>;
+  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string) => Promise<void>;
   fetchMessages: (contactId: string, isGroup?: boolean) => Promise<void>;
   fetchFriends: () => Promise<void>;
   fetchGroups: () => Promise<void>;
@@ -52,6 +58,11 @@ interface UseMessagesResult {
   deleteMessage: (messageId: string) => Promise<void>;
   reactToMessage: (messageId: string, emoji: string) => Promise<void>;
   createGroup: (name: string, description: string, memberIds: string[]) => Promise<Group | null>;
+  editMessage: (messageId: string, newContent: string) => Promise<void>;
+  pinMessage: (messageId: string, isPinned: boolean) => Promise<void>;
+  muteGroup: (groupId: string, mutedUntil?: Date) => Promise<void>;
+  unmuteGroup: (groupId: string) => Promise<void>;
+  leaveGroup: (groupId: string) => Promise<void>;
 }
 
 const useMessages = (): UseMessagesResult => {
@@ -486,7 +497,7 @@ const useMessages = (): UseMessagesResult => {
     }
   };
 
-  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string) => {
+  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -515,6 +526,7 @@ const useMessages = (): UseMessagesResult => {
         reactions: {},
         status: 'sending',
         group_id: groupId,
+        reply_to: replyTo,
         sender: currentUserProfile || undefined
       };
 
@@ -536,6 +548,10 @@ const useMessages = (): UseMessagesResult => {
         messageData.group_id = groupId;
       } else {
         messageData.receiver_id = receiverId;
+      }
+
+      if (replyTo) {
+        messageData.reply_to = replyTo;
       }
 
       if (imageUrl) {
@@ -686,6 +702,118 @@ const useMessages = (): UseMessagesResult => {
     }
   }, [messages]);
 
+  const editMessage = useCallback(async (messageId: string, newContent: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          content: newContent,
+          edited_at: new Date().toISOString()
+        })
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
+
+      if (error) {
+        console.error('Error editing message:', error);
+        return;
+      }
+
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: newContent, edited_at: new Date().toISOString() }
+          : msg
+      ));
+    } catch (error) {
+      console.error('Error editing message:', error);
+    }
+  }, []);
+
+  const pinMessage = useCallback(async (messageId: string, isPinned: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ is_pinned: isPinned })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error pinning message:', error);
+        return;
+      }
+
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId ? { ...msg, is_pinned: isPinned } : msg
+      ));
+    } catch (error) {
+      console.error('Error pinning message:', error);
+    }
+  }, []);
+
+  const muteGroup = useCallback(async (groupId: string, mutedUntil?: Date) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('muted_groups')
+        .upsert({
+          user_id: user.id,
+          group_id: groupId,
+          muted_until: mutedUntil?.toISOString() || null
+        });
+
+      if (error) {
+        console.error('Error muting group:', error);
+      }
+    } catch (error) {
+      console.error('Error muting group:', error);
+    }
+  }, []);
+
+  const unmuteGroup = useCallback(async (groupId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('muted_groups')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('group_id', groupId);
+
+      if (error) {
+        console.error('Error unmuting group:', error);
+      }
+    } catch (error) {
+      console.error('Error unmuting group:', error);
+    }
+  }, []);
+
+  const leaveGroup = useCallback(async (groupId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('group_id', groupId);
+
+      if (error) {
+        console.error('Error leaving group:', error);
+        return;
+      }
+
+      // Remove group from local state
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+    } catch (error) {
+      console.error('Error leaving group:', error);
+    }
+  }, []);
+
   return {
     friends,
     groups,
@@ -698,7 +826,12 @@ const useMessages = (): UseMessagesResult => {
     markMessagesAsRead,
     deleteMessage,
     reactToMessage,
-    createGroup
+    createGroup,
+    editMessage,
+    pinMessage,
+    muteGroup,
+    unmuteGroup,
+    leaveGroup
   };
 };
 

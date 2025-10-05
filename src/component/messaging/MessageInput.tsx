@@ -15,13 +15,22 @@ import GifCreator from '@/component/messaging/GifCreator';
 import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 
 interface MessageInputProps {
-  onSendMessage: (message: string, imageFile?: File, gifUrl?: string) => Promise<void>;
+  onSendMessage: (message: string, imageFile?: File, gifUrl?: string, replyTo?: string) => Promise<void>;
   isSending: boolean;
   disabled?: boolean;
   receiverId?: string;
+  replyingTo?: { id: string; content: string; sender: string } | null;
+  onCancelReply?: () => void;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isSending, disabled, receiverId }) => {
+const MessageInput: React.FC<MessageInputProps> = ({ 
+  onSendMessage, 
+  isSending, 
+  disabled, 
+  receiverId,
+  replyingTo,
+  onCancelReply
+}) => {
   const { toast } = useToast();
   const [message, setMessage] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -37,11 +46,12 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isSending, d
   const handleSend = async () => {
     if ((message.trim() || selectedImage || selectedGif) && !isSending) {
       try {
-        await onSendMessage(message, selectedImage || undefined, selectedGif || undefined);
+        await onSendMessage(message, selectedImage || undefined, selectedGif || undefined, replyingTo?.id);
         setMessage('');
         setSelectedImage(null);
         setImagePreview(null);
         setSelectedGif(null);
+        onCancelReply?.();
         
         // Keep focus on textarea after sending
         setTimeout(() => {
@@ -155,6 +165,28 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isSending, d
 
   return (
     <div className="border-t p-3 dark:border-gray-800 bg-background/95 backdrop-blur-sm">
+      {/* Reply Preview */}
+      {replyingTo && (
+        <div className="mb-2 flex items-center gap-2 p-2 bg-muted rounded-lg">
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-medium text-primary">
+              Replying to {replyingTo.sender}
+            </div>
+            <div className="text-sm text-muted-foreground truncate">
+              {replyingTo.content}
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={onCancelReply}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
       {/* Media Previews */}
       <div className="flex gap-3 mb-3">
         {imagePreview && (

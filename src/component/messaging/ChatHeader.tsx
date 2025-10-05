@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
-import { ArrowLeft, MoreVertical, UserPlus, Info } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/component/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/component/ui/alert-dialog';
 import GroupMembersManager from './GroupMembersManager';
+import MessageSearch from './MessageSearch';
 
 interface Contact {
   id: string;
@@ -31,17 +42,55 @@ interface ChatHeaderProps {
   onBack?: () => void;
   isGroupChat?: boolean;
   onMembersUpdated?: () => void;
+  onLeaveGroup?: (groupId: string) => void;
+  onMuteGroup?: (groupId: string) => void;
+  onUnmuteGroup?: (groupId: string) => void;
+  messages?: any[];
+  onMessageSelect?: (messageId: string) => void;
+  isMuted?: boolean;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onBack, isGroupChat, onMembersUpdated }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ 
+  contact, 
+  onOpenUserActions, 
+  onBack, 
+  isGroupChat, 
+  onMembersUpdated,
+  onLeaveGroup,
+  onMuteGroup,
+  onUnmuteGroup,
+  messages = [],
+  onMessageSelect,
+  isMuted = false
+}) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showMembersManager, setShowMembersManager] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   if (!contact) return null;
 
   const displayName = contact.name || contact.displayName || contact.username || 'Unknown';
   const isGroup = isGroupChat || contact.isGroup;
+
+  const handleLeaveGroup = () => {
+    if (isGroup && contact.id && onLeaveGroup) {
+      onLeaveGroup(contact.id);
+      setShowLeaveDialog(false);
+      navigate('/messages');
+    }
+  };
+
+  const handleMuteToggle = () => {
+    if (!isGroup || !contact.id) return;
+    
+    if (isMuted && onUnmuteGroup) {
+      onUnmuteGroup(contact.id);
+    } else if (!isMuted && onMuteGroup) {
+      onMuteGroup(contact.id);
+    }
+  };
 
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 flex justify-between items-center dark:border-gray-800 sticky top-0 z-10">
@@ -99,13 +148,43 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onB
                   <UserPlus className="h-4 w-4 mr-2" />
                   Manage Members
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowSearch(true)}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Messages
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMuteToggle}>
+                  {isMuted ? (
+                    <>
+                      <Bell className="h-4 w-4 mr-2" />
+                      Unmute Group
+                    </>
+                  ) : (
+                    <>
+                      <BellOff className="h-4 w-4 mr-2" />
+                      Mute Group
+                    </>
+                  )}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setShowLeaveDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Leave Group
+                </DropdownMenuItem>
               </>
             )}
             {!isGroup && contact.username && (
-              <DropdownMenuItem onClick={() => navigate(`/profile/${contact.username}`)}>
-                {t('messages.viewProfile')}
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem onClick={() => navigate(`/profile/${contact.username}`)}>
+                  {t('messages.viewProfile')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowSearch(true)}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Messages
+                </DropdownMenuItem>
+              </>
             )}
             <DropdownMenuItem>
               {t('messages.muteNotifications')}
@@ -129,11 +208,46 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ contact, onOpenUserActions, onB
       </div>
 
       {isGroup && contact && (
-        <GroupMembersManager
-          groupId={contact.id}
-          open={showMembersManager}
-          onOpenChange={setShowMembersManager}
-          onMembersUpdated={onMembersUpdated}
+        <>
+          <GroupMembersManager
+            groupId={contact.id}
+            open={showMembersManager}
+            onOpenChange={setShowMembersManager}
+            onMembersUpdated={onMembersUpdated}
+          />
+          
+          <MessageSearch
+            open={showSearch}
+            onOpenChange={setShowSearch}
+            messages={messages}
+            onMessageSelect={onMessageSelect || (() => {})}
+          />
+
+          <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Leave Group?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to leave "{displayName}"? You won't receive any messages from this group anymore.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLeaveGroup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Leave Group
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
+
+      {!isGroup && (
+        <MessageSearch
+          open={showSearch}
+          onOpenChange={setShowSearch}
+          messages={messages}
+          onMessageSelect={onMessageSelect || (() => {})}
         />
       )}
     </div>

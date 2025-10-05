@@ -226,6 +226,8 @@ export type Database = {
       }
       groups: {
         Row: {
+          announcement_message: string | null
+          announcement_updated_at: string | null
           avatar_url: string | null
           created_at: string
           created_by: string
@@ -235,6 +237,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          announcement_message?: string | null
+          announcement_updated_at?: string | null
           avatar_url?: string | null
           created_at?: string
           created_by: string
@@ -244,6 +248,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          announcement_message?: string | null
+          announcement_updated_at?: string | null
           avatar_url?: string | null
           created_at?: string
           created_by?: string
@@ -294,34 +300,43 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          edited_at: string | null
           group_id: string | null
           id: string
           image_url: string | null
+          is_pinned: boolean | null
           is_read: boolean | null
           reactions: Json | null
           receiver_id: string | null
+          reply_to: string | null
           sender_id: string
         }
         Insert: {
           content: string
           created_at?: string | null
+          edited_at?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
+          is_pinned?: boolean | null
           is_read?: boolean | null
           reactions?: Json | null
           receiver_id?: string | null
+          reply_to?: string | null
           sender_id: string
         }
         Update: {
           content?: string
           created_at?: string | null
+          edited_at?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
+          is_pinned?: boolean | null
           is_read?: boolean | null
           reactions?: Json | null
           receiver_id?: string | null
+          reply_to?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -340,10 +355,49 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      muted_groups: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          muted_until: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          muted_until?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          muted_until?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muted_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
         ]

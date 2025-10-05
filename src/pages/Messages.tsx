@@ -23,6 +23,8 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
   
+  const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
+  
   const {
     friends,
     groups,
@@ -35,7 +37,12 @@ const Messages = () => {
     markMessagesAsRead,
     deleteMessage,
     reactToMessage,
-    createGroup
+    createGroup,
+    editMessage,
+    pinMessage,
+    muteGroup,
+    unmuteGroup,
+    leaveGroup
   } = useMessages();
 
   // Check for userId in URL params
@@ -194,10 +201,17 @@ const Messages = () => {
                       onMembersUpdated={() => {
                         fetchGroups();
                         if (selectedUserId && isGroupChat) {
-                          // Refresh the selected group data
                           const group = groups.find(g => g.id === selectedUserId);
                           if (group) setSelectedUser(group as any);
                         }
+                      }}
+                      onLeaveGroup={leaveGroup}
+                      onMuteGroup={muteGroup}
+                      onUnmuteGroup={unmuteGroup}
+                      messages={messages}
+                      onMessageSelect={(msgId) => {
+                        const element = document.getElementById(`message-${msgId}`);
+                        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
                     />
                   </div>
@@ -221,6 +235,8 @@ const Messages = () => {
                     onSendMessage={handleSendMessage}
                     isSending={isSending}
                     receiverId={selectedUserId || undefined}
+                    replyingTo={replyingTo}
+                    onCancelReply={() => setReplyingTo(null)}
                   />
                 </>
               ) : (
