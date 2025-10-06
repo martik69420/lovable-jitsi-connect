@@ -301,11 +301,15 @@ export type Database = {
           content: string
           created_at: string | null
           edited_at: string | null
+          forwarded_from: string | null
           group_id: string | null
           id: string
           image_url: string | null
           is_pinned: boolean | null
           is_read: boolean | null
+          media_type: string | null
+          media_url: string | null
+          mentioned_users: string[] | null
           reactions: Json | null
           receiver_id: string | null
           reply_to: string | null
@@ -315,11 +319,15 @@ export type Database = {
           content: string
           created_at?: string | null
           edited_at?: string | null
+          forwarded_from?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
           is_pinned?: boolean | null
           is_read?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          mentioned_users?: string[] | null
           reactions?: Json | null
           receiver_id?: string | null
           reply_to?: string | null
@@ -329,17 +337,28 @@ export type Database = {
           content?: string
           created_at?: string | null
           edited_at?: string | null
+          forwarded_from?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
           is_pinned?: boolean | null
           is_read?: boolean | null
+          media_type?: string | null
+          media_url?: string | null
+          mentioned_users?: string[] | null
           reactions?: Json | null
           receiver_id?: string | null
           reply_to?: string | null
           sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_forwarded_from_fkey"
+            columns: ["forwarded_from"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_group_id_fkey"
             columns: ["group_id"]
@@ -807,6 +826,8 @@ export type Database = {
       user_settings: {
         Row: {
           birthday: string | null
+          chat_background: string | null
+          chat_theme: string | null
           created_at: string | null
           id: string
           language: string | null
@@ -835,6 +856,8 @@ export type Database = {
         }
         Insert: {
           birthday?: string | null
+          chat_background?: string | null
+          chat_theme?: string | null
           created_at?: string | null
           id?: string
           language?: string | null
@@ -863,6 +886,8 @@ export type Database = {
         }
         Update: {
           birthday?: string | null
+          chat_background?: string | null
+          chat_theme?: string | null
           created_at?: string | null
           id?: string
           language?: string | null
