@@ -2,20 +2,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/component/ui/button';
 import { Textarea } from '@/component/ui/textarea';
-import { Send, Smile, Paperclip, Loader2, Image, X, FileImage, Zap } from 'lucide-react';
+import { Send, Smile, Paperclip, Loader2, Image, X, FileImage, Zap, Mic, Video, File } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/component/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/component/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/component/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/component/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import EmojiPicker from '@/component/messaging/EmojiPicker';
+import { EnhancedEmojiPicker } from '@/component/messaging/EnhancedEmojiPicker';
 import GifPicker from '@/component/messaging/GifPicker';
 import PrebuiltGifs from '@/component/messaging/PrebuiltGifs';
 import GifCreator from '@/component/messaging/GifCreator';
 import { TypingIndicator } from '@/component/messaging/TypingIndicator';
+import { VoiceRecorder } from '@/component/messaging/VoiceRecorder';
+import { MediaUpload } from '@/component/messaging/MediaUpload';
 
 interface MessageInputProps {
-  onSendMessage: (message: string, imageFile?: File, gifUrl?: string, replyTo?: string) => Promise<void>;
+  onSendMessage: (message: string, imageFile?: File, gifUrl?: string, replyTo?: string, mediaFile?: File, mediaType?: string, voiceBlob?: Blob, mentionedUsers?: string[]) => Promise<void>;
   isSending: boolean;
   disabled?: boolean;
   receiverId?: string;
@@ -36,21 +39,38 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedGif, setSelectedGif] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<{ file: File; type: string } | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifDialog, setShowGifDialog] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [showMediaDialog, setShowMediaDialog] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingIndicatorRef = useRef<any>(null);
 
   const handleSend = async () => {
-    if ((message.trim() || selectedImage || selectedGif) && !isSending) {
+    if ((message.trim() || selectedImage || selectedGif || selectedMedia) && !isSending) {
       try {
-        await onSendMessage(message, selectedImage || undefined, selectedGif || undefined, replyingTo?.id);
+        // Extract @mentions from message
+        const mentionRegex = /@(\w+)/g;
+        const mentions = [...message.matchAll(mentionRegex)].map(match => match[1]);
+        
+        await onSendMessage(
+          message, 
+          selectedImage || undefined, 
+          selectedGif || undefined, 
+          replyingTo?.id,
+          selectedMedia?.file,
+          selectedMedia?.type,
+          undefined,
+          mentions.length > 0 ? mentions : undefined
+        );
         setMessage('');
         setSelectedImage(null);
         setImagePreview(null);
         setSelectedGif(null);
+        setSelectedMedia(null);
         onCancelReply?.();
         
         // Keep focus on textarea after sending
@@ -117,6 +137,34 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const removeGif = () => {
     setSelectedGif(null);
+  };
+
+  const handleVoiceSend = async (audioBlob: Blob) => {
+    try {
+      await onSendMessage('', undefined, undefined, replyingTo?.id, undefined, undefined, audioBlob);
+      setShowVoiceRecorder(false);
+      onCancelReply?.();
+    } catch (error) {
+      console.error('Failed to send voice message:', error);
+      toast({
+        title: "Failed to send voice message",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleMediaSelect = (file: File, type: string) => {
+    setSelectedMedia({ file, type });
+    setShowMediaDialog(false);
+    toast({
+      title: "Media Selected",
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} added to your message`
+    });
+  };
+
+  const removeMedia = () => {
+    setSelectedMedia(null);
   };
 
   const insertEmoji = (emoji: string) => {
@@ -258,6 +306,49 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <TooltipContent>Attach image</TooltipContent>
             </Tooltip>
 
+            <Dialog open={showMediaDialog} onOpenChange={setShowMediaDialog}>
+              <DialogTrigger asChild>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
+                      disabled={isSending || disabled}
+                    >
+                      <Paperclip className="h-5 w-5" />
+                      <span className="sr-only">Add media</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add media</TooltipContent>
+                </Tooltip>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Upload Media</DialogTitle>
+                </DialogHeader>
+                <MediaUpload onMediaSelect={handleMediaSelect} />
+              </DialogContent>
+            </Dialog>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
+                  disabled={isSending || disabled}
+                  onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+                >
+                  <Mic className="h-5 w-5" />
+                  <span className="sr-only">Record voice</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Record voice message</TooltipContent>
+            </Tooltip>
+
             <Dialog open={showGifDialog} onOpenChange={setShowGifDialog}>
               <DialogTrigger asChild>
                 <Tooltip>
@@ -313,7 +404,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" side="top" align="end">
-                <EmojiPicker onEmojiSelect={insertEmoji} />
+                <EnhancedEmojiPicker onEmojiSelect={insertEmoji} />
               </PopoverContent>
             </Popover>
           </TooltipProvider>
@@ -321,7 +412,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           <Button
             variant="default"
             size="icon"
-            disabled={(!message.trim() && !selectedImage && !selectedGif) || isSending || disabled}
+            disabled={(!message.trim() && !selectedImage && !selectedGif && !selectedMedia) || isSending || disabled}
             onClick={handleSend}
             className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 animate-glow"
           >
