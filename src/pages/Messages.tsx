@@ -42,7 +42,9 @@ const Messages = () => {
     pinMessage,
     muteGroup,
     unmuteGroup,
-    leaveGroup
+    leaveGroup,
+    deleteGroup,
+    updateGroup
   } = useMessages();
 
   // Check for userId in URL params
@@ -208,6 +210,8 @@ const Messages = () => {
                       onLeaveGroup={leaveGroup}
                       onMuteGroup={muteGroup}
                       onUnmuteGroup={unmuteGroup}
+                      onDeleteGroup={deleteGroup}
+                      isCreator={isGroupChat && (selectedUser as any)?.created_by === user?.id}
                       messages={messages}
                       onMessageSelect={(msgId) => {
                         const element = document.getElementById(`message-${msgId}`);

@@ -41,6 +41,7 @@ export interface Group {
   isGroup: true;
   announcement_message?: string | null;
   announcement_updated_at?: string | null;
+  created_by?: string;
 }
 
 export type Contact = Friend | Group;
@@ -63,6 +64,8 @@ interface UseMessagesResult {
   muteGroup: (groupId: string, mutedUntil?: Date) => Promise<void>;
   unmuteGroup: (groupId: string) => Promise<void>;
   leaveGroup: (groupId: string) => Promise<void>;
+  deleteGroup: (groupId: string) => Promise<void>;
+  updateGroup: (groupId: string, name: string, description: string, avatarUrl?: string) => Promise<void>;
 }
 
 const useMessages = (): UseMessagesResult => {
@@ -171,7 +174,7 @@ const useMessages = (): UseMessagesResult => {
 
       const { data: groupsData, error: groupsError } = await supabase
         .from('groups' as any)
-        .select('id, name, avatar_url, description')
+        .select('id, name, avatar_url, description, created_by')
         .in('id', groupIds);
 
       if (groupsError) {
@@ -191,6 +194,7 @@ const useMessages = (): UseMessagesResult => {
           name: group.name,
           avatar_url: group.avatar_url,
           description: group.description,
+          created_by: group.created_by,
           memberCount: count || 0,
           isGroup: true as const
         };
@@ -814,6 +818,58 @@ const useMessages = (): UseMessagesResult => {
     }
   }, []);
 
+  const deleteGroup = useCallback(async (groupId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete group (messages and members will cascade delete)
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', groupId)
+        .eq('created_by', user.id);
+
+      if (error) {
+        console.error('Error deleting group:', error);
+        return;
+      }
+
+      // Remove group from local state
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+    } catch (error) {
+      console.error('Error deleting group:', error);
+    }
+  }, []);
+
+  const updateGroup = useCallback(async (groupId: string, name: string, description: string, avatarUrl?: string) => {
+    try {
+      const updateData: any = { name, description };
+      if (avatarUrl !== undefined) {
+        updateData.avatar_url = avatarUrl;
+      }
+
+      const { error } = await supabase
+        .from('groups')
+        .update(updateData)
+        .eq('id', groupId);
+
+      if (error) {
+        console.error('Error updating group:', error);
+        return;
+      }
+
+      // Update local state
+      setGroups(prev => prev.map(g => 
+        g.id === groupId 
+          ? { ...g, name, description, avatar_url: avatarUrl ?? g.avatar_url }
+          : g
+      ));
+    } catch (error) {
+      console.error('Error updating group:', error);
+    }
+  }, []);
+
   return {
     friends,
     groups,
@@ -831,7 +887,9 @@ const useMessages = (): UseMessagesResult => {
     pinMessage,
     muteGroup,
     unmuteGroup,
-    leaveGroup
+    leaveGroup,
+    deleteGroup,
+    updateGroup
   };
 };
 

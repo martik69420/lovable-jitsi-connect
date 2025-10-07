@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
-import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ import {
 } from '@/component/ui/alert-dialog';
 import GroupMembersManager from './GroupMembersManager';
 import MessageSearch from './MessageSearch';
+import { GroupInfoEditor } from './GroupInfoEditor';
 
 interface Contact {
   id: string;
@@ -45,9 +46,11 @@ interface ChatHeaderProps {
   onLeaveGroup?: (groupId: string) => void;
   onMuteGroup?: (groupId: string) => void;
   onUnmuteGroup?: (groupId: string) => void;
+  onDeleteGroup?: (groupId: string) => void;
   messages?: any[];
   onMessageSelect?: (messageId: string) => void;
   isMuted?: boolean;
+  isCreator?: boolean;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ 
@@ -59,15 +62,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onLeaveGroup,
   onMuteGroup,
   onUnmuteGroup,
+  onDeleteGroup,
   messages = [],
   onMessageSelect,
-  isMuted = false
+  isMuted = false,
+  isCreator = false
 }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showMembersManager, setShowMembersManager] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   if (!contact) return null;
 
@@ -89,6 +96,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       onUnmuteGroup(contact.id);
     } else if (!isMuted && onMuteGroup) {
       onMuteGroup(contact.id);
+    }
+  };
+
+  const handleDeleteGroup = () => {
+    if (isGroup && contact.id && onDeleteGroup) {
+      onDeleteGroup(contact.id);
+      setShowDeleteDialog(false);
+      navigate('/messages');
     }
   };
 
@@ -144,6 +159,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <DropdownMenuContent align="end" className="w-48">
             {isGroup && (
               <>
+                {isCreator && (
+                  <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Group Info
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setShowMembersManager(true)}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Manage Members
@@ -173,6 +194,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <LogOut className="h-4 w-4 mr-2" />
                   Leave Group
                 </DropdownMenuItem>
+                {isCreator && (
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Group
+                  </DropdownMenuItem>
+                )}
               </>
             )}
             {!isGroup && contact.username && (
@@ -223,6 +253,16 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             onMessageSelect={onMessageSelect || (() => {})}
           />
 
+          <GroupInfoEditor
+            groupId={contact.id}
+            currentName={contact.name || ''}
+            currentDescription={(contact as any).description || ''}
+            currentAvatar={(contact as any).avatar_url || contact.avatar || null}
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            onUpdate={() => onMembersUpdated?.()}
+          />
+
           <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -235,6 +275,23 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleLeaveGroup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   Leave Group
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Group?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to permanently delete "{displayName}"? This action cannot be undone and all messages will be lost.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteGroup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete Group
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
