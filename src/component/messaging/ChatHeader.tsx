@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
-import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,7 @@ interface ChatHeaderProps {
   onMessageSelect?: (messageId: string) => void;
   isMuted?: boolean;
   isCreator?: boolean;
+  onOpenThemeSelector?: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ 
@@ -66,7 +67,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   messages = [],
   onMessageSelect,
   isMuted = false,
-  isCreator = false
+  isCreator = false,
+  onOpenThemeSelector
 }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -173,6 +175,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                   <Search className="h-4 w-4 mr-2" />
                   Search Messages
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={onOpenThemeSelector}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Chat Theme
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleMuteToggle}>
                   {isMuted ? (
                     <>
@@ -213,6 +219,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <DropdownMenuItem onClick={() => setShowSearch(true)}>
                   <Search className="h-4 w-4 mr-2" />
                   Search Messages
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onOpenThemeSelector}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Chat Theme
                 </DropdownMenuItem>
               </>
             )}

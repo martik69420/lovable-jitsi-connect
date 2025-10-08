@@ -12,6 +12,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import useMessages from '@/hooks/use-messages';
 import { MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useChatPreferences } from '@/hooks/use-chat-preferences';
+import { ThemeSelector } from '@/component/messaging/ThemeSelectorDialog';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -22,8 +24,15 @@ const Messages = () => {
   const [isGroupChat, setIsGroupChat] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
+  
+  const { preferences, savePreferences } = useChatPreferences(
+    user?.id,
+    selectedUserId,
+    isGroupChat ? 'group' : 'direct'
+  );
   
   const {
     friends,
@@ -188,10 +197,17 @@ const Messages = () => {
 
           {/* Chat Area - Hidden on mobile when no chat selected */}
           <div className={`flex-1 min-h-0 ml-6 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
-            <Card className="h-full flex flex-col overflow-hidden">
+            <Card 
+              className="h-full flex flex-col overflow-hidden"
+              style={{
+                background: preferences.background || undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
               {selectedUser ? (
                 <>
-                  <div className="border-b">
+                  <div className="border-b bg-background/95 backdrop-blur-sm">
                     <ChatHeader 
                       contact={selectedUser} 
                       onOpenUserActions={() => console.log('Open user actions')}
@@ -217,9 +233,13 @@ const Messages = () => {
                         const element = document.getElementById(`message-${msgId}`);
                         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
+                      onOpenThemeSelector={() => setShowThemeSelector(true)}
                     />
                   </div>
-                  <div className="flex-1 min-h-0 flex flex-col">
+                  <div 
+                    className="flex-1 min-h-0 flex flex-col"
+                    data-theme={preferences.theme}
+                  >
                     <div className="flex-1 min-h-0">
                       <MessagesList
                         messages={messages}
@@ -235,13 +255,15 @@ const Messages = () => {
                       <TypingIndicator receiverId={selectedUserId} />
                     )}
                   </div>
-                  <MessageInput 
-                    onSendMessage={handleSendMessage}
-                    isSending={isSending}
-                    receiverId={selectedUserId || undefined}
-                    replyingTo={replyingTo}
-                    onCancelReply={() => setReplyingTo(null)}
-                  />
+                  <div className="bg-background/95 backdrop-blur-sm">
+                    <MessageInput 
+                      onSendMessage={handleSendMessage}
+                      isSending={isSending}
+                      receiverId={selectedUserId || undefined}
+                      replyingTo={replyingTo}
+                      onCancelReply={() => setReplyingTo(null)}
+                    />
+                  </div>
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
@@ -263,6 +285,17 @@ const Messages = () => {
           </div>
         </div>
       </div>
+
+      {/* Theme Selector Dialog */}
+      {showThemeSelector && (
+        <ThemeSelector
+          currentTheme={preferences.theme}
+          currentBackground={preferences.background}
+          onThemeChange={(theme) => savePreferences({ theme })}
+          onBackgroundChange={(background) => savePreferences({ background })}
+          onClose={() => setShowThemeSelector(false)}
+        />
+      )}
     </AppLayout>
   );
 };

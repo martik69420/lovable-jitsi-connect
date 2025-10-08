@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_preferences: {
+        Row: {
+          background: string | null
+          chat_id: string
+          chat_type: string
+          created_at: string | null
+          id: string
+          theme: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          background?: string | null
+          chat_id: string
+          chat_type?: string
+          created_at?: string | null
+          id?: string
+          theme?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          background?: string | null
+          chat_id?: string
+          chat_type?: string
+          created_at?: string | null
+          id?: string
+          theme?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string | null
