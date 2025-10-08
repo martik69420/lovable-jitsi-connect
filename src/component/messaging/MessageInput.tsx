@@ -328,7 +328,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 <DialogHeader>
                   <DialogTitle>Upload Media</DialogTitle>
                 </DialogHeader>
-                <MediaUpload onMediaSelect={handleMediaSelect} />
+                <MediaUpload onFileSelect={handleMediaSelect} />
               </DialogContent>
             </Dialog>
 
