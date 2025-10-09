@@ -288,43 +288,62 @@
     }
   }
 
-  /* Chat Theme Styles */
-  [data-theme="default"] .message-bubble {
-    @apply bg-primary text-primary-foreground;
+  /* Chat Theme Styles - Enhanced with smooth transitions and better gradients */
+  .message-bubble {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
   }
 
-  [data-theme="ocean"] .message-bubble {
-    background: linear-gradient(135deg, hsl(199, 89%, 48%), hsl(187, 85%, 43%));
+  .message-bubble.sent {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: white;
   }
 
-  [data-theme="sunset"] .message-bubble {
-    background: linear-gradient(135deg, hsl(27, 98%, 54%), hsl(340, 82%, 52%));
-    color: white;
+  .theme-default .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(217, 91%, 65%) 50%, hsl(271, 91%, 65%) 100%);
   }
 
-  [data-theme="forest"] .message-bubble {
-    background: linear-gradient(135deg, hsl(142, 76%, 36%), hsl(160, 85%, 37%));
-    color: white;
+  .theme-ocean .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(187, 85%, 53%) 0%, hsl(197, 71%, 52%) 50%, hsl(203, 89%, 53%) 100%);
   }
 
-  [data-theme="purple"] .message-bubble {
-    background: linear-gradient(135deg, hsl(271, 81%, 56%), hsl(340, 82%, 52%));
-    color: white;
+  .theme-sunset .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(25, 95%, 63%) 0%, hsl(330, 85%, 56%) 50%, hsl(271, 75%, 60%) 100%);
   }
 
-  [data-theme="night"] .message-bubble {
-    background: linear-gradient(135deg, hsl(231, 48%, 25%), hsl(271, 81%, 25%));
-    color: white;
+  .theme-forest .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(152, 76%, 46%) 0%, hsl(152, 69%, 41%) 50%, hsl(174, 72%, 46%) 100%);
   }
 
-  [data-theme="fire"] .message-bubble {
-    background: linear-gradient(135deg, hsl(0, 72%, 51%), hsl(27, 98%, 54%));
-    color: white;
+  .theme-purple .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(271, 81%, 66%) 0%, hsl(271, 91%, 65%) 50%, hsl(330, 85%, 60%) 100%);
   }
 
-  [data-theme="mint"] .message-bubble {
-    background: linear-gradient(135deg, hsl(174, 63%, 59%), hsl(142, 73%, 62%));
-    color: white;
+  .theme-night .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(238, 83%, 17%) 0%, hsl(271, 70%, 17%) 50%, hsl(215, 28%, 17%) 100%);
+  }
+
+  .theme-fire .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(25, 95%, 53%) 50%, hsl(45, 97%, 54%) 100%);
+  }
+
+  .theme-mint .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(174, 62%, 66%) 0%, hsl(152, 76%, 56%) 50%, hsl(142, 76%, 46%) 100%);
+  }
+
+  .theme-rose .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(338, 78%, 76%) 0%, hsl(347, 77%, 65%) 50%, hsl(24, 95%, 65%) 100%);
+  }
+
+  .theme-aurora .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(142, 76%, 56%) 0%, hsl(187, 85%, 53%) 50%, hsl(203, 89%, 53%) 100%);
+  }
+
+  .theme-cosmic .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(258, 90%, 66%) 0%, hsl(271, 91%, 65%) 50%, hsl(238, 83%, 57%) 100%);
+  }
+
+  .theme-cherry .message-bubble.sent {
+    background: linear-gradient(135deg, hsl(338, 78%, 66%) 0%, hsl(338, 78%, 60%) 50%, hsl(347, 77%, 60%) 100%);
   }
 }

@@ -216,7 +216,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 )}
                 
                 <div
-                  className={`relative group/message ${
+                  className={`message-bubble ${isOwn ? 'sent' : 'received'} relative group/message ${
                     isGroupChat
                       ? (isOwn 
                           ? 'bg-primary text-primary-foreground rounded-[20px] rounded-bl-md shadow-md' 
