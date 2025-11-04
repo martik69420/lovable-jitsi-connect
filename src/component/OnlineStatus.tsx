@@ -12,6 +12,8 @@ interface OnlineStatusProps {
   showLastActive?: boolean;
   showIcon?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  unreadCount?: number;
+  isActive?: boolean;
 }
 
 const OnlineStatus: React.FC<OnlineStatusProps> = ({ 
@@ -20,7 +22,9 @@ const OnlineStatus: React.FC<OnlineStatusProps> = ({
   className = '',
   showLastActive = true,
   showIcon = false,
-  size = 'sm'
+  size = 'sm',
+  unreadCount = 0,
+  isActive = false
 }) => {
   const { isUserOnline, onlineStatuses, getUserStatus } = useOnlineStatus([userId]);
   
@@ -55,6 +59,22 @@ const OnlineStatus: React.FC<OnlineStatusProps> = ({
       default: return 'h-2.5 w-2.5';
     }
   };
+  
+  // Show unread badge if there are unread messages and not on active chat
+  if (unreadCount > 0 && !isActive) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`flex items-center justify-center h-5 w-5 bg-destructive text-destructive-foreground rounded-full text-xs font-semibold ${className}`}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-sm">{unreadCount} unread {unreadCount === 1 ? 'message' : 'messages'}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
   
   const getStatusColor = () => {
     if (isOnline) return 'bg-green-500 border-green-500/20 shadow-sm shadow-green-500/30';

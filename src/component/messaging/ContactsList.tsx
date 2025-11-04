@@ -151,7 +151,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
                   {isGroup ? <Users className="h-6 w-6" /> : displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {!isGroup && <OnlineStatus userId={contact.id} className="absolute -bottom-1 -right-1" />}
+              {!isGroup && <OnlineStatus userId={contact.id} className="absolute -bottom-1 -right-1" unreadCount={contact.unreadCount} isActive={contact.id === activeContactId} />}
             </div>
             
             <div className="flex-1 min-w-0">
@@ -180,8 +180,8 @@ const ContactsList: React.FC<ContactsListProps> = ({
               </p>
             </div>
             
-            {(contact.unreadCount || 0) > 0 && (
-              <span className="absolute top-3 right-3 bg-primary text-white h-5 min-w-5 flex items-center justify-center text-xs px-1.5 rounded-full font-medium">
+            {isGroup && (contact.unreadCount || 0) > 0 && (
+              <span className="absolute top-3 right-3 bg-destructive text-destructive-foreground h-5 min-w-5 flex items-center justify-center text-xs px-1.5 rounded-full font-semibold">
                 {contact.unreadCount}
               </span>
             )}
