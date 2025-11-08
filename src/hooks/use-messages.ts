@@ -30,6 +30,7 @@ export interface Friend {
   username: string;
   displayName: string;
   avatar: string | null;
+  unreadCount?: number;
 }
 
 export interface Group {
@@ -135,15 +136,29 @@ const useMessages = (): UseMessagesResult => {
 
       console.log('Profiles data:', profilesData);
 
-      const friendsList = profilesData?.map(profile => ({
-        id: profile.id,
-        username: profile.username || profile.id.slice(0, 8),
-        displayName: profile.display_name || profile.username || `User ${profile.id.slice(0, 8)}`,
-        avatar: profile.avatar_url
-      })) || [];
+      // Fetch unread counts for each friend
+      const friendsListWithUnread = await Promise.all(
+        (profilesData || []).map(async (profile) => {
+          const { count } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('sender_id', profile.id)
+            .eq('receiver_id', user.id)
+            .eq('is_read', false)
+            .is('group_id', null);
 
-      console.log('Final friends list:', friendsList);
-      setFriends(friendsList);
+          return {
+            id: profile.id,
+            username: profile.username || profile.id.slice(0, 8),
+            displayName: profile.display_name || profile.username || `User ${profile.id.slice(0, 8)}`,
+            avatar: profile.avatar_url,
+            unreadCount: count || 0
+          };
+        })
+      );
+
+      console.log('Final friends list with unread counts:', friendsListWithUnread);
+      setFriends(friendsListWithUnread);
     } catch (error) {
       console.error('Error fetching friends:', error);
     } finally {
@@ -314,6 +329,11 @@ const useMessages = (): UseMessagesResult => {
           ? { ...msg, is_read: true }
           : msg
       ));
+
+      // Reset unread count for this friend
+      setFriends(prev => prev.map(friend => 
+        friend.id === senderId ? { ...friend, unreadCount: 0 } : friend
+      ));
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
@@ -350,6 +370,16 @@ const useMessages = (): UseMessagesResult => {
           const belongsToCurrentDirectChat = isDirectMessage && !isGroupChat &&
             ((newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
              (newMessage.sender_id === user.id && newMessage.receiver_id === currentContactId));
+          
+          // Update unread count for friends list
+          if (!isGroupMessage && newMessage.receiver_id === user.id) {
+            setFriends(prev => prev.map(friend => {
+              if (friend.id === newMessage.sender_id && newMessage.sender_id !== currentContactId) {
+                return { ...friend, unreadCount: (friend.unreadCount || 0) + 1 };
+              }
+              return friend;
+            }));
+          }
           
           if (belongsToGroup || belongsToCurrentDirectChat) {
             console.log('➡️ Adding message to current conversation');

@@ -65,7 +65,7 @@ const OnlineStatus: React.FC<OnlineStatusProps> = ({
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className={`flex items-center justify-center h-5 w-5 bg-destructive text-destructive-foreground rounded-full text-xs font-semibold ${className}`}>
+          <span className={`flex items-center justify-center h-6 w-6 bg-destructive text-destructive-foreground rounded-full text-xs font-semibold ${className}`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         </TooltipTrigger>
