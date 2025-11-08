@@ -87,17 +87,25 @@ export const PrivacySettings: React.FC = () => {
   };
 
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-4">
-        <CardTitle className="text-xl flex items-center">
-          <Shield className="h-5 w-5 mr-2 text-primary" />
-          Privacy & Safety
-        </CardTitle>
-        <CardDescription>
-          Control your privacy settings and who can see your information
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 p-6">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Privacy</h2>
+        <p className="text-muted-foreground">Control your privacy settings and who can see your information</p>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Privacy & Safety</CardTitle>
+              <CardDescription>Control your privacy settings and who can see your information</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -291,7 +299,6 @@ export const PrivacySettings: React.FC = () => {
           <div className="flex justify-end pt-4">
             <Button 
               onClick={savePrivacySettings} 
-              className="bg-primary"
               disabled={isSaving}
             >
               {isSaving ? "Saving..." : "Save Privacy Settings"}
@@ -300,5 +307,6 @@ export const PrivacySettings: React.FC = () => {
         </motion.div>
       </CardContent>
     </Card>
+    </div>
   );
 };

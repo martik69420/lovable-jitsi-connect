@@ -134,17 +134,25 @@ export const AccountSettings = () => {
   };
   
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-4">
-        <CardTitle className="text-xl flex items-center">
-          <Shield className="h-5 w-5 mr-2 text-primary" />
-          Account Settings
-        </CardTitle>
-        <CardDescription>
-          Manage your account credentials and security
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 p-6">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Account Settings</h2>
+        <p className="text-muted-foreground">Manage your account credentials and security</p>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Account Settings</CardTitle>
+              <CardDescription>Manage your account credentials and security</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
         <div className="grid gap-6">
           <div className="flex items-center gap-4">
             <Mail className="h-5 w-5 text-primary" />
@@ -263,5 +271,6 @@ export const AccountSettings = () => {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };

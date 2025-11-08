@@ -19,31 +19,26 @@ export const NotificationSettings = () => {
     friendRequests: true,
     messages: true,
     mentions: true,
-    comments: true,
+    comments: true
   });
-  
+
   const handleToggleChange = (key: string) => {
     setNotificationSettings(prev => ({
       ...prev,
       [key]: !prev[key as keyof typeof prev]
     }));
   };
-  
+
   const saveNotificationSettings = async () => {
-    if (!user || !updateUserProfile) return;
-    
     setIsSaving(true);
-    
     try {
       const success = await updateUserProfile({
         settings: {
-          ...user.settings,
-          emailNotifications: notificationSettings.emailNotifications,
-          pushNotifications: notificationSettings.pushNotifications,
-          // We could save more notification preferences here if the API supported it
+          ...user?.settings,
+          ...notificationSettings
         }
       });
-      
+
       if (success) {
         toast({
           title: "Notification settings updated",
@@ -68,75 +63,110 @@ export const NotificationSettings = () => {
   };
 
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-4">
-        <CardTitle className="text-xl flex items-center">
-          <Bell className="h-5 w-5 mr-2 text-primary" />
-          Notification Settings
-        </CardTitle>
-        <CardDescription>
-          Manage how and when you receive notifications
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="emailNotifications">Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Notifications</h2>
+        <p className="text-muted-foreground">Manage how you receive notifications</p>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Bell className="h-5 w-5 text-primary" />
             </div>
-            <Switch
-              id="emailNotifications"
-              checked={notificationSettings.emailNotifications}
-              onCheckedChange={() => handleToggleChange('emailNotifications')}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="pushNotifications">Push Notifications</Label>
-              <p className="text-sm text-muted-foreground">Receive notifications in browser</p>
+            <div>
+              <CardTitle className="text-lg">Notification Settings</CardTitle>
+              <CardDescription>Manage how you receive notifications</CardDescription>
             </div>
-            <Switch
-              id="pushNotifications"
-              checked={notificationSettings.pushNotifications}
-              onCheckedChange={() => handleToggleChange('pushNotifications')}
-            />
           </div>
-          
-          <div className="pt-4 border-t">
-            <h3 className="font-medium mb-3">Notification Types</h3>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="friendRequests">Friend Requests</Label>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h3 className="text-base font-medium mb-4">General</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="emailNotifications" className="text-base cursor-pointer">
+                    Email Notifications
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
+                </div>
+                <Switch
+                  id="emailNotifications"
+                  checked={notificationSettings.emailNotifications}
+                  onCheckedChange={() => handleToggleChange('emailNotifications')}
+                />
+              </div>
+
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pushNotifications" className="text-base cursor-pointer">
+                    Push Notifications
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Receive push notifications</p>
+                </div>
+                <Switch
+                  id="pushNotifications"
+                  checked={notificationSettings.pushNotifications}
+                  onCheckedChange={() => handleToggleChange('pushNotifications')}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-medium mb-4">Activity</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="friendRequests" className="text-base cursor-pointer">
+                    Friend Requests
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Notify when someone sends a friend request</p>
+                </div>
                 <Switch
                   id="friendRequests"
                   checked={notificationSettings.friendRequests}
                   onCheckedChange={() => handleToggleChange('friendRequests')}
                 />
               </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="messages">Messages</Label>
+
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="messages" className="text-base cursor-pointer">
+                    Messages
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Notify when you receive a message</p>
+                </div>
                 <Switch
                   id="messages"
                   checked={notificationSettings.messages}
                   onCheckedChange={() => handleToggleChange('messages')}
                 />
               </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="mentions">Mentions</Label>
+
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="mentions" className="text-base cursor-pointer">
+                    Mentions
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Notify when someone mentions you</p>
+                </div>
                 <Switch
                   id="mentions"
                   checked={notificationSettings.mentions}
                   onCheckedChange={() => handleToggleChange('mentions')}
                 />
               </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="comments">Comments</Label>
+
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="comments" className="text-base cursor-pointer">
+                    Comments
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Notify when someone comments on your post</p>
+                </div>
                 <Switch
                   id="comments"
                   checked={notificationSettings.comments}
@@ -145,17 +175,17 @@ export const NotificationSettings = () => {
               </div>
             </div>
           </div>
-        </div>
-        
-        <div className="flex justify-end pt-4">
-          <Button 
-            onClick={saveNotificationSettings} 
-            disabled={isSaving}
-          >
-            {isSaving ? "Saving..." : "Save Notification Settings"}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+
+          <div className="flex justify-end pt-4">
+            <Button 
+              onClick={saveNotificationSettings} 
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Notification Settings"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

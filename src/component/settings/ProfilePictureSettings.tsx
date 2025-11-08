@@ -135,17 +135,19 @@ export const ProfilePictureSettings = () => {
   const displayName = profile?.display_name || user?.displayName || user?.username || '';
 
   return (
-    <Card className="mb-8">
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-4">
-        <CardTitle className="text-xl flex items-center">
-          <Camera className="h-5 w-5 mr-2 text-primary" />
-          Profile Picture
-        </CardTitle>
-        <CardDescription>
-          Upload or change your profile picture. This will be visible to other users.
-        </CardDescription>
+    <Card>
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Camera className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Profile Picture</CardTitle>
+            <CardDescription>Upload or change your profile picture. This will be visible to other users.</CardDescription>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6 p-6">
+      <CardContent className="space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <div className="flex flex-col items-center space-y-4">
             <Avatar className="h-24 w-24 border-4 border-border shadow-lg">

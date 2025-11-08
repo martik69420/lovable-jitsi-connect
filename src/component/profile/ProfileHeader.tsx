@@ -71,112 +71,96 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({
   const displayName = user?.displayName || user?.username || 'Unknown User';
 
   return (
-    <div className="flex flex-col md:flex-row md:items-end gap-6">
-      {/* Avatar Section */}
-      <div className="relative">
-        <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-background shadow-xl ring-2 ring-primary/20">
-          <AvatarImage 
-            src={user?.avatar_url || "/placeholder.svg"} 
-            alt={displayName}
-            className="object-cover"
-          />
-          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-foreground font-bold text-lg md:text-2xl">
-            {getInitials(displayName)}
-          </AvatarFallback>
-        </Avatar>
-        
-        {/* Status Indicators */}
-        <div className="absolute -bottom-1 -right-1 flex gap-1">
-          {user?.isAdmin && (
-            <div className="p-1.5 rounded-full bg-destructive shadow-lg ring-2 ring-background">
-              <Shield className="h-3 w-3 text-white" />
+    <div className="bg-card rounded-xl border border-border p-6 space-y-6">
+      <div className="flex items-start gap-6">
+        {/* Avatar Section */}
+        <div className="relative">
+          <Avatar className="h-32 w-32 border-4 border-background">
+            <AvatarImage 
+              src={user?.avatar_url || "/placeholder.svg"} 
+              alt={displayName}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-primary/10 text-foreground font-bold text-2xl">
+              {getInitials(displayName)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* User Info Section */}
+        <div className="flex-1 space-y-4">
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-bold text-foreground">
+                {displayName}
+              </h1>
+              {user?.isAdmin && (
+                <Badge variant="destructive" className="gap-1">
+                  <Shield className="h-3 w-3" />
+                  Admin
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground">@{user?.username || 'unknown'}</p>
+          </div>
+          
+          {user?.bio && (
+            <p className="text-foreground/90 max-w-2xl">
+              {user.bio}
+            </p>
+          )}
+          
+          <div className="flex gap-6 text-sm">
+            <div>
+              <span className="font-semibold text-foreground">42</span>{' '}
+              <span className="text-muted-foreground">Mutual friends</span>
+            </div>
+            <div>
+              <span className="font-semibold text-foreground">234</span>{' '}
+              <span className="text-muted-foreground">Total friends</span>
+            </div>
+          </div>
+
+          {user?.created_at && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Joined {formatDate(user?.created_at)}</span>
             </div>
           )}
-          <div className="p-1.5 rounded-full bg-green-500 shadow-lg ring-2 ring-background">
-            <div className="h-2 w-2 rounded-full bg-white"></div>
-          </div>
         </div>
-      </div>
 
-      {/* User Info Section */}
-      <div className="flex-1 space-y-3">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              {displayName}
-            </h1>
-            {user?.isAdmin && (
-              <span className="text-sm font-medium text-destructive flex items-center gap-1">
-                <Shield className="h-3 w-3" />
-                Admin
-              </span>
-            )}
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Joined {formatDate(user?.created_at)}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-lg">@{user?.username || 'unknown'}</p>
-        </div>
-        
-        {user?.bio && (
-          <p className="text-foreground leading-relaxed max-w-md">
-            {user.bio}
-          </p>
-        )}
-        
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          {user?.school && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              <span>{user.school}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1.5">
-            <Calendar className="h-4 w-4" />
-            <span>Joined {formatDate(user?.created_at)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Users className="h-4 w-4" />
-            <span>1.2K followers</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 md:flex-col md:items-end">
-        {isCurrentUser ? (
-          <Button variant="outline" className="flex items-center gap-2 shadow-sm">
-            <Settings className="h-4 w-4" />
-            Edit Profile
-          </Button>
-        ) : (
-          <>
-            {isFriend ? (
-              <Button 
-                variant="outline" 
-                onClick={onRemoveFriend}
-                disabled={loading}
-                className="flex items-center gap-2 shadow-sm"
-              >
-                <UserMinus className="h-4 w-4" />
-                Unfollow
-              </Button>
-            ) : (
-              <Button 
-                onClick={onAddFriend}
-                disabled={loading}
-                className="flex items-center gap-2 shadow-sm"
-              >
-                <UserPlus className="h-4 w-4" />
-                Follow
-              </Button>
-            )}
-            <Button variant="outline" className="shadow-sm">
-              Message
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {isCurrentUser ? (
+            <Button variant="outline" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Edit profile
             </Button>
-          </>
-        )}
+          ) : (
+            <>
+              {isFriend ? (
+                <Button 
+                  variant="outline" 
+                  onClick={onRemoveFriend}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <UserMinus className="h-4 w-4" />
+                  Unfollow
+                </Button>
+              ) : (
+                <Button 
+                  onClick={onAddFriend}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Follow
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

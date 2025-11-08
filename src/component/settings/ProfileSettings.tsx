@@ -77,17 +77,25 @@ export const ProfileSettings = () => {
   };
 
   return (
-    <Card>
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-4">
-        <CardTitle className="text-xl flex items-center">
-          <User className="h-5 w-5 mr-2 text-primary" />
-          Profile Information
-        </CardTitle>
-        <CardDescription>
-          Update your public profile information
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 p-6">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Profile Settings</h2>
+        <p className="text-muted-foreground">Update your public profile information</p>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Profile Information</CardTitle>
+              <CardDescription>Update your public profile information</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
         <div className="grid gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -175,15 +183,17 @@ export const ProfileSettings = () => {
             </div>
           </div>
 
-          <Button 
-            onClick={saveProfileData} 
-            disabled={isSaving}
-            className="w-full md:w-auto"
-          >
-            {isSaving ? 'Saving...' : 'Save Profile'}
-          </Button>
+          <div className="flex justify-end pt-4">
+            <Button 
+              onClick={saveProfileData} 
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Profile'}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
