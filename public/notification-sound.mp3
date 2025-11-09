@@ -1,0 +1,2 @@
+// This is a placeholder - in production, add an actual MP3 file
+// For now, we'll use the Web Audio API to generate a simple beep sound

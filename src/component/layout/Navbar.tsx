@@ -109,11 +109,6 @@ const Navbar = () => {
                       variant="ghost" 
                       size="icon" 
                       className="relative"
-                      onClick={() => {
-                        if (isMobile) {
-                          navigate('/notifications');
-                        }
-                      }}
                     >
                       <Bell className="h-5 w-5" />
                       {isLoading ? (

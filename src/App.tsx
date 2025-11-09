@@ -19,7 +19,7 @@ import Settings from './pages/Settings';
 import AuthCallback from './pages/AuthCallback';
 import Messages from './pages/Messages';
 import Search from './pages/Search';
-import Notifications from './pages/Notifications';
+// Notifications page removed - now using side drawer
 import Friends from './pages/Friends';
 import AddFriends from './pages/AddFriends';
 import Games from './pages/Games';
@@ -63,7 +63,6 @@ function App() {
                       <Route path="/auth/callback" element={<AuthCallback />} />
                       <Route path="/messages" element={<Messages />} />
                       <Route path="/search" element={<Search />} />
-                      <Route path="/notifications" element={<Notifications />} />
                       <Route path="/friends" element={<Friends />} />
                       <Route path="/friend-requests" element={<FriendRequests />} />
                       <Route path="/add-friends" element={<AddFriends />} />
