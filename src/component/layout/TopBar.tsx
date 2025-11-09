@@ -183,33 +183,31 @@ const TopBar: React.FC = () => {
           </Button>
 
           {/* Notifications */}
-          <div className="relative">
-            <DropdownMenu open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn(
-                    "relative transition-all", 
-                    unreadCount > 0 ? "animate-pulse" : ""
-                  )}
-                >
-                  <Bell className={cn(
-                    "h-5 w-5 transition-colors",
-                    unreadCount > 0 ? "text-primary" : ""
-                  )} />
-                  {isLoading ? (
-                    <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full border-2 border-t-transparent border-primary animate-spin" />
-                  ) : unreadCount > 0 ? (
-                    <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  ) : null}
-                </Button>
-              </DropdownMenuTrigger>
-              <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />
-            </DropdownMenu>
-          </div>
+          <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={cn(
+                  "relative transition-all", 
+                  unreadCount > 0 ? "animate-pulse" : ""
+                )}
+              >
+                <Bell className={cn(
+                  "h-5 w-5 transition-colors",
+                  unreadCount > 0 ? "text-primary" : ""
+                )} />
+                {isLoading ? (
+                  <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full border-2 border-t-transparent border-primary animate-spin" />
+                ) : unreadCount > 0 ? (
+                  <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />
+          </Sheet>
 
 
           {/* User dropdown */}

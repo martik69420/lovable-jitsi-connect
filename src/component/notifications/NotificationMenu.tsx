@@ -3,17 +3,12 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, MessageSquare, Heart, Check, UserPlus, User, Megaphone, Trash2, AtSign, X, Loader2 } from 'lucide-react';
-import {
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuGroup,
-} from '@/components/ui/dropdown-menu';
+import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/context/NotificationContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -205,24 +200,24 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
   const notificationGroups = groupNotifications();
   
   const renderNotificationItem = (notification: any) => (
-    <DropdownMenuItem
+    <div
       key={notification.id}
       className={cn(
-        "flex items-start p-3 cursor-pointer group", 
+        "flex items-start p-3 cursor-pointer group rounded-lg hover:bg-muted/50 transition-colors", 
         !notification.read ? 'bg-muted/60' : ''
       )}
       onClick={() => handleNotificationClick(notification)}
     >
       <div className="flex gap-3 w-full">
         {notification.sender?.avatar ? (
-          <Avatar className="h-9 w-9 border">
+          <Avatar className="h-10 w-10 border">
             <AvatarImage src={notification.sender.avatar} alt={notification.sender.name || ''} />
             <AvatarFallback className="bg-primary/10">
               {notification.sender.name?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
         ) : (
-          <div className="rounded-full bg-muted p-2 h-9 w-9 flex items-center justify-center">
+          <div className="rounded-full bg-muted p-2 h-10 w-10 flex items-center justify-center">
             {getNotificationIcon(notification.type)}
           </div>
         )}
@@ -236,18 +231,14 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
           </p>
         </div>
         
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           {!notification.read && (
-            <div className="mr-2">
-              <span className="ml-auto bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs font-medium">
-                {notifications.filter(n => !n.read).length}
-              </span>
-            </div>
+            <div className="h-2 w-2 rounded-full bg-primary" />
           )}
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => handleDeleteNotification(e, notification.id)}
             disabled={deletingIds.includes(notification.id)}
           >
@@ -260,105 +251,105 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
           </Button>
         </div>
       </div>
-    </DropdownMenuItem>
+    </div>
   );
   
   return (
     <>
-      <DropdownMenuContent align="end" className="w-[320px] sm:w-[350px]">
-        <DropdownMenuLabel className="flex justify-between items-center p-4 border-b">
-          <span className="text-lg font-semibold">{notificationTexts.all}</span>
-          <div className="flex space-x-2">
-            {!isNotificationPermissionGranted && 'Notification' in window && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleNotificationPermission} 
-                className="h-8 px-2 text-xs"
-                title="Enable push notifications"
-              >
-                <Bell className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">{notificationTexts.enable}</span>
-              </Button>
-            )}
-            {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={markAllAsRead} className="h-8 px-2 text-xs">
-                <Check className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">{notificationTexts.markAllRead}</span>
-              </Button>
-            )}
+      <SheetContent side="left" className="w-[400px] sm:w-[450px] p-0">
+        <SheetHeader className="px-6 py-4 border-b">
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-xl font-bold">{notificationTexts.all}</SheetTitle>
+            <Button variant="ghost" size="sm" className="text-primary hover:text-primary">
+              Filter
+            </Button>
+          </div>
+        </SheetHeader>
+
+        <div className="px-6 py-3 border-b flex gap-2">
+          {!isNotificationPermissionGranted && 'Notification' in window && (
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={handleClearAllNotifications} 
-              className={cn(
-                "h-8 px-2 text-xs",
-                notifications.length === 0 ? "opacity-50 cursor-not-allowed" : ""
-              )}
-              disabled={isDeleting || notifications.length === 0}
+              onClick={handleNotificationPermission} 
+              className="h-8 text-xs"
             >
-              {isDeleting ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <Trash2 className="h-3 w-3 mr-1" />
-              )}
-              <span className="hidden sm:inline">{notificationTexts.clearAll}</span>
+              <Bell className="h-3 w-3 mr-1" />
+              {notificationTexts.enable}
             </Button>
-          </div>
-        </DropdownMenuLabel>
+          )}
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllAsRead} className="h-8 text-xs">
+              <Check className="h-3 w-3 mr-1" />
+              Mark Read
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleClearAllNotifications} 
+            className={cn(
+              "h-8 text-xs",
+              notifications.length === 0 ? "opacity-50 cursor-not-allowed" : ""
+            )}
+            disabled={isDeleting || notifications.length === 0}
+          >
+            {isDeleting ? (
+              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+            ) : (
+              <Trash2 className="h-3 w-3 mr-1" />
+            )}
+            Clear
+          </Button>
+        </div>
         
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[calc(100vh-140px)]">
           {notifications.length > 0 ? (
-            <DropdownMenuGroup>
+            <div className="px-4 py-2">
               {notificationGroups.today.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/30">
-                    {notificationTexts.today}
+                <div className="mb-4">
+                  <div className="px-2 py-2 text-xs font-semibold text-foreground">
+                    Earlier
                   </div>
-                  {notificationGroups.today.map(renderNotificationItem)}
-                </>
+                  <div className="space-y-1">
+                    {notificationGroups.today.map(renderNotificationItem)}
+                  </div>
+                </div>
               )}
               
               {notificationGroups.yesterday.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/30">
+                <div className="mb-4">
+                  <div className="px-2 py-2 text-xs font-semibold text-foreground">
                     {notificationTexts.yesterday}
                   </div>
-                  {notificationGroups.yesterday.map(renderNotificationItem)}
-                </>
+                  <div className="space-y-1">
+                    {notificationGroups.yesterday.map(renderNotificationItem)}
+                  </div>
+                </div>
               )}
               
               {notificationGroups.older.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/30">
+                <div className="mb-4">
+                  <div className="px-2 py-2 text-xs font-semibold text-foreground">
                     {notificationTexts.older}
                   </div>
-                  {notificationGroups.older.map(renderNotificationItem)}
-                </>
+                  <div className="space-y-1">
+                    {notificationGroups.older.map(renderNotificationItem)}
+                  </div>
+                </div>
               )}
-            </DropdownMenuGroup>
+            </div>
           ) : (
-            <div className="px-4 py-10 text-center">
-              <Bell className="mx-auto h-10 w-10 text-muted-foreground opacity-25 mb-3" />
+            <div className="px-6 py-16 text-center">
+              <Bell className="mx-auto h-12 w-12 text-muted-foreground opacity-25 mb-4" />
               <p className="text-sm font-medium">{notificationTexts.empty}</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-2">
                 {notificationTexts.emptyDesc}
               </p>
             </div>
           )}
         </ScrollArea>
-        
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          className="py-2 justify-center font-medium text-primary text-center"
-          onClick={() => {
-            navigate('/notifications');
-            if (onClose) onClose();
-          }}
-        >
-          {notificationTexts.viewAll}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+      </SheetContent>
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
@@ -373,7 +364,7 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
             <AlertDialogAction 
               onClick={confirmClearAllNotifications}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               {isDeleting ? (
                 <>
