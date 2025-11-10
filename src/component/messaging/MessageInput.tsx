@@ -277,25 +277,33 @@ const MessageInput: React.FC<MessageInputProps> = ({
       </div>
 
       <div className="flex gap-2 items-end">
-        <Textarea
-          ref={textareaRef}
-          placeholder="Type a message..."
-          className="min-h-[40px] max-h-[150px] flex-1 resize-none py-2 px-3 focus-visible:ring-1 focus-visible:ring-primary"
-          value={message}
-          onChange={handleMessageChange}
-          onKeyDown={handleKeyDown}
-          disabled={isSending || disabled}
-          rows={1}
-        />
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
           <TooltipProvider>
+            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary"
+                  disabled={isSending || disabled}
+                >
+                  <Smile className="h-5 w-5" />
+                  <span className="sr-only">Add emoji</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" side="top" align="start">
+                <EnhancedEmojiPicker onEmojiSelect={insertEmoji} />
+              </PopoverContent>
+            </Popover>
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
+                  className="text-muted-foreground hover:text-primary"
                   disabled={isSending || disabled}
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -306,39 +314,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
               <TooltipContent>Attach image</TooltipContent>
             </Tooltip>
 
-            <Dialog open={showMediaDialog} onOpenChange={setShowMediaDialog}>
-              <DialogTrigger asChild>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
-                      disabled={isSending || disabled}
-                    >
-                      <Paperclip className="h-5 w-5" />
-                      <span className="sr-only">Add media</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Add media</TooltipContent>
-                </Tooltip>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Upload Media</DialogTitle>
-                </DialogHeader>
-                <MediaUpload onFileSelect={handleMediaSelect} />
-              </DialogContent>
-            </Dialog>
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
+                  className="text-muted-foreground hover:text-primary"
                   disabled={isSending || disabled}
                   onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
                 >
@@ -348,82 +330,34 @@ const MessageInput: React.FC<MessageInputProps> = ({
               </TooltipTrigger>
               <TooltipContent>Record voice message</TooltipContent>
             </Tooltip>
-
-            <Dialog open={showGifDialog} onOpenChange={setShowGifDialog}>
-              <DialogTrigger asChild>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
-                      disabled={isSending || disabled}
-                    >
-                      <FileImage className="h-5 w-5" />
-                      <span className="sr-only">Add GIF</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Add GIF</TooltipContent>
-                </Tooltip>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add GIF</DialogTitle>
-                </DialogHeader>
-                <Tabs defaultValue="search" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="search">Search</TabsTrigger>
-                    <TabsTrigger value="popular">Popular</TabsTrigger>
-                    <TabsTrigger value="create">Create</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="search" className="mt-4">
-                    <GifPicker onGifSelect={handleGifSelect} />
-                  </TabsContent>
-                  <TabsContent value="popular" className="mt-4">
-                    <PrebuiltGifs onGifSelect={handleGifSelect} />
-                  </TabsContent>
-                  <TabsContent value="create" className="mt-4">
-                    <GifCreator onGifCreated={handleGifSelect} />
-                  </TabsContent>
-                </Tabs>
-              </DialogContent>
-            </Dialog>
-          
-            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
-                  disabled={isSending || disabled}
-                >
-                  <Smile className="h-5 w-5" />
-                  <span className="sr-only">Add emoji</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" side="top" align="end">
-                <EnhancedEmojiPicker onEmojiSelect={insertEmoji} />
-              </PopoverContent>
-            </Popover>
           </TooltipProvider>
-          
-          <Button
-            variant="default"
-            size="icon"
-            disabled={(!message.trim() && !selectedImage && !selectedGif && !selectedMedia) || isSending || disabled}
-            onClick={handleSend}
-            className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 animate-glow"
-          >
-            {isSending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" />
-            )}
-            <span className="sr-only">Send</span>
-          </Button>
         </div>
+        
+        <Textarea
+          ref={textareaRef}
+          placeholder="Type a message..."
+          className="min-h-[40px] max-h-[150px] flex-1 resize-none py-2 px-3 focus-visible:ring-1 focus-visible:ring-primary"
+          value={message}
+          onChange={handleMessageChange}
+          onKeyDown={handleKeyDown}
+          disabled={isSending || disabled}
+          rows={1}
+        />
+        
+        <Button
+          variant="default"
+          size="icon"
+          disabled={(!message.trim() && !selectedImage && !selectedGif && !selectedMedia) || isSending || disabled}
+          onClick={handleSend}
+          className="flex-shrink-0"
+        >
+          {isSending ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+          <span className="sr-only">Send</span>
+        </Button>
       </div>
 
       <input

@@ -14,6 +14,7 @@ import { MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useChatPreferences } from '@/hooks/use-chat-preferences';
 import { ThemeSelector } from '@/component/messaging/ThemeSelectorDialog';
+import PinnedMessages from '@/component/messaging/PinnedMessages';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -168,6 +169,9 @@ const Messages = () => {
     console.log('New chat clicked');
   };
 
+  // Get pinned messages
+  const pinnedMessages = messages.filter(msg => msg.is_pinned);
+
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
@@ -240,6 +244,19 @@ const Messages = () => {
                     className="flex-1 min-h-0 flex flex-col"
                     data-theme={preferences.theme}
                   >
+                    {/* Pinned Messages */}
+                    {pinnedMessages.length > 0 && (
+                      <PinnedMessages
+                        messages={pinnedMessages}
+                        onUnpin={(msgId) => pinMessage(msgId, false)}
+                        onMessageClick={(msgId) => {
+                          const element = document.getElementById(`message-${msgId}`);
+                          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        canUnpin={isGroupChat && (selectedUser as any)?.created_by === user?.id}
+                      />
+                    )}
+                    
                     <div className="flex-1 min-h-0">
                       <MessagesList
                         messages={messages}
