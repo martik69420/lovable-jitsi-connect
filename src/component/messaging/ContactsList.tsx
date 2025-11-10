@@ -77,14 +77,20 @@ const ContactsList: React.FC<ContactsListProps> = ({
     });
   };
 
-  // Filter contacts based on search query
-  const filteredContacts = allContacts.filter(contact => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    const name = contact.name || contact.displayName || contact.username || '';
-    const username = contact.username || '';
-    return name.toLowerCase().includes(query) || username.toLowerCase().includes(query);
-  });
+  // Filter and sort contacts based on search query
+  const filteredContacts = allContacts
+    .filter(contact => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      const name = contact.name || contact.displayName || contact.username || '';
+      const username = contact.username || '';
+      return name.toLowerCase().includes(query) || username.toLowerCase().includes(query);
+    })
+    .sort((a, b) => {
+      const at = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+      const bt = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+      return bt - at; // most recent first
+    });
   return <div className="h-full flex flex-col">
       <div className="border-b p-4 dark:border-gray-800 sticky top-0 bg-background z-10">
         <h2 className="text-xl font-bold mb-3">Messages</h2>

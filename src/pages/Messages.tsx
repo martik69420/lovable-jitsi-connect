@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useChatPreferences } from '@/hooks/use-chat-preferences';
 import { ThemeSelector } from '@/component/messaging/ThemeSelectorDialog';
 import PinnedMessages from '@/component/messaging/PinnedMessages';
+import ForwardMessageDialog from '@/component/messaging/ForwardMessageDialog';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [forwardMessage, setForwardMessage] = useState<any | null>(null);
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
   
@@ -73,7 +75,7 @@ const Messages = () => {
       fetchFriends();
       fetchGroups();
     }
-  }, [user?.id, fetchFriends, fetchGroups]);
+  }, [user?.id]);
 
   // Fetch messages and user/group data when selectedUserId changes
   useEffect(() => {
@@ -124,7 +126,7 @@ const Messages = () => {
       
       loadMessages();
     }
-  }, [selectedUserId, isGroupChat, user?.id, fetchMessages, friends, groups, markMessagesAsRead]);
+  }, [selectedUserId, isGroupChat, user?.id]);
 
   const handleSelectUser = (userId: string) => {
     console.log('Selecting user:', userId);
@@ -266,6 +268,9 @@ const Messages = () => {
                         onDeleteMessage={deleteMessage}
                         onReactToMessage={reactToMessage}
                         isGroupChat={isGroupChat}
+                        onReply={(m:any) => setReplyingTo({ id: m.id, content: m.content, sender: m.sender?.display_name || m.sender?.username || 'Unknown' })}
+                        onTogglePin={(id:string, isPinned:boolean) => pinMessage(id, !isPinned)}
+                        onForward={(m:any) => setForwardMessage(m)}
                       />
                     </div>
                     {selectedUserId && (
@@ -313,6 +318,27 @@ const Messages = () => {
           onClose={() => setShowThemeSelector(false)}
         />
       )}
+
+      {/* Forward Message Dialog */}
+      <ForwardMessageDialog
+        open={!!forwardMessage}
+        onOpenChange={(open) => !open && setForwardMessage(null)}
+        message={forwardMessage}
+        friends={friends as any}
+        groups={groups as any}
+        onSelect={async (targetId: string, isGroup: boolean) => {
+          if (!forwardMessage) return;
+          try {
+            if (isGroup) {
+              await sendMessage('', forwardMessage.content || '', undefined, undefined, targetId);
+            } else {
+              await sendMessage(targetId, forwardMessage.content || '');
+            }
+          } finally {
+            setForwardMessage(null);
+          }
+        }}
+      />
     </AppLayout>
   );
 };

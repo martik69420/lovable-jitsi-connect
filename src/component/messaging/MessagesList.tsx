@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCheck, Clock, Trash2, Heart, ThumbsUp, Laugh } from 'lucide-react';
+import { Check, CheckCheck, Clock, Trash2, Heart, ThumbsUp, Laugh, Reply, CornerUpRight, Pin } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -25,6 +25,7 @@ interface Message {
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
   group_id?: string;
+  is_pinned?: boolean;
 }
 
 interface MessagesListProps {
@@ -35,6 +36,9 @@ interface MessagesListProps {
   onDeleteMessage?: (messageId: string) => void;
   onReactToMessage?: (messageId: string, emoji: string) => void;
   isGroupChat?: boolean;
+  onReply?: (message: Message) => void;
+  onForward?: (message: Message) => void;
+  onTogglePin?: (messageId: string, isPinned: boolean) => void;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({
@@ -44,7 +48,10 @@ const MessagesList: React.FC<MessagesListProps> = ({
   isLoading,
   onDeleteMessage,
   onReactToMessage,
-  isGroupChat
+  isGroupChat,
+  onReply,
+  onForward,
+  onTogglePin
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -95,13 +102,11 @@ const MessagesList: React.FC<MessagesListProps> = ({
     }
   };
 
-  const handleDeleteMessage = (messageId: string) => {
-    onDeleteMessage?.(messageId);
-  };
-
-  const handleReactToMessage = (messageId: string, emoji: string) => {
-    onReactToMessage?.(messageId, emoji);
-  };
+  const handleDeleteMessage = (messageId: string) => onDeleteMessage?.(messageId);
+  const handleReactToMessage = (messageId: string, emoji: string) => onReactToMessage?.(messageId, emoji);
+  const handleReply = (message: Message) => onReply?.(message);
+  const handleForward = (message: Message) => onForward?.(message);
+  const handleTogglePin = (message: Message) => onTogglePin?.(message.id, !!message.is_pinned);
 
   const formatMessageTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -267,14 +272,26 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     px-3 py-2 max-w-full break-words transition-all duration-200`}
                   >
                   {/* Message Options Dropdown */}
-                  <div className="absolute -top-2 right-2 opacity-0 group-hover/message:opacity-100 transition-opacity">
+                  <div className={`absolute ${isOwn ? '-top-2 left-2' : '-top-2 right-2'} opacity-0 group-hover/message:opacity-100 transition-opacity`}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0 bg-background/90 hover:bg-background">
                           <span className="text-xs">⋯</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuContent align={isOwn ? 'start' : 'end'} className="w-44">
+                        <DropdownMenuItem onClick={() => handleReply(message)}>
+                          <Reply className="mr-2 h-4 w-4" />
+                          Reply
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleForward(message)}>
+                          <CornerUpRight className="mr-2 h-4 w-4" />
+                          Forward
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleTogglePin(message)}>
+                          <Pin className="mr-2 h-4 w-4" />
+                          {message.is_pinned ? 'Unpin' : 'Pin'}
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleReactToMessage(message.id, '❤️')}>
                           <Heart className="mr-2 h-4 w-4" />
                           React with ❤️
