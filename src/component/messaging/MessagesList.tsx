@@ -56,6 +56,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolled, setIsUserScrolled] = useState(false);
+  const [swipedMessageId, setSwipedMessageId] = useState<string | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const allMessages = [...messages, ...optimisticMessages];
 
   const scrollToBottom = () => {
@@ -107,6 +109,38 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const handleReply = (message: Message) => onReply?.(message);
   const handleForward = (message: Message) => onForward?.(message);
   const handleTogglePin = (message: Message) => onTogglePin?.(message.id, !!message.is_pinned);
+
+  // Swipe gesture handlers
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = (message: Message) => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      // Swipe left to forward
+      handleForward(message);
+    }
+    if (isRightSwipe) {
+      // Swipe right to reply
+      handleReply(message);
+    }
+  };
 
   const formatMessageTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -232,6 +266,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
               className={`flex gap-2 group transition-colors ${
                 isOwn ? 'justify-end' : 'justify-start'
               }`}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={() => onTouchEnd(message)}
             >
               {!isOwn && (
                 <div className="w-8 flex justify-center items-end flex-shrink-0">

@@ -151,19 +151,9 @@ const TypingIndicator = forwardRef<any, TypingIndicatorProps>(({ receiverId, onT
   if (typingUsers.length === 0) return null;
 
   return (
-    <div className="px-4 py-2 text-sm text-muted-foreground">
-      <div className="flex items-center gap-2">
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-        </div>
-        <span>
-          {typingUsers.length === 1 
-            ? `${typingUsers[0].username} is typing...`
-            : `${typingUsers.length} people are typing...`
-          }
-        </span>
+    <div className="px-4 py-1 flex items-start">
+      <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-3 py-2 flex items-center gap-1">
+        <span className="text-2xl leading-none">...</span>
       </div>
     </div>
   );

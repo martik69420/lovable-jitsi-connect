@@ -259,7 +259,7 @@ const Messages = () => {
                       />
                     )}
                     
-                    <div className="flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 flex flex-col">
                       <MessagesList
                         messages={messages}
                         optimisticMessages={[]}
@@ -272,10 +272,12 @@ const Messages = () => {
                         onTogglePin={(id:string, isPinned:boolean) => pinMessage(id, !isPinned)}
                         onForward={(m:any) => setForwardMessage(m)}
                       />
+                      {selectedUserId && (
+                        <div className="mt-auto">
+                          <TypingIndicator receiverId={selectedUserId} />
+                        </div>
+                      )}
                     </div>
-                    {selectedUserId && (
-                      <TypingIndicator receiverId={selectedUserId} />
-                    )}
                   </div>
                   <div className="bg-background/95 backdrop-blur-sm">
                     <MessageInput 

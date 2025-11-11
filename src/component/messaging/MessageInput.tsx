@@ -368,7 +368,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
         onChange={handleImageSelect}
       />
       
-      {/* Typing Indicator Component */}
+      {/* Voice Recorder Dialog */}
+      {showVoiceRecorder && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-background border rounded-lg shadow-lg">
+          <VoiceRecorder 
+            onSend={handleVoiceSend}
+            onCancel={() => setShowVoiceRecorder(false)}
+          />
+        </div>
+      )}
+      
+      {/* Typing Indicator Component (hidden) */}
       {receiverId && (
         <TypingIndicator
           ref={typingIndicatorRef}
