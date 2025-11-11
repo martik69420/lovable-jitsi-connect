@@ -22,6 +22,7 @@ export type Post = {
   comments: Comment[];
   shares: number;
   images?: string[];
+  isSaved?: boolean;
   user?: {
     id: string;
     username: string; 
@@ -54,6 +55,8 @@ export type PostContextType = {
   likeComment: (postId: string, commentId: string) => Promise<void>;
   sharePost: (postId: string) => Promise<void>;
   getUserById: (userId: string) => User | undefined;
+  savePost: (postId: string) => Promise<void>;
+  unsavePost: (postId: string) => Promise<void>;
 };
 
 // Create the context
@@ -150,13 +153,16 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase
         .from('posts')
         .select(`
           id, content, created_at, user_id, images,
           likes:likes(id, user_id),
           comments:comments(id, content, user_id, created_at),
-          profiles:profiles(id, username, display_name, avatar_url)
+          profiles:profiles(id, username, display_name, avatar_url),
+          saved_posts:saved_posts(id, user_id)
         `)
         .order('created_at', { ascending: false });
 
@@ -170,6 +176,7 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: post.created_at,
         userId: post.user_id,
         likes: post.likes?.map(like => like.user_id || '') || [],
+        isSaved: session?.user ? post.saved_posts?.some((save: any) => save.user_id === session.user.id) : false,
         comments: (post.comments || []).map((comment: any) => ({
           id: comment.id,
           content: comment.content,
@@ -571,6 +578,84 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser, fetchPosts]);
 
+  // Function to save a post
+  const savePost = useCallback(async (postId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save posts.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Optimistically update UI
+      setPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, isSaved: true } : post
+      ));
+
+      const { error } = await supabase
+        .from('saved_posts')
+        .insert({ user_id: currentUser.id, post_id: postId });
+
+      if (error) throw error;
+
+      toast({
+        title: "Post saved",
+        description: "Post saved to your collection.",
+      });
+    } catch (error: any) {
+      console.error("Error saving post:", error.message);
+      toast({
+        title: "Error saving post",
+        description: error.message,
+        variant: "destructive",
+      });
+      
+      // Revert optimistic update
+      setPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, isSaved: false } : post
+      ));
+    }
+  }, [currentUser]);
+
+  // Function to unsave a post
+  const unsavePost = useCallback(async (postId: string) => {
+    if (!currentUser) return;
+
+    try {
+      // Optimistically update UI
+      setPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, isSaved: false } : post
+      ));
+
+      const { error } = await supabase
+        .from('saved_posts')
+        .delete()
+        .match({ user_id: currentUser.id, post_id: postId });
+
+      if (error) throw error;
+
+      toast({
+        title: "Post unsaved",
+        description: "Post removed from your collection.",
+      });
+    } catch (error: any) {
+      console.error("Error unsaving post:", error.message);
+      toast({
+        title: "Error unsaving post",
+        description: error.message,
+        variant: "destructive",
+      });
+      
+      // Revert optimistic update
+      setPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, isSaved: true } : post
+      ));
+    }
+  }, [currentUser]);
+
   return (
     <PostContext.Provider value={{ 
       posts, 
@@ -585,7 +670,9 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
       commentOnPost,
       likeComment,
       sharePost,
-      getUserById
+      getUserById,
+      savePost,
+      unsavePost
     }}>
       {children}
     </PostContext.Provider>
