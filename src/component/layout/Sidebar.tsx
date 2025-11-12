@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 // Import icons
 import { 
@@ -27,7 +28,8 @@ import {
   Gamepad2,
   LogOut,
   Sparkles,
-  User
+  User,
+  Shield
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -49,6 +51,25 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState(location.pathname);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user has admin role
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!user?.id) return;
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!data);
+    };
+
+    checkAdminRole();
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     await logout();
@@ -145,6 +166,29 @@ const Sidebar = () => {
               </li>
             );
           })}
+          
+          {isAdmin && (
+            <li>
+              <Button
+                variant={location.pathname === '/admin' ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start text-base",
+                  location.pathname === '/admin'
+                    ? "bg-primary text-primary-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => handleNavClick('/admin')}
+              >
+                <div className="flex items-center w-full">
+                  <Shield className={cn(
+                    "h-5 w-5 mr-3", 
+                    location.pathname === '/admin' ? "text-primary-foreground" : "text-orange-500"
+                  )} />
+                  <span>Admin Panel</span>
+                </div>
+              </Button>
+            </li>
+          )}
         </ul>
       </div>
 

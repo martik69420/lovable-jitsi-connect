@@ -9,6 +9,7 @@ export interface Message {
   receiver_id: string;
   content: string;
   is_read: boolean;
+  read_at?: string | null;
   image_url?: string;
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
@@ -312,9 +313,10 @@ const useMessages = (): UseMessagesResult => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const readTimestamp = new Date().toISOString();
       const { error } = await supabase
         .from('messages')
-        .update({ is_read: true })
+        .update({ is_read: true, read_at: readTimestamp })
         .eq('sender_id', senderId)
         .eq('receiver_id', user.id)
         .eq('is_read', false);
@@ -327,7 +329,7 @@ const useMessages = (): UseMessagesResult => {
       // Update local state
       setMessages(prev => prev.map(msg => 
         msg.sender_id === senderId && msg.receiver_id === user.id && !msg.is_read
-          ? { ...msg, is_read: true }
+          ? { ...msg, is_read: true, read_at: readTimestamp }
           : msg
       ));
 

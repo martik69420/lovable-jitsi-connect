@@ -15,6 +15,7 @@ interface Message {
   sender_id: string;
   receiver_id: string;
   is_read: boolean;
+  read_at?: string | null;
   sender?: {
     id?: string;
     username: string;
@@ -180,6 +181,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
     
     const status = getMessageStatus(message, isOwn);
     const iconClass = "h-3 w-3";
+    const readTime = message.read_at ? format(new Date(message.read_at), 'HH:mm') : null;
     
     switch (status) {
       case 'sending':
@@ -189,7 +191,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
       case 'delivered':
         return <CheckCheck className={`${iconClass} text-gray-500 dark:text-gray-400`} />;
       case 'read':
-        return <CheckCheck className={`${iconClass} text-blue-400 dark:text-blue-300`} />;
+        return (
+          <div className="flex items-center gap-1" title={readTime ? `Read at ${readTime}` : undefined}>
+            <CheckCheck className={`${iconClass} text-blue-400 dark:text-blue-300`} />
+            {readTime && <span className="text-[10px] text-blue-400 dark:text-blue-300">{readTime}</span>}
+          </div>
+        );
       default:
         return <Check className={`${iconClass} text-muted-foreground`} />;
     }
@@ -422,9 +429,9 @@ const MessagesList: React.FC<MessagesListProps> = ({
 
                     {/* Pinned badge */}
                     {message.is_pinned && (
-                      <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-[10px]">
+                      <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[10px] w-fit">
                         <Pin className="h-2.5 w-2.5" />
-                        <span>Pinned</span>
+                        <span className="text-[9px]">Pinned</span>
                       </div>
                     )}
                   </div>
@@ -434,6 +441,12 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   <span className="text-xs text-muted-foreground self-end mb-1 whitespace-nowrap">
                     {format(new Date(message.created_at), 'HH:mm')}
                   </span>
+                )}
+                
+                {isOwn && (
+                  <div className="self-end mb-1">
+                    {renderMessageStatus(message, isOwn)}
+                  </div>
                 )}
               </div>
             </div>

