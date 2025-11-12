@@ -16,6 +16,7 @@ export interface Message {
   edited_at?: string;
   reply_to?: string;
   is_pinned?: boolean;
+  forwarded_from?: string;
   reply_message?: Message;
   sender?: {
     id: string;
@@ -52,7 +53,7 @@ interface UseMessagesResult {
   groups: Group[];
   messages: Message[];
   loading: boolean;
-  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string) => Promise<void>;
+  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string, forwardedFrom?: string) => Promise<void>;
   fetchMessages: (contactId: string, isGroup?: boolean) => Promise<void>;
   fetchFriends: () => Promise<void>;
   fetchGroups: () => Promise<void>;
@@ -531,7 +532,7 @@ const useMessages = (): UseMessagesResult => {
     }
   };
 
-  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string) => {
+  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string, forwardedFrom?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -561,6 +562,7 @@ const useMessages = (): UseMessagesResult => {
         status: 'sending',
         group_id: groupId,
         reply_to: replyTo,
+        forwarded_from: forwardedFrom,
         sender: currentUserProfile || undefined
       };
 
@@ -586,6 +588,10 @@ const useMessages = (): UseMessagesResult => {
 
       if (replyTo) {
         messageData.reply_to = replyTo;
+      }
+
+      if (forwardedFrom) {
+        messageData.forwarded_from = forwardedFrom;
       }
 
       if (imageUrl) {

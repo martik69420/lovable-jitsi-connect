@@ -26,6 +26,8 @@ interface Message {
   status?: 'sending' | 'sent' | 'delivered' | 'read';
   group_id?: string;
   is_pinned?: boolean;
+  reply_to?: string;
+  forwarded_from?: string;
 }
 
 interface MessagesListProps {
@@ -109,6 +111,17 @@ const MessagesList: React.FC<MessagesListProps> = ({
   const handleReply = (message: Message) => onReply?.(message);
   const handleForward = (message: Message) => onForward?.(message);
   const handleTogglePin = (message: Message) => onTogglePin?.(message.id, !!message.is_pinned);
+
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      messageElement.classList.add('bg-primary/10', 'transition-colors', 'duration-500');
+      setTimeout(() => {
+        messageElement.classList.remove('bg-primary/10');
+      }, 2000);
+    }
+  };
 
   // Swipe gesture handlers
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -308,6 +321,18 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     } ${getMessageStatus(message, isOwn) === 'sending' ? 'opacity-70' : 'opacity-100'}
                     px-3 py-2 max-w-full break-words transition-all duration-200`}
                   >
+                    {/* Reply indicator */}
+                    {message.reply_to && (
+                      <div 
+                        className="mb-2 p-2 bg-background/20 rounded-lg cursor-pointer hover:bg-background/30 transition-colors border-l-2 border-current"
+                        onClick={() => scrollToMessage(message.reply_to!)}
+                      >
+                        <p className="text-[10px] opacity-70 font-medium mb-0.5">Replying to</p>
+                        <p className="text-xs line-clamp-1 opacity-90">
+                          {allMessages.find(m => m.id === message.reply_to)?.content || 'Message'}
+                        </p>
+                      </div>
+                    )}
                   {/* Message Options Dropdown */}
                   <div className={`absolute ${isOwn ? '-top-2 left-2' : '-top-2 right-2'} opacity-0 group-hover/message:opacity-100 transition-opacity`}>
                     <DropdownMenu>
@@ -387,6 +412,19 @@ const MessagesList: React.FC<MessagesListProps> = ({
                             <span>{userIds.length}</span>
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Forwarded indicator */}
+                    {message.forwarded_from && (
+                      <p className="text-[10px] opacity-60 mt-1 italic">Forwarded</p>
+                    )}
+
+                    {/* Pinned badge */}
+                    {message.is_pinned && (
+                      <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-[10px]">
+                        <Pin className="h-2.5 w-2.5" />
+                        <span>Pinned</span>
                       </div>
                     )}
                   </div>

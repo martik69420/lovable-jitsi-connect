@@ -140,10 +140,11 @@ const Messages = () => {
       setIsSending(true);
       try {
         if (isGroupChat) {
-          await sendMessage('', content, imageFile, gifUrl, selectedUserId);
+          await sendMessage('', content, imageFile, gifUrl, selectedUserId, replyingTo?.id);
         } else {
-          await sendMessage(selectedUserId, content, imageFile, gifUrl);
+          await sendMessage(selectedUserId, content, imageFile, gifUrl, undefined, replyingTo?.id);
         }
+        setReplyingTo(null); // Clear reply after sending
       } finally {
         setIsSending(false);
       }
@@ -332,9 +333,9 @@ const Messages = () => {
           if (!forwardMessage) return;
           try {
             if (isGroup) {
-              await sendMessage('', forwardMessage.content || '', undefined, undefined, targetId);
+              await sendMessage('', forwardMessage.content || '', undefined, undefined, targetId, undefined, forwardMessage.id);
             } else {
-              await sendMessage(targetId, forwardMessage.content || '');
+              await sendMessage(targetId, forwardMessage.content || '', undefined, undefined, undefined, undefined, forwardMessage.id);
             }
           } finally {
             setForwardMessage(null);
