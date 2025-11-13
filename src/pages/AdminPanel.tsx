@@ -56,23 +56,43 @@ const AdminPanel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    let cancelled = false;
 
-    if (!user?.isAdmin) {
-      navigate('/');
-      toast({
-        title: "Access Denied",
-        description: "You don't have admin privileges.",
-        variant: "destructive"
-      });
-      return;
-    }
+    const guard = async () => {
+      if (!isAuthenticated) {
+        navigate('/login');
+        return;
+      }
+      if (!user?.id) return;
 
-    fetchAdminData();
-  }, [isAuthenticated, user, navigate]);
+      // Check admin role using user_roles table (not profile flag)
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (!data) {
+        toast({
+          title: 'Access Denied',
+          description: "You don't have admin privileges.",
+          variant: 'destructive',
+        });
+        navigate('/');
+        return;
+      }
+
+      fetchAdminData();
+    };
+
+    guard();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.id, navigate]);
 
   const fetchAdminData = async () => {
     setLoading(true);
