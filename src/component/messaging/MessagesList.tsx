@@ -7,6 +7,8 @@ import { Check, CheckCheck, Clock, Trash2, Heart, ThumbsUp, Laugh, Reply, Corner
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, isToday, isYesterday } from 'date-fns';
+import PostPreview from '@/component/post/PostPreview';
+import { AudioPlayer } from '@/component/messaging/AudioPlayer';
 
 interface Message {
   id: string;
@@ -23,6 +25,9 @@ interface Message {
     avatar_url?: string;
   };
   image_url?: string;
+  media_url?: string;
+  media_type?: string;
+  shared_post_id?: string;
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
   group_id?: string;
@@ -395,8 +400,22 @@ const MessagesList: React.FC<MessagesListProps> = ({
                       />
                     </div>
                   )}
+
+                  {/* Shared Post Preview */}
+                  {message.shared_post_id && (
+                    <div className="mb-2">
+                      <PostPreview postId={message.shared_post_id} compact />
+                    </div>
+                  )}
+
+                  {/* Voice Message */}
+                  {message.media_url && message.media_type === 'audio' && (
+                    <div className="mb-2">
+                      <AudioPlayer audioUrl={message.media_url} isMine={isOwn} />
+                    </div>
+                  )}
                   
-                    {message.content && (
+                    {message.content && !message.shared_post_id && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {message.content}
                       </p>

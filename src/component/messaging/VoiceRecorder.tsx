@@ -56,14 +56,16 @@ export function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
+      setRecordingTime(0);
     }
   };
 
   const handleSend = () => {
-    if (mediaRecorderRef.current && chunksRef.current.length > 0) {
+    stopRecording();
+    if (chunksRef.current.length > 0) {
       const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
       onSend(audioBlob);
-      setRecordingTime(0);
+      chunksRef.current = [];
     }
   };
 
@@ -96,11 +98,6 @@ export function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) {
           <Button onClick={stopRecording} size="sm" variant="outline">
             <Square className="w-4 h-4" />
           </Button>
-        </>
-      )}
-      
-      {!isRecording && recordingTime > 0 && (
-        <>
           <Button onClick={handleSend} size="sm" variant="default">
             <Send className="w-4 h-4" />
           </Button>

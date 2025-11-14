@@ -129,12 +129,12 @@ const ShareModal: React.FC<ShareModalProps> = ({
     if (!user) return;
     
     try {
-      const postUrl = `${window.location.origin}/#/post/${postId}`;
-      const messageContent = `Check out this post: ${postUrl}`;
-      
+      // Share post with preview by setting shared_post_id
       const messageData: any = {
         sender_id: user.id,
-        content: messageContent,
+        shared_post_id: postId,
+        content: '[Shared Post]',
+        is_read: false
       };
 
       if (isGroup) {

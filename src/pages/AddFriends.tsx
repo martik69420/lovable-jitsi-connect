@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserPlus, UserCheck, Search, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppLayout from '@/components/layout/AppLayout';
+import FriendsForYou from '@/component/users/FriendsForYou';
 
 const AddFriends = () => {
   const navigate = useNavigate();
@@ -340,6 +341,11 @@ const AddFriends = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Friend Recommendations */}
+        <div className="mt-6">
+          <FriendsForYou />
+        </div>
       </div>
     </AppLayout>
   );
