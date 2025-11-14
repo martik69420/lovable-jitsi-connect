@@ -11,6 +11,8 @@ export interface Message {
   is_read: boolean;
   read_at?: string | null;
   image_url?: string;
+  media_url?: string;
+  media_type?: string;
   reactions?: Record<string, string[]>;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
   group_id?: string;
@@ -18,6 +20,7 @@ export interface Message {
   reply_to?: string;
   is_pinned?: boolean;
   forwarded_from?: string;
+  shared_post_id?: string;
   reply_message?: Message;
   sender?: {
     id: string;
@@ -54,7 +57,7 @@ interface UseMessagesResult {
   groups: Group[];
   messages: Message[];
   loading: boolean;
-  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string, forwardedFrom?: string) => Promise<void>;
+  sendMessage: (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string, forwardedFrom?: string, voiceBlob?: Blob, sharedPostId?: string) => Promise<void>;
   fetchMessages: (contactId: string, isGroup?: boolean) => Promise<void>;
   fetchFriends: () => Promise<void>;
   fetchGroups: () => Promise<void>;
@@ -534,13 +537,41 @@ const useMessages = (): UseMessagesResult => {
     }
   };
 
-  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string, forwardedFrom?: string) => {
+  const uploadVoice = async (voiceBlob: Blob): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const fileName = `${user.id}/${Date.now()}-voice.webm`;
+      const { data, error } = await supabase.storage
+        .from('voice-messages')
+        .upload(fileName, voiceBlob, {
+          contentType: 'audio/webm'
+        });
+
+      if (error) {
+        console.error('Error uploading voice:', error);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Exception during voice upload:', error);
+      return null;
+    }
+  };
+
+  const sendMessage = useCallback(async (receiverId: string, content: string, imageFile?: File, gifUrl?: string, groupId?: string, replyTo?: string, forwardedFrom?: string, voiceBlob?: Blob, sharedPostId?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Prevent sending empty messages without content, image, or gif
-      if (!content.trim() && !imageFile && !gifUrl) return;
+      // Prevent sending empty messages without content, image, gif, voice, or shared post
+      if (!content.trim() && !imageFile && !gifUrl && !voiceBlob && !sharedPostId) return;
 
       console.log('Sending message from', user.id, groupId ? `to group ${groupId}` : `to ${receiverId}`, ':', content);
 
@@ -557,7 +588,7 @@ const useMessages = (): UseMessagesResult => {
         id: tempId,
         sender_id: user.id,
         receiver_id: groupId ? '' : receiverId,
-        content: content || (imageFile ? '[Image]' : (gifUrl ? '[GIF]' : '')),
+        content: content || (imageFile ? '[Image]' : (gifUrl ? '[GIF]' : (voiceBlob ? '[Voice Message]' : (sharedPostId ? '[Shared Post]' : '')))),
         created_at: new Date().toISOString(),
         is_read: false,
         reactions: {},
@@ -565,6 +596,7 @@ const useMessages = (): UseMessagesResult => {
         group_id: groupId,
         reply_to: replyTo,
         forwarded_from: forwardedFrom,
+        shared_post_id: sharedPostId,
         sender: currentUserProfile || undefined
       };
 
@@ -576,9 +608,14 @@ const useMessages = (): UseMessagesResult => {
         imageUrl = await uploadImage(imageFile);
       }
 
+      let voiceUrl: string | null = null;
+      if (voiceBlob) {
+        voiceUrl = await uploadVoice(voiceBlob);
+      }
+
       const messageData: any = {
         sender_id: user.id,
-        content: content || (imageUrl ? '[Image]' : (gifUrl ? '[GIF]' : '')),
+        content: content || (imageUrl ? '[Image]' : (gifUrl ? '[GIF]' : (voiceUrl ? '[Voice Message]' : (sharedPostId ? '[Shared Post]' : '')))),
         is_read: false
       };
 
@@ -596,10 +633,19 @@ const useMessages = (): UseMessagesResult => {
         messageData.forwarded_from = forwardedFrom;
       }
 
+      if (sharedPostId) {
+        messageData.shared_post_id = sharedPostId;
+      }
+
       if (imageUrl) {
         messageData.image_url = imageUrl;
       } else if (gifUrl) {
         messageData.image_url = gifUrl;
+      }
+
+      if (voiceUrl) {
+        messageData.media_url = voiceUrl;
+        messageData.media_type = 'audio';
       }
 
       const { data, error } = await supabase

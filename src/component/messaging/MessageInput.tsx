@@ -18,7 +18,7 @@ import { VoiceRecorder } from '@/component/messaging/VoiceRecorder';
 import { MediaUpload } from '@/component/messaging/MediaUpload';
 
 interface MessageInputProps {
-  onSendMessage: (message: string, imageFile?: File, gifUrl?: string, replyTo?: string, mediaFile?: File, mediaType?: string, voiceBlob?: Blob, mentionedUsers?: string[]) => Promise<void>;
+  onSendMessage: (message: string, imageFile?: File, gifUrl?: string, replyTo?: string, mediaFile?: File, mediaType?: string, voiceBlob?: Blob, mentionedUsers?: string[], sharedPostId?: string) => Promise<void>;
   isSending: boolean;
   disabled?: boolean;
   receiverId?: string;
@@ -141,9 +141,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleVoiceSend = async (audioBlob: Blob) => {
     try {
-      await onSendMessage('', undefined, undefined, replyingTo?.id, undefined, undefined, audioBlob);
+      await onSendMessage('', undefined, undefined, replyingTo?.id, undefined, undefined, audioBlob, undefined);
       setShowVoiceRecorder(false);
       onCancelReply?.();
+      toast({
+        title: "Voice message sent",
+        description: "Your voice message has been sent"
+      });
     } catch (error) {
       console.error('Failed to send voice message:', error);
       toast({

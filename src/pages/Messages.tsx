@@ -135,14 +135,24 @@ const Messages = () => {
     setSelectedUser(friend);
   };
 
-  const handleSendMessage = async (content: string, imageFile?: File, gifUrl?: string) => {
+  const handleSendMessage = async (
+    content: string, 
+    imageFile?: File, 
+    gifUrl?: string, 
+    replyTo?: string, 
+    mediaFile?: File, 
+    mediaType?: string, 
+    voiceBlob?: Blob, 
+    mentionedUsers?: string[], 
+    sharedPostId?: string
+  ) => {
     if (selectedUserId) {
       setIsSending(true);
       try {
         if (isGroupChat) {
-          await sendMessage('', content, imageFile, gifUrl, selectedUserId, replyingTo?.id);
+          await sendMessage('', content, imageFile, gifUrl, selectedUserId, replyTo || replyingTo?.id, undefined, voiceBlob, sharedPostId);
         } else {
-          await sendMessage(selectedUserId, content, imageFile, gifUrl, undefined, replyingTo?.id);
+          await sendMessage(selectedUserId, content, imageFile, gifUrl, undefined, replyTo || replyingTo?.id, undefined, voiceBlob, sharedPostId);
         }
         setReplyingTo(null); // Clear reply after sending
       } finally {
