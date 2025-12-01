@@ -8,13 +8,13 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/context/GameContext';
 import { 
-  BrainCircuit, 
   Terminal, 
   Gamepad, 
   Crown, 
   Trophy, 
-  Star,
-  Award 
+  Users,
+  Rocket,
+  Circle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -54,86 +54,146 @@ const Games = () => {
           </div>
         </div>
 
-        {/* Game cards with consistent theme */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Multiplayer Games Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">Multiplayer Games</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pong Game Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200 border-primary/20">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Circle className="w-5 h-5 text-blue-500" />
+                      Pong
+                    </CardTitle>
+                    <CardDescription>Classic 2-player ping pong game</CardDescription>
+                  </div>
+                  <Badge className="bg-primary/10 text-primary border-0">
+                    <Users className="w-3 h-3 mr-1" />
+                    2 Players
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <p className="text-sm text-muted-foreground">
+                  Challenge friends in real-time multiplayer pong matches!
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={() => navigate('/games/pong')} className="w-full">
+                  Play Now
+                </Button>
+              </CardFooter>
+            </Card>
 
-          {/* Snake Game Card */}
-          <Card className="hover:shadow-md transition-shadow duration-200">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Terminal className="w-5 h-5 text-green-600" />
-                    {t('games.snake')}
-                  </CardTitle>
-                  <CardDescription>{t('games.classicSnake')}</CardDescription>
+            {/* Asteroids Game Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200 border-primary/20">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Rocket className="w-5 h-5 text-orange-500" />
+                      Asteroids
+                    </CardTitle>
+                    <CardDescription>Cooperative space shooter</CardDescription>
+                  </div>
+                  <Badge className="bg-primary/10 text-primary border-0">
+                    <Users className="w-3 h-3 mr-1" />
+                    Co-op
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="font-medium">
-                  <Crown className="w-3 h-3 mr-1" />
-                  {bestScores.snake}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-3">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('games.progress')}</span>
-                  <span className="font-medium">{gameState.progress.snake.gamesPlayed} {t('games.gamesPlayed')}</span>
-                </div>
-                <Progress 
-                  value={Math.min(gameState.progress.snake.gamesPlayed * 10, 100)} 
-                  className="h-2" 
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={() => navigate('/games/snake')} 
-                className="w-full"
-              >
-                {t('games.playNow')}
-              </Button>
-            </CardFooter>
-          </Card>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <p className="text-sm text-muted-foreground">
+                  Team up with friends to destroy asteroids together!
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={() => navigate('/games/asteroids')} className="w-full">
+                  Play Now
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
 
-          {/* Coming Soon Game Card */}
-          <Card className="hover:shadow-md transition-shadow duration-200">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Gamepad className="w-5 h-5 text-purple-600" />
-                    {t('games.tetris')}
-                  </CardTitle>
-                  <CardDescription>{t('games.tetrisDesc')}</CardDescription>
+        {/* Single Player Games Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Gamepad className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">Single Player</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Snake Game Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Terminal className="w-5 h-5 text-green-600" />
+                      {t('games.snake')}
+                    </CardTitle>
+                    <CardDescription>{t('games.classicSnake')}</CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="font-medium">
+                    <Crown className="w-3 h-3 mr-1" />
+                    {bestScores.snake}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="font-medium">
-                  <Crown className="w-3 h-3 mr-1" />
-                  {bestScores.tetris || 0}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-3">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('games.progress')}</span>
-                  <span className="font-medium">{gameState.progress.tetris.gamesPlayed} {t('games.gamesPlayed')}</span>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t('games.progress')}</span>
+                    <span className="font-medium">{gameState.progress.snake.gamesPlayed} {t('games.gamesPlayed')}</span>
+                  </div>
+                  <Progress value={Math.min(gameState.progress.snake.gamesPlayed * 10, 100)} className="h-2" />
                 </div>
-                <Progress 
-                  value={Math.min(gameState.progress.tetris.gamesPlayed * 10, 100)} 
-                  className="h-2" 
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={() => navigate('/games/tetris')} 
-                className="w-full"
-              >
-                {t('games.playNow')}
-              </Button>
-            </CardFooter>
-          </Card>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={() => navigate('/games/snake')} className="w-full">
+                  {t('games.playNow')}
+                </Button>
+              </CardFooter>
+            </Card>
+
+            {/* Tetris Game Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Gamepad className="w-5 h-5 text-purple-600" />
+                      {t('games.tetris')}
+                    </CardTitle>
+                    <CardDescription>{t('games.tetrisDesc')}</CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="font-medium">
+                    <Crown className="w-3 h-3 mr-1" />
+                    {bestScores.tetris || 0}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t('games.progress')}</span>
+                    <span className="font-medium">{gameState.progress.tetris.gamesPlayed} {t('games.gamesPlayed')}</span>
+                  </div>
+                  <Progress value={Math.min(gameState.progress.tetris.gamesPlayed * 10, 100)} className="h-2" />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={() => navigate('/games/tetris')} className="w-full">
+                  {t('games.playNow')}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
         </div>
         
         {/* Game Stats Section */}

@@ -33,6 +33,8 @@ import Achievements from './pages/Achievements';
 import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
 import TicTacToe from './pages/games/TicTacToe';
+import Pong from './pages/games/Pong';
+import Asteroids from './pages/games/Asteroids';
 
 // Initialize React Query client
 const queryClient = new QueryClient({
@@ -70,6 +72,8 @@ function App() {
                       <Route path="/games/snake" element={<Snake />} />
                       <Route path="/games/tetris" element={<Tetris />} />
                       <Route path="/games/tictactoe" element={<TicTacToe />} />
+                      <Route path="/games/pong" element={<Pong />} />
+                      <Route path="/games/asteroids" element={<Asteroids />} />
                       
                       <Route path="/achievements" element={<Achievements />} />
                       <Route path="/post/:postId" element={<Post />} />

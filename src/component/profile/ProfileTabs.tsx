@@ -20,89 +20,82 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({ username, isOwnProfile }) => 
   
   return (
     <Tabs defaultValue="posts" className="w-full">
-      <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-8 p-1.5 gap-1 bg-muted/50 rounded-xl h-auto">
+      <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-6 h-auto p-1 bg-muted/50">
         <TabsTrigger 
           value="posts" 
-          className="flex gap-2 items-center py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 animate-slide-up"
+          className="flex gap-2 items-center py-2.5 px-3 text-sm data-[state=active]:bg-background"
         >
           <PencilLine className="h-4 w-4" />
-          <span className="hidden sm:inline font-medium">Posts</span>
+          <span className="hidden sm:inline">Posts</span>
         </TabsTrigger>
         
         <TabsTrigger 
           value="about" 
-          className="flex gap-2 items-center py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 animate-slide-up"
-          style={{ animationDelay: '0.1s' }}
+          className="flex gap-2 items-center py-2.5 px-3 text-sm data-[state=active]:bg-background"
         >
           <User className="h-4 w-4" />
-          <span className="hidden sm:inline font-medium">About</span>
+          <span className="hidden sm:inline">About</span>
         </TabsTrigger>
         
         <TabsTrigger 
           value="activity" 
-          className="flex gap-2 items-center py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 animate-slide-up"
-          style={{ animationDelay: '0.2s' }}
+          className="flex gap-2 items-center py-2.5 px-3 text-sm data-[state=active]:bg-background"
         >
           <Activity className="h-4 w-4" />
-          <span className="hidden sm:inline font-medium">Activity</span>
+          <span className="hidden sm:inline">Activity</span>
         </TabsTrigger>
         
         <TabsTrigger 
           value="friends" 
-          className="flex gap-2 items-center py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 animate-slide-up"
-          style={{ animationDelay: '0.3s' }}
+          className="flex gap-2 items-center py-2.5 px-3 text-sm data-[state=active]:bg-background"
         >
           <Users className="h-4 w-4" />
-          <span className="hidden sm:inline font-medium">Friends</span>
+          <span className="hidden sm:inline">Friends</span>
         </TabsTrigger>
         
         {isOwnProfile && (
           <>
             <TabsTrigger 
               value="liked" 
-              className="flex gap-2 items-center py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 animate-slide-up"
-              style={{ animationDelay: '0.4s' }}
+              className="flex gap-2 items-center py-2.5 px-3 text-sm data-[state=active]:bg-background"
             >
               <Heart className="h-4 w-4" />
-              <span className="hidden sm:inline font-medium">Liked</span>
+              <span className="hidden sm:inline">Liked</span>
             </TabsTrigger>
             <TabsTrigger 
               value="saved" 
-              className="flex gap-2 items-center py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 animate-slide-up"
-              style={{ animationDelay: '0.5s' }}
+              className="flex gap-2 items-center py-2.5 px-3 text-sm data-[state=active]:bg-background"
             >
               <Bookmark className="h-4 w-4" />
-              <span className="hidden sm:inline font-medium">Saved</span>
+              <span className="hidden sm:inline">Saved</span>
             </TabsTrigger>
           </>
         )}
       </TabsList>
 
-      <div className="bg-background/50 rounded-xl p-6 border border-border/50">
-        <TabsContent value="posts" className="mt-0">
-          <ProfilePosts username={username} />
-        </TabsContent>
-        
-        <TabsContent value="about" className="mt-0">
-          <ProfileAbout username={username} isEditable={isOwnProfile} />
-        </TabsContent>
+      <TabsContent value="posts" className="mt-0">
+        <ProfilePosts username={username} />
+      </TabsContent>
+      
+      <TabsContent value="about" className="mt-0">
+        <ProfileAbout username={username} isEditable={isOwnProfile} />
+      </TabsContent>
 
-        <TabsContent value="activity" className="mt-0">
-          <ProfileActivity userId={user?.id || ''} isOwnProfile={isOwnProfile} />
-        </TabsContent>
+      <TabsContent value="activity" className="mt-0">
+        <ProfileActivity userId={user?.id || ''} isOwnProfile={isOwnProfile} />
+      </TabsContent>
 
-        <TabsContent value="friends" className="mt-0">
-          <ProfileFriends username={username} />
-        </TabsContent>
-        
-        <TabsContent value="liked" className="mt-0">
-          <ProfileLikedPosts username={username} />
-        </TabsContent>
-        
-        <TabsContent value="saved" className="mt-0">
-          <ProfileSavedPosts username={username} />
-        </TabsContent>
-      </div>
+      <TabsContent value="friends" className="mt-0">
+        <ProfileFriends username={username} />
+      </TabsContent>
+      
+      <TabsContent value="liked" className="mt-0">
+        <ProfileLikedPosts username={username} />
+      </TabsContent>
+      
+      <TabsContent value="saved" className="mt-0">
+        <ProfileSavedPosts username={username} />
+      </TabsContent>
     </Tabs>
   );
 };
