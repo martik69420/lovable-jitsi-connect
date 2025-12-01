@@ -348,6 +348,7 @@ export type Database = {
           receiver_id: string | null
           reply_to: string | null
           sender_id: string
+          shared_post_id: string | null
         }
         Insert: {
           content: string
@@ -367,6 +368,7 @@ export type Database = {
           receiver_id?: string | null
           reply_to?: string | null
           sender_id: string
+          shared_post_id?: string | null
         }
         Update: {
           content?: string
@@ -386,6 +388,7 @@ export type Database = {
           receiver_id?: string | null
           reply_to?: string | null
           sender_id?: string
+          shared_post_id?: string | null
         }
         Relationships: [
           {
@@ -421,6 +424,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_shared_post_id_fkey"
+            columns: ["shared_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
