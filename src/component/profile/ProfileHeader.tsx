@@ -102,11 +102,11 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({
       {/* Avatar */}
       <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
         <AvatarImage 
-          src={user?.avatar_url || "/placeholder.svg"} 
+          src={user?.avatar_url && user.avatar_url !== '/placeholder.svg' ? user.avatar_url : undefined} 
           alt={displayName}
           className="object-cover"
         />
-        <AvatarFallback className="bg-muted text-foreground font-semibold text-xl">
+        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xl">
           {getInitials(displayName)}
         </AvatarFallback>
       </Avatar>

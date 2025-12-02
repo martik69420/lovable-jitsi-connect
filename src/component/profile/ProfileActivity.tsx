@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,14 +9,8 @@ import {
   Users, 
   MessageSquare, 
   Heart, 
-  Image, 
   Trophy, 
-  Calendar,
-  MapPin,
-  Star,
-  Clock,
-  TrendingUp,
-  Gift
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/context/auth';
 
@@ -29,11 +22,7 @@ interface ProfileActivityProps {
 interface ActivityStats {
   postsCount: number;
   likesReceived: number;
-  commentsCount: number;
   friendsCount: number;
-  joinDate: string;
-  totalViews: number;
-  activeStreak: number;
 }
 
 interface RecentActivity {
@@ -49,15 +38,12 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
   const [stats, setStats] = useState<ActivityStats>({
     postsCount: 0,
     likesReceived: 0,
-    commentsCount: 0,
-    friendsCount: 0,
-    joinDate: '',
-    totalViews: 0,
-    activeStreak: 0
+    friendsCount: 0
   });
   const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActivityData();
@@ -67,13 +53,27 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
     setLoading(true);
     try {
       // Fetch basic stats
-      const [postsData, likesData, commentsData, friendsData, profileData] = await Promise.all([
+      const [postsData, friendsData, profileData] = await Promise.all([
         supabase.from('posts').select('id').eq('user_id', userId),
-        supabase.from('likes').select('id').eq('user_id', userId),
-        supabase.from('comments').select('id').eq('user_id', userId),
         supabase.from('friends').select('id').or(`user_id.eq.${userId},friend_id.eq.${userId}`).eq('status', 'accepted'),
-        supabase.from('profiles').select('created_at').eq('id', userId).single()
+        supabase.from('profiles').select('created_at, avatar_url').eq('id', userId).single()
       ]);
+
+      // Fetch total likes received on user's posts
+      const { data: userPosts } = await supabase
+        .from('posts')
+        .select('id')
+        .eq('user_id', userId);
+      
+      let likesReceived = 0;
+      if (userPosts && userPosts.length > 0) {
+        const postIds = userPosts.map(p => p.id);
+        const { count } = await supabase
+          .from('likes')
+          .select('*', { count: 'exact', head: true })
+          .in('post_id', postIds);
+        likesReceived = count || 0;
+      }
 
       // Fetch user achievements
       const { data: achievementsData } = await supabase
@@ -84,40 +84,61 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
 
       setStats({
         postsCount: postsData.data?.length || 0,
-        likesReceived: likesData.data?.length || 0,
-        commentsCount: commentsData.data?.length || 0,
-        friendsCount: friendsData.data?.length || 0,
-        joinDate: profileData.data?.created_at || '',
-        totalViews: Math.floor(Math.random() * 1000) + 100, // Simulated
-        activeStreak: Math.floor(Math.random() * 30) + 1 // Simulated
+        likesReceived: likesReceived,
+        friendsCount: friendsData.data?.length || 0
       });
 
+      setUserAvatar(profileData.data?.avatar_url || null);
       setAchievements(achievementsData || []);
 
-      // Simulate recent activities
-      setActivities([
-        {
-          id: '1',
-          type: 'post',
-          content: 'Created a new post',
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          target: 'Amazing sunset today!'
-        },
-        {
-          id: '2', 
-          type: 'like',
-          content: 'Liked a post',
-          created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          target: "John's latest photo"
-        },
-        {
-          id: '3',
-          type: 'friend',
-          content: 'Made a new friend',
-          created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          target: 'Sarah Johnson'
-        }
-      ]);
+      // Fetch real recent activities
+      const recentActivities: RecentActivity[] = [];
+      
+      // Recent posts
+      const { data: recentPosts } = await supabase
+        .from('posts')
+        .select('id, content, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (recentPosts) {
+        recentPosts.forEach(post => {
+          recentActivities.push({
+            id: `post-${post.id}`,
+            type: 'post',
+            content: 'Created a new post',
+            created_at: post.created_at,
+            target: post.content.slice(0, 50) + (post.content.length > 50 ? '...' : '')
+          });
+        });
+      }
+
+      // Recent likes given
+      const { data: recentLikes } = await supabase
+        .from('likes')
+        .select('id, created_at, post_id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(2);
+      
+      if (recentLikes) {
+        recentLikes.forEach(like => {
+          recentActivities.push({
+            id: `like-${like.id}`,
+            type: 'like',
+            content: 'Liked a post',
+            created_at: like.created_at || new Date().toISOString()
+          });
+        });
+      }
+
+      // Sort by date
+      recentActivities.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setActivities(recentActivities.slice(0, 5));
 
     } catch (error) {
       console.error('Error fetching activity data:', error);
@@ -155,9 +176,9 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
 
   return (
     <div className="space-y-6">
-      {/* Activity Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="animate-slide-up hover:shadow-lg transition-all duration-300">
+      {/* Activity Stats - 3 cards instead of 4 */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="hover:shadow-lg transition-all duration-300">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-primary/10 rounded-full">
               <MessageSquare className="h-6 w-6 text-primary" />
@@ -167,7 +188,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
           </CardContent>
         </Card>
 
-        <Card className="animate-slide-up hover:shadow-lg transition-all duration-300" style={{ animationDelay: '0.1s' }}>
+        <Card className="hover:shadow-lg transition-all duration-300">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-red-100 dark:bg-red-900/20 rounded-full">
               <Heart className="h-6 w-6 text-red-500" />
@@ -177,23 +198,13 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
           </CardContent>
         </Card>
 
-        <Card className="animate-slide-up hover:shadow-lg transition-all duration-300" style={{ animationDelay: '0.2s' }}>
+        <Card className="hover:shadow-lg transition-all duration-300">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-blue-100 dark:bg-blue-900/20 rounded-full">
               <Users className="h-6 w-6 text-blue-500" />
             </div>
             <div className="text-2xl font-bold text-blue-500">{stats.friendsCount}</div>
             <div className="text-sm text-muted-foreground">Friends</div>
-          </CardContent>
-        </Card>
-
-        <Card className="animate-slide-up hover:shadow-lg transition-all duration-300" style={{ animationDelay: '0.3s' }}>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-2 bg-green-100 dark:bg-green-900/20 rounded-full">
-              <TrendingUp className="h-6 w-6 text-green-500" />
-            </div>
-            <div className="text-2xl font-bold text-green-500">{stats.totalViews}</div>
-            <div className="text-sm text-muted-foreground">Views</div>
           </CardContent>
         </Card>
       </div>
@@ -206,7 +217,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
         </TabsList>
 
         <TabsContent value="activity" className="space-y-4">
-          <Card className="animate-slide-up">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
@@ -215,11 +226,10 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activities.map((activity, index) => (
+                {activities.length > 0 ? activities.map((activity, index) => (
                   <div 
                     key={activity.id} 
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors animate-slide-right"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
                       {getActivityIcon(activity.type)}
@@ -236,14 +246,19 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
                       </p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No recent activity</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="achievements" className="space-y-4">
-          <Card className="animate-slide-up">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5" />
@@ -256,8 +271,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
                   {achievements.map((achievement, index) => (
                     <div 
                       key={achievement.id} 
-                      className="flex items-center gap-3 p-3 border rounded-lg hover:shadow-md transition-shadow animate-bounce-in"
-                      style={{ animationDelay: `${index * 0.1}s` }}
+                      className="flex items-center gap-3 p-3 border rounded-lg hover:shadow-md transition-shadow"
                     >
                       <div className="text-2xl">{achievement.icon}</div>
                       <div>
@@ -282,7 +296,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-4">
-          <Card className="animate-slide-up">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
@@ -293,37 +307,20 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, isOwnProfile 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Active Streak</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-lg font-bold text-orange-500">{stats.activeStreak}</span>
-                      <span className="text-sm text-muted-foreground">days</span>
-                    </div>
+                    <span className="text-sm font-medium">Total Posts</span>
+                    <span className="text-lg font-bold text-primary">{stats.postsCount}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Member Since</span>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDate(stats.joinDate)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Comments</span>
-                    <span className="text-lg font-bold text-blue-500">{stats.commentsCount}</span>
+                    <span className="text-sm font-medium">Total Friends</span>
+                    <span className="text-lg font-bold text-blue-500">{stats.friendsCount}</span>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Profile Views</span>
-                    <span className="text-lg font-bold text-green-500">{stats.totalViews}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Engagement Rate</span>
-                    <span className="text-sm text-muted-foreground">
-                      {stats.postsCount > 0 ? Math.round((stats.likesReceived / stats.postsCount) * 100) : 0}%
-                    </span>
+                    <span className="text-sm font-medium">Likes Received</span>
+                    <span className="text-lg font-bold text-red-500">{stats.likesReceived}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">

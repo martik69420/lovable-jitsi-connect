@@ -53,10 +53,26 @@ export function NotificationPreferences() {
     }
   };
 
-  const savePreferences = () => {
+  const savePreferences = async () => {
     setIsSaving(true);
     try {
+      // Save to localStorage for immediate use
       localStorage.setItem('notificationPreferences', JSON.stringify(preferences));
+
+      // Also save to Supabase user_settings if user is logged in
+      if (user?.id) {
+        await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: user.id,
+            notif_post_likes: preferences.likes,
+            notif_comment_replies: preferences.comments,
+            notif_friend_requests: preferences.friends,
+            notif_mentions: preferences.mentions,
+            notif_messages: preferences.messages,
+            notif_announcements: preferences.system,
+          }, { onConflict: 'user_id' });
+      }
 
       toast({
         title: 'Success',

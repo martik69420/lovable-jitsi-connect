@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PencilLine, Heart, Bookmark, User, Activity, Users } from 'lucide-react';
 import ProfilePosts from './ProfilePosts';
@@ -9,6 +9,7 @@ import ProfileAbout from './ProfileAbout';
 import ProfileActivity from './ProfileActivity';
 import ProfileFriends from './ProfileFriends';
 import { useAuth } from '@/context/auth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileTabsProps {
   username: string;
@@ -17,6 +18,25 @@ interface ProfileTabsProps {
 
 const ProfileTabs: React.FC<ProfileTabsProps> = ({ username, isOwnProfile }) => {
   const { user } = useAuth();
+  const [profileUserId, setProfileUserId] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      if (isOwnProfile && user?.id) {
+        setProfileUserId(user.id);
+      } else if (username) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', username)
+          .single();
+        if (data) {
+          setProfileUserId(data.id);
+        }
+      }
+    };
+    fetchUserId();
+  }, [username, isOwnProfile, user?.id]);
   
   return (
     <Tabs defaultValue="posts" className="w-full">
@@ -82,7 +102,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({ username, isOwnProfile }) => 
       </TabsContent>
 
       <TabsContent value="activity" className="mt-0">
-        <ProfileActivity userId={user?.id || ''} isOwnProfile={isOwnProfile} />
+        <ProfileActivity userId={profileUserId} isOwnProfile={isOwnProfile} />
       </TabsContent>
 
       <TabsContent value="friends" className="mt-0">
