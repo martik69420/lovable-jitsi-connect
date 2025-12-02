@@ -96,7 +96,10 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
 
   const createRoom = async () => {
     if (!user) return;
-    const newRoomId = `asteroids_${Date.now()}_${user.id.slice(0, 8)}`;
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    const username = user.username || user.displayName || 'player';
+    const shortName = username.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const newRoomId = `${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
     setWaiting(true);

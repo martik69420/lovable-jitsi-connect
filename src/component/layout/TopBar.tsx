@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Search, Bell, User, Menu, Home, MessageSquare, Users, Gamepad2, Award, BarChart3, LogOut, Sun, Moon } from "lucide-react";
+import { Bell, User, Menu, Home, MessageSquare, Users, Gamepad2, Award, BarChart3, LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/context/auth";
 import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/component/ui/button";
-import { Input } from "@/component/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/component/ui/avatar";
 import { Badge } from "@/component/ui/badge";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/component/ui/sheet";
@@ -22,7 +21,6 @@ const TopBar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = useState("");
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
 
   // Fetch user's coin balance from the database
@@ -76,13 +74,6 @@ const TopBar: React.FC = () => {
       fetchNotifications();
     }
   }, [notificationMenuOpen, fetchNotifications]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchValue.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchValue)}`);
-    }
-  };
 
   const mobileNavItems = [
     { path: "/", icon: Home, label: t('nav.home') },
@@ -150,20 +141,8 @@ const TopBar: React.FC = () => {
           <span className="text-lg font-bold">Campus Fenix</span>
         </div>
         
-        {/* Search bar */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4">
-          <form onSubmit={handleSearch} className="w-full">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('nav.search')}
-                className="pl-10 w-full"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-              />
-            </div>
-          </form>
-        </div>
+        {/* Spacer for layout balance */}
+        <div className="hidden md:flex flex-1 max-w-md mx-4" />
 
         {/* User actions */}
         <div className="flex items-center gap-3">

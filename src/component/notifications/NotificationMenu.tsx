@@ -306,19 +306,51 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
     );
   };
 
-  // Filter notifications based on active tab
+  // Filter notifications based on active tab AND user preferences
   const filteredNotifications = () => {
+    // Load preferences from localStorage
+    let prefs = {
+      likes: true,
+      comments: true,
+      friends: true,
+      mentions: true,
+      messages: true,
+      system: true
+    };
+    
+    try {
+      const saved = localStorage.getItem('notificationPreferences');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        prefs = { ...prefs, ...parsed };
+      }
+    } catch (e) {}
+
+    // First filter by preferences
+    let filtered = notifications.filter(n => {
+      switch (n.type) {
+        case 'like': return prefs.likes;
+        case 'comment': return prefs.comments;
+        case 'friend': return prefs.friends;
+        case 'mention': return prefs.mentions;
+        case 'message': return prefs.messages;
+        case 'system': return prefs.system;
+        default: return true;
+      }
+    });
+
+    // Then filter by active tab
     switch (activeFilter) {
       case 'likes':
-        return notifications.filter(n => n.type === 'like');
+        return filtered.filter(n => n.type === 'like');
       case 'comments':
-        return notifications.filter(n => n.type === 'comment');
+        return filtered.filter(n => n.type === 'comment');
       case 'friends':
-        return notifications.filter(n => n.type === 'friend');
+        return filtered.filter(n => n.type === 'friend');
       case 'mentions':
-        return notifications.filter(n => n.type === 'mention');
+        return filtered.filter(n => n.type === 'mention');
       default:
-        return notifications;
+        return filtered;
     }
   };
 
