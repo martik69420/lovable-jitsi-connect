@@ -233,33 +233,33 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear
-    ctx.fillStyle = 'hsl(var(--background))';
+    // Clear with solid color (not CSS variable)
+    ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Center line
     ctx.setLineDash([10, 10]);
-    ctx.strokeStyle = 'hsl(var(--muted-foreground) / 0.3)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.beginPath();
     ctx.moveTo(CANVAS_WIDTH / 2, 0);
     ctx.lineTo(CANVAS_WIDTH / 2, CANVAS_HEIGHT);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Paddles
-    ctx.fillStyle = 'hsl(var(--primary))';
+    // Paddles - white color
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(10, gameState.paddle1, PADDLE_WIDTH, PADDLE_HEIGHT);
     ctx.fillRect(CANVAS_WIDTH - PADDLE_WIDTH - 10, gameState.paddle2, PADDLE_WIDTH, PADDLE_HEIGHT);
 
-    // Ball
-    ctx.fillStyle = 'hsl(var(--foreground))';
+    // Ball - bright color
+    ctx.fillStyle = '#00ff88';
     ctx.beginPath();
     ctx.arc(gameState.ball.x + BALL_SIZE / 2, gameState.ball.y + BALL_SIZE / 2, BALL_SIZE / 2, 0, Math.PI * 2);
     ctx.fill();
 
     // Scores
     ctx.font = '48px sans-serif';
-    ctx.fillStyle = 'hsl(var(--muted-foreground) / 0.5)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.textAlign = 'center';
     ctx.fillText(gameState.score1.toString(), CANVAS_WIDTH / 4, 60);
     ctx.fillText(gameState.score2.toString(), (CANVAS_WIDTH * 3) / 4, 60);

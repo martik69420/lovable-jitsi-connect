@@ -19,17 +19,20 @@ const ProfileLikedPosts: React.FC<ProfileLikedPostsProps> = ({ username }) => {
   const [canViewLikedPosts, setCanViewLikedPosts] = useState(false);
   
   useEffect(() => {
+    let isMounted = true;
+    
     const checkPermissionAndLoadPosts = async () => {
+      if (!username) return;
+      
       setIsLoading(true);
       
       try {
         // Check if this is the current user's profile
         const isOwnProfile = user?.username === username;
         
-        // If it's not the user's own profile, we'll default to showing the posts
-        // since settings column doesn't exist yet
-        const hasPermission = isOwnProfile || true; // Default to true for now
-        setCanViewLikedPosts(hasPermission);
+        // Default to showing posts for own profile
+        const hasPermission = isOwnProfile;
+        if (isMounted) setCanViewLikedPosts(hasPermission);
         
         if (hasPermission) {
           // Get userId for the username
@@ -39,7 +42,7 @@ const ProfileLikedPosts: React.FC<ProfileLikedPostsProps> = ({ username }) => {
             .eq('username', username)
             .single();
             
-          if (userData) {
+          if (userData && isMounted) {
             // Fetch liked posts
             const { data: likes } = await supabase
               .from('likes')
@@ -47,38 +50,40 @@ const ProfileLikedPosts: React.FC<ProfileLikedPostsProps> = ({ username }) => {
               .eq('user_id', userData.id);
               
             if (likes && likes.length > 0) {
-              const postIds = likes.map(like => like.post_id);
+              const postIds = likes.map(like => like.post_id).filter(Boolean);
               
               // Fetch the actual posts with user data
               const { data: posts } = await supabase
                 .from('posts')
                 .select(`
                   *,
-                  profiles:user_id (username, display_name, avatar_url),
+                  profiles:user_id (id, username, display_name, avatar_url),
                   likes:likes (user_id),
                   comments:comments (*)
                 `)
                 .in('id', postIds)
                 .order('created_at', { ascending: false });
                 
-              setLikedPosts(posts || []);
+              if (isMounted) setLikedPosts(posts || []);
             } else {
-              setLikedPosts([]);
+              if (isMounted) setLikedPosts([]);
             }
           }
+        } else {
+          if (isMounted) setLikedPosts([]);
         }
       } catch (error) {
         console.error('Error loading liked posts:', error);
-        setLikedPosts([]);
+        if (isMounted) setLikedPosts([]);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
     
-    if (username) {
-      checkPermissionAndLoadPosts();
-    }
-  }, [username, user]);
+    checkPermissionAndLoadPosts();
+    
+    return () => { isMounted = false; };
+  }, [username, user?.username]);
 
   if (isLoading) {
     return (

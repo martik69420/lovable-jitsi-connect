@@ -47,7 +47,14 @@ const ContactsList: React.FC<ContactsListProps> = ({
   createGroup,
   onGroupCreated
 }) => {
-  const allContacts = [...groups.map(g => ({ ...g, isGroup: true })), ...contacts];
+  // Sort contacts by lastMessageTime, most recent first
+  const sortedContacts = [...contacts].sort((a, b) => {
+    const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+    const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+    return timeB - timeA;
+  });
+  
+  const allContacts = [...groups.map(g => ({ ...g, isGroup: true })), ...sortedContacts];
 
   const formatLastMessageTime = (dateString?: string) => {
     if (!dateString) return '';

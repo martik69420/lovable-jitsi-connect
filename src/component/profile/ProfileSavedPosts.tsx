@@ -21,17 +21,20 @@ const ProfileSavedPosts: React.FC<ProfileSavedPostsProps> = ({ username }) => {
   const [canViewSavedPosts, setCanViewSavedPosts] = useState(false);
   
   useEffect(() => {
+    let isMounted = true;
+    
     const checkPermissionAndLoadPosts = async () => {
+      if (!username) return;
+      
       setIsLoading(true);
       
       try {
         // Check if this is the current user's profile
         const isOwnProfile = user?.username === username;
         
-        // If it's not the user's own profile, we'll default to showing the posts
-        // since settings column doesn't exist yet
-        const hasPermission = isOwnProfile || true; // Default to true for now
-        setCanViewSavedPosts(hasPermission);
+        // Only show saved posts for own profile
+        const hasPermission = isOwnProfile;
+        if (isMounted) setCanViewSavedPosts(hasPermission);
         
         if (hasPermission) {
           // Get userId for the username
@@ -41,7 +44,7 @@ const ProfileSavedPosts: React.FC<ProfileSavedPostsProps> = ({ username }) => {
             .eq('username', username)
             .single();
             
-          if (userData) {
+          if (userData && isMounted) {
             // Fetch saved posts with proper joins
             const { data: savedItems, error } = await supabase
               .from('saved_posts')
@@ -69,31 +72,33 @@ const ProfileSavedPosts: React.FC<ProfileSavedPostsProps> = ({ username }) => {
               
             if (error) {
               console.error('Error fetching saved posts:', error);
-              setSavedPosts([]);
+              if (isMounted) setSavedPosts([]);
             } else if (savedItems && savedItems.length > 0) {
               // Filter out any null posts and format them
               const validPosts = savedItems
                 .filter(item => item.posts)
                 .map(item => item.posts);
               
-              setSavedPosts(validPosts || []);
+              if (isMounted) setSavedPosts(validPosts || []);
             } else {
-              setSavedPosts([]);
+              if (isMounted) setSavedPosts([]);
             }
           }
+        } else {
+          if (isMounted) setSavedPosts([]);
         }
       } catch (error) {
         console.error('Error loading saved posts:', error);
-        setSavedPosts([]);
+        if (isMounted) setSavedPosts([]);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
     
-    if (username) {
-      checkPermissionAndLoadPosts();
-    }
-  }, [username, user]);
+    checkPermissionAndLoadPosts();
+    
+    return () => { isMounted = false; };
+  }, [username, user?.username]);
 
   if (isLoading) {
     return (
