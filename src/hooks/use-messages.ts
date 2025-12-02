@@ -36,6 +36,8 @@ export interface Friend {
   displayName: string;
   avatar: string | null;
   unreadCount?: number;
+  lastMessage?: string;
+  lastMessageTime?: string;
 }
 
 export interface Group {
@@ -141,7 +143,7 @@ const useMessages = (): UseMessagesResult => {
 
       console.log('Profiles data:', profilesData);
 
-      // Fetch unread counts for each friend
+      // Fetch unread counts and last message for each friend
       const friendsListWithUnread = await Promise.all(
         (profilesData || []).map(async (profile) => {
           const { count } = await supabase
@@ -152,12 +154,24 @@ const useMessages = (): UseMessagesResult => {
             .eq('is_read', false)
             .is('group_id', null);
 
+          // Fetch most recent message
+          const { data: lastMsgData } = await supabase
+            .from('messages')
+            .select('content, created_at')
+            .is('group_id', null)
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${profile.id}),and(sender_id.eq.${profile.id},receiver_id.eq.${user.id})`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
           return {
             id: profile.id,
             username: profile.username || profile.id.slice(0, 8),
             displayName: profile.display_name || profile.username || `User ${profile.id.slice(0, 8)}`,
             avatar: profile.avatar_url,
-            unreadCount: count || 0
+            unreadCount: count || 0,
+            lastMessage: lastMsgData?.content || '',
+            lastMessageTime: lastMsgData?.created_at || ''
           };
         })
       );
@@ -377,11 +391,52 @@ const useMessages = (): UseMessagesResult => {
             ((newMessage.sender_id === currentContactId && newMessage.receiver_id === user.id) ||
              (newMessage.sender_id === user.id && newMessage.receiver_id === currentContactId));
           
-          // Update unread count for friends list
+          // Update unread count and lastMessage for friends list
           if (!isGroupMessage && newMessage.receiver_id === user.id) {
+            // Create a notification for the new message
+            if (newMessage.sender_id !== currentContactId) {
+              // Fetch sender info for notification
+              const { data: senderProfile } = await supabase
+                .from('profiles')
+                .select('display_name, username')
+                .eq('id', newMessage.sender_id)
+                .single();
+              
+              const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
+              
+              await supabase.from('notifications').insert({
+                user_id: user.id,
+                type: 'message',
+                content: `${senderName} sent you a message`,
+                related_id: newMessage.id,
+                url: `/messages?userId=${newMessage.sender_id}`
+              });
+            }
+            
             setFriends(prev => prev.map(friend => {
-              if (friend.id === newMessage.sender_id && newMessage.sender_id !== currentContactId) {
-                return { ...friend, unreadCount: (friend.unreadCount || 0) + 1 };
+              if (friend.id === newMessage.sender_id) {
+                return { 
+                  ...friend, 
+                  unreadCount: newMessage.sender_id !== currentContactId 
+                    ? (friend.unreadCount || 0) + 1 
+                    : friend.unreadCount,
+                  lastMessage: newMessage.content,
+                  lastMessageTime: newMessage.created_at
+                };
+              }
+              return friend;
+            }));
+          }
+          
+          // Also update if current user sent the message (update lastMessage)
+          if (!isGroupMessage && newMessage.sender_id === user.id) {
+            setFriends(prev => prev.map(friend => {
+              if (friend.id === newMessage.receiver_id) {
+                return { 
+                  ...friend, 
+                  lastMessage: newMessage.content,
+                  lastMessageTime: newMessage.created_at
+                };
               }
               return friend;
             }));

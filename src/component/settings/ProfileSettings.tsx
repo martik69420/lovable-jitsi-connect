@@ -5,19 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/auth';
-import { User, MapPin, Building2, Heart } from 'lucide-react';
+import { User, MapPin, Building2, Globe } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const ProfileSettings = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [profileData, setProfileData] = useState({
-    display_name: user?.displayName || '',
-    username: user?.username || '',
-    bio: user?.bio || '',
-    class: user?.class || '',
-    location: user?.location || '',
-    website: localStorage.getItem('userWebsite') || ''
+    display_name: '',
+    username: '',
+    bio: '',
+    class: '',
+    location: '',
+    website: ''
   });
 
   useEffect(() => {
@@ -42,28 +43,38 @@ export const ProfileSettings = () => {
   };
 
   const saveProfileData = async () => {
+    if (!user?.id) return;
+    
     setIsSaving(true);
     try {
       // Save website to localStorage
       localStorage.setItem('userWebsite', profileData.website);
       
-      // Update profile in database
-      const { success, error } = await updateProfile({
-        display_name: profileData.display_name,
-        username: profileData.username,
-        bio: profileData.bio,
-        class: profileData.class,
-        location: profileData.location
-      });
+      // Update profile directly in Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: profileData.display_name,
+          username: profileData.username,
+          bio: profileData.bio,
+          class: profileData.class,
+          location: profileData.location
+        })
+        .eq('id', user.id);
 
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Profile updated successfully"
-        });
-      } else {
-        throw error || new Error('Failed to update profile');
+      if (error) {
+        throw error;
       }
+
+      // Refresh user data
+      if (refreshUser) {
+        await refreshUser();
+      }
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully"
+      });
     } catch (error: any) {
       console.error('Error saving profile:', error);
       toast({
@@ -168,7 +179,7 @@ export const ProfileSettings = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Heart className="h-5 w-5 text-primary flex-shrink-0" />
+            <Globe className="h-5 w-5 text-primary flex-shrink-0" />
             <div className="flex-1">
               <Label htmlFor="website" className="text-base">Website</Label>
               <Input
