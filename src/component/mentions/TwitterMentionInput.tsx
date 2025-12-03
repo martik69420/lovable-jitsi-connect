@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Command, CommandGroup, CommandItem } from '@/components/ui/command';
+import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { AtSign, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -215,49 +215,51 @@ const TwitterMentionInput: React.FC<TwitterMentionInputProps> = ({
               position: 'fixed'
             }}
           >
-            <Command className="rounded-lg">
+            <Command className="rounded-lg" shouldFilter={false}>
               <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/20 flex items-center">
                 <AtSign className="h-3 w-3 mr-1" />
                 {mentionQuery ? `Searching for "${mentionQuery}"` : 'Type to search users'}
               </div>
               
-              <CommandGroup className="max-h-48 overflow-y-auto">
-                {loading ? (
-                  <div className="p-4 text-center">
-                    <Loader2 className="h-5 w-5 mx-auto mb-2 animate-spin text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Searching...</p>
-                  </div>
-                ) : users.length > 0 ? (
-                  users.map((user, index) => (
-                    <CommandItem
-                      key={user.id}
-                      value={user.username}
-                      onSelect={() => insertMention(user)}
-                      className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
-                        index === selectedIndex ? 'bg-accent' : ''
-                      }`}
-                      onMouseEnter={() => setSelectedIndex(index)}
-                    >
-                      <Avatar className="h-8 w-8 border">
-                        <AvatarImage src={user.avatar_url || '/placeholder.svg'} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {user.display_name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-medium truncate">
-                          {user.display_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
-                      </div>
-                    </CommandItem>
-                  ))
-                ) : mentionQuery ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    No users found matching "{mentionQuery}"
-                  </div>
-                ) : null}
-              </CommandGroup>
+              <CommandList className="max-h-48 overflow-y-auto">
+                <CommandGroup>
+                  {loading ? (
+                    <div className="p-4 text-center">
+                      <Loader2 className="h-5 w-5 mx-auto mb-2 animate-spin text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Searching...</p>
+                    </div>
+                  ) : users.length > 0 ? (
+                    users.map((user, index) => (
+                      <CommandItem
+                        key={user.id}
+                        value={user.username}
+                        onSelect={() => insertMention(user)}
+                        className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                          index === selectedIndex ? 'bg-accent' : ''
+                        }`}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                      >
+                        <Avatar className="h-8 w-8 border">
+                          <AvatarImage src={user.avatar_url || '/placeholder.svg'} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {user.display_name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 overflow-hidden">
+                          <p className="text-sm font-medium truncate">
+                            {user.display_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">@{user.username}</p>
+                        </div>
+                      </CommandItem>
+                    ))
+                  ) : mentionQuery ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No users found matching "{mentionQuery}"
+                    </div>
+                  ) : null}
+                </CommandGroup>
+              </CommandList>
             </Command>
           </motion.div>
         )}
