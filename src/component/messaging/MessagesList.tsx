@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, isToday, isYesterday } from 'date-fns';
 import PostPreview from '@/component/post/PostPreview';
+import GamePreview from '@/component/game/GamePreview';
 import { AudioPlayer } from '@/component/messaging/AudioPlayer';
 
 interface Message {
@@ -408,6 +409,16 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     </div>
                   )}
 
+                  {/* Shared Game Preview */}
+                  {message.content?.startsWith('[GAME:') && (
+                    <div className="mb-2">
+                      <GamePreview 
+                        gameType={message.content.replace('[GAME:', '').replace(']', '') as 'snake' | 'tetris' | 'pong' | 'asteroids'} 
+                        compact 
+                      />
+                    </div>
+                  )}
+
                   {/* Voice Message */}
                   {message.media_url && message.media_type === 'audio' && (
                     <div className="mb-2">
@@ -415,7 +426,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     </div>
                   )}
                   
-                    {message.content && !message.shared_post_id && (
+                    {message.content && !message.shared_post_id && !message.content?.startsWith('[GAME:') && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {message.content}
                       </p>

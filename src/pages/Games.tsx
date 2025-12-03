@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -14,22 +14,24 @@ import {
   Trophy, 
   Users,
   Rocket,
-  Circle
+  Circle,
+  Share2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import ShareGameModal from '@/component/game/ShareGameModal';
 
 const Games = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { toast } = useToast();
   const { bestScores, gameScores, gameState, isLoading } = useGame();
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<'snake' | 'tetris' | 'pong' | 'asteroids'>('snake');
 
-  const handleGameClick = () => {
-    toast({
-      title: t('games.comingSoon'),
-      description: t('games.tetris')
-    });
+  const handleShareGame = (gameType: 'snake' | 'tetris' | 'pong' | 'asteroids') => {
+    setSelectedGame(gameType);
+    setShareModalOpen(true);
   };
 
   return (
@@ -83,9 +85,12 @@ const Games = () => {
                   Challenge friends in real-time multiplayer pong matches!
                 </p>
               </CardContent>
-              <CardFooter>
-                <Button onClick={() => navigate('/games/pong')} className="w-full">
+              <CardFooter className="gap-2">
+                <Button onClick={() => navigate('/games/pong')} className="flex-1">
                   Play Now
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleShareGame('pong')}>
+                  <Share2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -112,9 +117,12 @@ const Games = () => {
                   Team up with friends to destroy asteroids together!
                 </p>
               </CardContent>
-              <CardFooter>
-                <Button onClick={() => navigate('/games/asteroids')} className="w-full">
+              <CardFooter className="gap-2">
+                <Button onClick={() => navigate('/games/asteroids')} className="flex-1">
                   Play Now
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleShareGame('asteroids')}>
+                  <Share2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -154,9 +162,12 @@ const Games = () => {
                   <Progress value={Math.min(gameState.progress.snake.gamesPlayed * 10, 100)} className="h-2" />
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button onClick={() => navigate('/games/snake')} className="w-full">
+              <CardFooter className="gap-2">
+                <Button onClick={() => navigate('/games/snake')} className="flex-1">
                   {t('games.playNow')}
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleShareGame('snake')}>
+                  <Share2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -187,9 +198,12 @@ const Games = () => {
                   <Progress value={Math.min(gameState.progress.tetris.gamesPlayed * 10, 100)} className="h-2" />
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button onClick={() => navigate('/games/tetris')} className="w-full">
+              <CardFooter className="gap-2">
+                <Button onClick={() => navigate('/games/tetris')} className="flex-1">
                   {t('games.playNow')}
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleShareGame('tetris')}>
+                  <Share2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -224,6 +238,12 @@ const Games = () => {
           </div>
         </div>
       </div>
+      
+      <ShareGameModal 
+        open={shareModalOpen} 
+        onOpenChange={setShareModalOpen} 
+        gameType={selectedGame} 
+      />
     </AppLayout>
   );
 };
