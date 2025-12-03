@@ -45,12 +45,20 @@ const ShareModal: React.FC<ShareModalProps> = ({
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
   
   useEffect(() => {
-    if (open && user) {
+    if (open && user && !hasFetched) {
       fetchContactsAndGroups();
     }
-  }, [open, user]);
+  }, [open, user, hasFetched]);
+
+  // Reset hasFetched when modal closes
+  useEffect(() => {
+    if (!open) {
+      setHasFetched(false);
+    }
+  }, [open]);
 
   const fetchContactsAndGroups = async () => {
     if (!user) return;
@@ -107,6 +115,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
 
       setContacts(friendsList);
       setGroups(groupsList);
+      setHasFetched(true);
     } catch (error) {
       console.error('Error fetching contacts:', error);
     } finally {
@@ -167,7 +176,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Share to Chat</DialogTitle>
           <DialogDescription>

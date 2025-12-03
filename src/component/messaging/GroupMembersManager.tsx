@@ -53,14 +53,16 @@ const GroupMembersManager: React.FC<GroupMembersManagerProps> = ({
 
   useEffect(() => {
     if (open && groupId) {
-      fetchMembers();
-      fetchFriends();
+      fetchData();
     }
   }, [open, groupId]);
 
-  const fetchMembers = async () => {
+  const fetchData = async () => {
+    if (!user) return;
+    
     try {
-      const { data, error } = await supabase
+      // Fetch members first
+      const { data: membersData, error: membersError } = await supabase
         .from('group_members')
         .select(`
           id,
@@ -70,32 +72,28 @@ const GroupMembersManager: React.FC<GroupMembersManagerProps> = ({
         `)
         .eq('group_id', groupId);
 
-      if (error) throw error;
+      if (membersError) throw membersError;
       
-      setMembers(data as any || []);
+      const membersList = membersData as any || [];
+      setMembers(membersList);
       
       // Find current user's role
-      const userMember = data?.find((m: any) => m.user_id === user?.id);
+      const userMember = membersList.find((m: any) => m.user_id === user?.id);
       if (userMember) {
         setCurrentUserRole(userMember.role);
       }
-    } catch (error) {
-      console.error('Error fetching members:', error);
-    }
-  };
 
-  const fetchFriends = async () => {
-    try {
-      const { data: friendsData, error } = await supabase
+      // Now fetch friends with current member IDs
+      const { data: friendsData, error: friendsError } = await supabase
         .from('friends')
         .select(`
           friend_id,
-          profiles:friend_id (id, username, display_name, avatar_url)
+          profiles!friends_friend_id_fkey (id, username, display_name, avatar_url)
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('status', 'accepted');
 
-      if (error) throw error;
+      if (friendsError) throw friendsError;
 
       const friendsList = friendsData?.map((f: any) => ({
         id: f.profiles.id,
@@ -104,14 +102,22 @@ const GroupMembersManager: React.FC<GroupMembersManagerProps> = ({
         avatar_url: f.profiles.avatar_url
       })) || [];
 
-      // Filter out friends who are already members
-      const memberIds = members.map(m => m.user_id);
+      // Filter out friends who are already members using fresh member data
+      const memberIds = membersList.map((m: any) => m.user_id);
       const availableFriends = friendsList.filter(f => !memberIds.includes(f.id));
       
       setFriends(availableFriends);
     } catch (error) {
-      console.error('Error fetching friends:', error);
+      console.error('Error fetching data:', error);
     }
+  };
+
+  const fetchMembers = async () => {
+    await fetchData();
+  };
+
+  const fetchFriends = async () => {
+    await fetchData();
   };
 
   const handleAddMembers = async () => {
