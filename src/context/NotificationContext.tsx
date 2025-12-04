@@ -50,6 +50,7 @@ export interface NotificationContextProps {
   enableAutomaticNotifications: (enable: boolean) => void;
   deleteNotification: (id: string) => Promise<void>;
   isLoading: boolean;
+  showTestNotification: (type?: Notification['type']) => void;
 }
 
 // Create the context with a default value
@@ -440,6 +441,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  // Show a test notification
+  const showTestNotification = useCallback((type: Notification['type'] = 'message') => {
+    const sender = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+    const testNotification: Notification = {
+      id: `test-${Date.now()}`,
+      type,
+      message: type === 'message' 
+        ? `${sender.name} sent you a message: "Hey, how are you?"` 
+        : type === 'friend' 
+        ? `${sender.name} sent you a friend request`
+        : type === 'like'
+        ? `${sender.name} liked your post`
+        : type === 'game'
+        ? `${sender.name} invited you to play a game!`
+        : type === 'share'
+        ? `${sender.name} shared a post with you`
+        : `New notification from ${sender.name}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      relatedId: sender.id,
+      sender
+    };
+    
+    setNotifications(prev => [testNotification, ...prev]);
+  }, []);
+
   return (
     <NotificationContext.Provider value={{
       notifications,
@@ -460,7 +487,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       isNotificationPermissionGranted,
       enableAutomaticNotifications,
       deleteNotification,
-      isLoading
+      isLoading,
+      showTestNotification
     }}>
       {children}
     </NotificationContext.Provider>

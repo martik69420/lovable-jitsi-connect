@@ -22,8 +22,10 @@ interface ProfileHeaderProps {
     display_name?: string;
     bio?: string;
     avatar_url?: string;
+    avatar?: string;
     school?: string;
     created_at?: string;
+    createdAt?: string;
     isAdmin?: boolean;
     is_admin?: boolean;
   };
@@ -96,13 +98,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({
 
   const displayName = user?.display_name || user?.displayName || user?.username || 'Unknown User';
   const isAdmin = user?.is_admin || user?.isAdmin;
+  const avatarUrl = user?.avatar_url || user?.avatar;
+  const createdAt = user?.created_at || user?.createdAt;
 
   return (
     <div className="flex flex-col sm:flex-row items-start gap-6">
       {/* Avatar */}
       <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
         <AvatarImage 
-          src={user?.avatar_url && user.avatar_url !== '/placeholder.svg' ? user.avatar_url : undefined} 
+          src={avatarUrl && avatarUrl !== '/placeholder.svg' ? avatarUrl : undefined} 
           alt={displayName}
           className="object-cover"
         />
@@ -146,10 +150,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({
           </div>
         </div>
 
-        {user?.created_at && (
+        {createdAt && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>Joined {formatDate(user?.created_at)}</span>
+            <span>Joined {formatDate(createdAt)}</span>
           </div>
         )}
       </div>

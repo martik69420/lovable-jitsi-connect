@@ -83,24 +83,52 @@ const GroupMembersManager: React.FC<GroupMembersManagerProps> = ({
         setCurrentUserRole(userMember.role);
       }
 
-      // Now fetch friends with current member IDs
-      const { data: friendsData, error: friendsError } = await supabase
+      // Now fetch friends with current member IDs - check both directions
+      const { data: friendsAsUser, error: friendsError1 } = await supabase
         .from('friends')
         .select(`
           friend_id,
-          profiles!friends_friend_id_fkey (id, username, display_name, avatar_url)
+          profiles:friend_id (id, username, display_name, avatar_url)
         `)
         .eq('user_id', user.id)
         .eq('status', 'accepted');
 
-      if (friendsError) throw friendsError;
+      const { data: friendsAsFriend, error: friendsError2 } = await supabase
+        .from('friends')
+        .select(`
+          user_id,
+          profiles:user_id (id, username, display_name, avatar_url)
+        `)
+        .eq('friend_id', user.id)
+        .eq('status', 'accepted');
 
-      const friendsList = friendsData?.map((f: any) => ({
-        id: f.profiles.id,
-        username: f.profiles.username,
-        display_name: f.profiles.display_name,
-        avatar_url: f.profiles.avatar_url
-      })) || [];
+      if (friendsError1) throw friendsError1;
+      if (friendsError2) throw friendsError2;
+
+      // Combine friends from both directions
+      const friendsList: Friend[] = [];
+      
+      friendsAsUser?.forEach((f: any) => {
+        if (f.profiles) {
+          friendsList.push({
+            id: f.profiles.id,
+            username: f.profiles.username,
+            display_name: f.profiles.display_name,
+            avatar_url: f.profiles.avatar_url
+          });
+        }
+      });
+      
+      friendsAsFriend?.forEach((f: any) => {
+        if (f.profiles && !friendsList.find(friend => friend.id === f.profiles.id)) {
+          friendsList.push({
+            id: f.profiles.id,
+            username: f.profiles.username,
+            display_name: f.profiles.display_name,
+            avatar_url: f.profiles.avatar_url
+          });
+        }
+      });
 
       // Filter out friends who are already members using fresh member data
       const memberIds = membersList.map((m: any) => m.user_id);
