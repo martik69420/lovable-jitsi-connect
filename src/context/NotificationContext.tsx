@@ -16,7 +16,7 @@ import PushNotificationService from '@/services/PushNotificationService';
 // Define the structure of a notification
 export interface Notification {
   id: string;
-  type: 'message' | 'like' | 'friend' | 'system' | 'comment' | 'mention' | 'coin';
+  type: 'message' | 'like' | 'friend' | 'system' | 'comment' | 'mention' | 'coin' | 'game' | 'share';
   message: string;
   timestamp: string;
   read: boolean;
