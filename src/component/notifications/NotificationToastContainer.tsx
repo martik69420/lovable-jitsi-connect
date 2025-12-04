@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import NotificationToast from './NotificationToast';
 import { Notification, useNotification } from '@/context/NotificationContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,8 @@ interface ToastNotification extends Notification {
 
 const NotificationToastContainer: React.FC = () => {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
-  const [shownIds, setShownIds] = useState<Set<string>>(new Set());
+  const shownIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadRef = useRef(true);
   const { 
     notifications, 
     markAsRead, 
@@ -20,7 +21,12 @@ const NotificationToastContainer: React.FC = () => {
 
   // Add a new toast
   const addToast = useCallback((notification: Notification) => {
+    // Don't add if already shown
+    if (shownIdsRef.current.has(notification.id)) return;
+    
     const toastId = `${notification.id}-${Date.now()}`;
+    shownIdsRef.current.add(notification.id);
+    
     setToasts(prev => {
       // Limit to 3 toasts max
       const newToasts = [...prev, { ...notification, toastId }];
@@ -29,7 +35,15 @@ const NotificationToastContainer: React.FC = () => {
       }
       return newToasts;
     });
-    setShownIds(prev => new Set(prev).add(notification.id));
+
+    // Play notification sound
+    try {
+      const audio = new Audio('/notification-sound.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch (e) {
+      // Ignore audio errors
+    }
   }, []);
 
   // Remove a toast
@@ -63,9 +77,19 @@ const NotificationToastContainer: React.FC = () => {
     markAsRead(notification.id);
   }, [markAsRead]);
 
-  // Listen for new unread notifications
+  // Listen for new unread notifications (skip initial load)
   useEffect(() => {
-    const unreadNotifications = notifications.filter(n => !n.read && !shownIds.has(n.id));
+    // Skip the initial load to avoid showing old notifications as toasts
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      // Mark all current notification IDs as "already seen"
+      notifications.forEach(n => shownIdsRef.current.add(n.id));
+      return;
+    }
+
+    const unreadNotifications = notifications.filter(n => 
+      !n.read && !shownIdsRef.current.has(n.id)
+    );
     
     unreadNotifications.forEach(notification => {
       // Check if we should show this type of notification
@@ -82,7 +106,7 @@ const NotificationToastContainer: React.FC = () => {
         addToast(notification);
       }
     });
-  }, [notifications, shownIds, addToast, showMessageNotifications, showFriendNotifications, showLikeNotifications]);
+  }, [notifications, addToast, showMessageNotifications, showFriendNotifications, showLikeNotifications]);
 
   // Set up real-time listener for new notifications
   useEffect(() => {
@@ -103,6 +127,9 @@ const NotificationToastContainer: React.FC = () => {
           async (payload) => {
             const newNotification = payload.new as any;
             
+            // Skip if already shown
+            if (shownIdsRef.current.has(newNotification.id)) return;
+            
             // Get sender info if available
             let sender = undefined;
             if (newNotification.related_id) {
@@ -110,7 +137,7 @@ const NotificationToastContainer: React.FC = () => {
                 .from('profiles')
                 .select('id, display_name, avatar_url')
                 .eq('id', newNotification.related_id)
-                .single();
+                .maybeSingle();
 
               if (userData) {
                 sender = {

@@ -51,7 +51,7 @@ export const ProfileSettings = () => {
       localStorage.setItem('userWebsite', profileData.website);
       
       // Update profile directly in Supabase
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           display_name: profileData.display_name,
@@ -62,8 +62,22 @@ export const ProfileSettings = () => {
         })
         .eq('id', user.id);
 
-      if (error) {
-        throw error;
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Also update user_settings for location
+      const { error: settingsError } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          location: profileData.location
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (settingsError) {
+        console.error('Error updating settings:', settingsError);
       }
 
       // Refresh user data

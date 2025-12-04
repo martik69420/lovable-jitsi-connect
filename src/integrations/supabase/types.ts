@@ -634,6 +634,7 @@ export type Database = {
           invite_code: string | null
           is_admin: boolean
           is_online: boolean | null
+          location: string | null
           password_hash: string | null
           school: string
           settings: Json | null
@@ -653,6 +654,7 @@ export type Database = {
           invite_code?: string | null
           is_admin?: boolean
           is_online?: boolean | null
+          location?: string | null
           password_hash?: string | null
           school: string
           settings?: Json | null
@@ -672,6 +674,7 @@ export type Database = {
           invite_code?: string | null
           is_admin?: boolean
           is_online?: boolean | null
+          location?: string | null
           password_hash?: string | null
           school?: string
           settings?: Json | null
@@ -913,6 +916,7 @@ export type Database = {
           privacy_profile: string | null
           privacy_read_receipts: boolean | null
           privacy_searchable: boolean | null
+          privacy_show_friends: boolean | null
           pronouns: string | null
           security_2fa: boolean | null
           security_account_activity: boolean | null
@@ -943,6 +947,7 @@ export type Database = {
           privacy_profile?: string | null
           privacy_read_receipts?: boolean | null
           privacy_searchable?: boolean | null
+          privacy_show_friends?: boolean | null
           pronouns?: string | null
           security_2fa?: boolean | null
           security_account_activity?: boolean | null
@@ -973,6 +978,7 @@ export type Database = {
           privacy_profile?: string | null
           privacy_read_receipts?: boolean | null
           privacy_searchable?: boolean | null
+          privacy_show_friends?: boolean | null
           pronouns?: string | null
           security_2fa?: boolean | null
           security_account_activity?: boolean | null
