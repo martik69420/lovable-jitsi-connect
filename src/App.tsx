@@ -10,6 +10,7 @@ import { Toaster } from './component/ui/toaster';
 import { AuthProvider } from './context/auth';
 import { TooltipProvider } from '@/component/ui/tooltip';
 import UnreadMessagesTitle from '@/component/system/UnreadMessagesTitle';
+import NotificationToastContainer from '@/component/notifications/NotificationToastContainer';
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import('./pages/Home'));
@@ -88,6 +89,7 @@ function App() {
                       </Routes>
                     </Suspense>
                     <Toaster />
+                    <NotificationToastContainer />
                   </PostProvider>
                 </NotificationProvider>
               </GameProvider>
