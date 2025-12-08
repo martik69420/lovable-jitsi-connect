@@ -10,7 +10,7 @@ interface ToastNotification extends Notification {
 const NotificationToastContainer: React.FC = () => {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const shownIdsRef = useRef<Set<string>>(new Set());
-  const initialLoadRef = useRef(true);
+  const lastFetchTimeRef = useRef<number>(Date.now());
   const { 
     notifications, 
     markAsRead, 
@@ -18,6 +18,19 @@ const NotificationToastContainer: React.FC = () => {
     showFriendNotifications,
     showLikeNotifications 
   } = useNotification();
+
+  // Check if notification should be shown based on preferences
+  const shouldShowNotification = useCallback((notification: Notification) => {
+    return (
+      (notification.type === 'message' && showMessageNotifications) ||
+      (notification.type === 'friend' && showFriendNotifications) ||
+      (notification.type === 'like' && showLikeNotifications) ||
+      notification.type === 'mention' ||
+      notification.type === 'comment' ||
+      notification.type === 'game' ||
+      notification.type === 'share'
+    );
+  }, [showMessageNotifications, showFriendNotifications, showLikeNotifications]);
 
   // Add a new toast
   const addToast = useCallback((notification: Notification) => {
@@ -68,45 +81,40 @@ const NotificationToastContainer: React.FC = () => {
     markAsRead(notification.id);
   }, [markAsRead]);
 
-  // Listen for new unread notifications (skip initial load)
+  // Listen for new notifications - check if they're newer than our last check
   useEffect(() => {
-    // Skip the initial load to avoid showing old notifications as toasts
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false;
-      // Mark all current notification IDs as "already seen"
-      notifications.forEach(n => shownIdsRef.current.add(n.id));
-      return;
-    }
-
-    const unreadNotifications = notifications.filter(n => 
-      !n.read && !shownIdsRef.current.has(n.id)
-    );
-    
-    unreadNotifications.forEach(notification => {
-      // Check if we should show this type of notification
-      const shouldShow = 
-        (notification.type === 'message' && showMessageNotifications) ||
-        (notification.type === 'friend' && showFriendNotifications) ||
-        (notification.type === 'like' && showLikeNotifications) ||
-        notification.type === 'mention' ||
-        notification.type === 'comment' ||
-        notification.type === 'game' ||
-        notification.type === 'share';
-
-      if (shouldShow) {
-        addToast(notification);
-      }
+    const newNotifications = notifications.filter(n => {
+      // Skip if already shown
+      if (shownIdsRef.current.has(n.id)) return false;
+      
+      // Skip if read
+      if (n.read) return false;
+      
+      // Check if notification is newer than our last fetch time
+      const notifTime = new Date(n.timestamp).getTime();
+      if (notifTime < lastFetchTimeRef.current) return false;
+      
+      // Check preferences
+      return shouldShowNotification(n);
     });
-  }, [notifications, addToast, showMessageNotifications, showFriendNotifications, showLikeNotifications]);
+    
+    // Show toasts for new notifications
+    newNotifications.forEach(notification => {
+      addToast(notification);
+    });
+    
+    // Update last fetch time
+    lastFetchTimeRef.current = Date.now();
+  }, [notifications, addToast, shouldShowNotification]);
 
-  // Set up real-time listener for new notifications
+  // Set up real-time listener for new notifications (direct from DB)
   useEffect(() => {
     const setupRealtimeListener = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return;
 
       const channel = supabase
-        .channel('notification-toasts')
+        .channel('notification-toasts-direct')
         .on(
           'postgres_changes',
           {
@@ -150,17 +158,8 @@ const NotificationToastContainer: React.FC = () => {
               sender
             };
 
-            // Check preferences
-            const shouldShow = 
-              (notification.type === 'message' && showMessageNotifications) ||
-              (notification.type === 'friend' && showFriendNotifications) ||
-              (notification.type === 'like' && showLikeNotifications) ||
-              notification.type === 'mention' ||
-              notification.type === 'comment' ||
-              notification.type === 'game' ||
-              notification.type === 'share';
-
-            if (shouldShow && !notification.read) {
+            // Check preferences and show toast
+            if (shouldShowNotification(notification) && !notification.read) {
               addToast(notification);
             }
           }
@@ -173,7 +172,7 @@ const NotificationToastContainer: React.FC = () => {
     };
 
     setupRealtimeListener();
-  }, [addToast, showMessageNotifications, showFriendNotifications, showLikeNotifications]);
+  }, [addToast, shouldShowNotification]);
 
   if (toasts.length === 0) return null;
 
