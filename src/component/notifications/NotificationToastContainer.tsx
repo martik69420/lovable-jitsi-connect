@@ -10,27 +10,10 @@ interface ToastNotification extends Notification {
 const NotificationToastContainer: React.FC = () => {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const shownIdsRef = useRef<Set<string>>(new Set());
-  const lastFetchTimeRef = useRef<number>(Date.now());
   const { 
-    notifications, 
-    markAsRead, 
-    showMessageNotifications,
-    showFriendNotifications,
-    showLikeNotifications 
+    markAsRead,
+    fetchNotifications 
   } = useNotification();
-
-  // Check if notification should be shown based on preferences
-  const shouldShowNotification = useCallback((notification: Notification) => {
-    return (
-      (notification.type === 'message' && showMessageNotifications) ||
-      (notification.type === 'friend' && showFriendNotifications) ||
-      (notification.type === 'like' && showLikeNotifications) ||
-      notification.type === 'mention' ||
-      notification.type === 'comment' ||
-      notification.type === 'game' ||
-      notification.type === 'share'
-    );
-  }, [showMessageNotifications, showFriendNotifications, showLikeNotifications]);
 
   // Add a new toast
   const addToast = useCallback((notification: Notification) => {
@@ -67,7 +50,6 @@ const NotificationToastContainer: React.FC = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
-          // Accept friend request
           await supabase
             .from('friends')
             .update({ status: 'accepted' })
@@ -79,42 +61,19 @@ const NotificationToastContainer: React.FC = () => {
       }
     }
     markAsRead(notification.id);
-  }, [markAsRead]);
+    removeToast(notification.toastId);
+  }, [markAsRead, removeToast]);
 
-  // Listen for new notifications - check if they're newer than our last check
+  // Set up real-time listener for new notifications directly from DB
   useEffect(() => {
-    const newNotifications = notifications.filter(n => {
-      // Skip if already shown
-      if (shownIdsRef.current.has(n.id)) return false;
-      
-      // Skip if read
-      if (n.read) return false;
-      
-      // Check if notification is newer than our last fetch time
-      const notifTime = new Date(n.timestamp).getTime();
-      if (notifTime < lastFetchTimeRef.current) return false;
-      
-      // Check preferences
-      return shouldShowNotification(n);
-    });
+    let channel: any = null;
     
-    // Show toasts for new notifications
-    newNotifications.forEach(notification => {
-      addToast(notification);
-    });
-    
-    // Update last fetch time
-    lastFetchTimeRef.current = Date.now();
-  }, [notifications, addToast, shouldShowNotification]);
-
-  // Set up real-time listener for new notifications (direct from DB)
-  useEffect(() => {
     const setupRealtimeListener = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return;
 
-      const channel = supabase
-        .channel('notification-toasts-direct')
+      channel = supabase
+        .channel('notification-toasts-realtime')
         .on(
           'postgres_changes',
           {
@@ -125,6 +84,7 @@ const NotificationToastContainer: React.FC = () => {
           },
           async (payload) => {
             const newNotification = payload.new as any;
+            console.log('New notification received:', newNotification);
             
             // Skip if already shown
             if (shownIdsRef.current.has(newNotification.id)) return;
@@ -158,21 +118,27 @@ const NotificationToastContainer: React.FC = () => {
               sender
             };
 
-            // Check preferences and show toast
-            if (shouldShowNotification(notification) && !notification.read) {
+            // Show toast for unread notifications
+            if (!notification.read) {
               addToast(notification);
+              // Also refresh notifications list for the bell icon
+              fetchNotifications();
             }
           }
         )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+        .subscribe((status: string) => {
+          console.log('Notification realtime subscription status:', status);
+        });
     };
 
     setupRealtimeListener();
-  }, [addToast, shouldShowNotification]);
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [addToast, fetchNotifications]);
 
   if (toasts.length === 0) return null;
 
