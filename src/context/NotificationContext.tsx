@@ -288,15 +288,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       // Only show the most recent unread notification as a push notification
       const latestNotification = unreadNotifications[0];
       
-      // Process notification based on its type and user's preferences
-      const shouldShow = 
-        (latestNotification.type === 'mention') || 
-        (latestNotification.type === 'friend' && showFriendNotifications) ||
-        (latestNotification.type === 'message' && showMessageNotifications);
-        
-      if (shouldShow) {
-        pushNotificationService.processNotification(latestNotification);
-      }
+      // In-app toast notifications are handled by NotificationToastContainer
+      // Native OS notifications are disabled - we only use in-app toasts
     }
   }, [notifications, showMessageNotifications, showFriendNotifications]);
 
