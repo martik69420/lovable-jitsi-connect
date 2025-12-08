@@ -6,13 +6,11 @@ import { useAuth } from '@/context/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Bell, TestTube2, MessageCircle, UserPlus, Heart, Gamepad2 } from 'lucide-react';
-import { useNotification } from '@/context/NotificationContext';
+import { Bell } from 'lucide-react';
 
 export const NotificationSettings = () => {
   const { user, updateUserProfile } = useAuth();
   const { toast } = useToast();
-  const { showTestNotification } = useNotification();
   const [isSaving, setIsSaving] = useState(false);
   
   const [notificationSettings, setNotificationSettings] = useState({
@@ -84,52 +82,6 @@ export const NotificationSettings = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Test Notifications Section */}
-          <div>
-            <h3 className="text-base font-medium mb-4">Test Notifications</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Click a button below to see how notifications will appear
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => showTestNotification('message')}
-                className="gap-2"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Message
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => showTestNotification('friend')}
-                className="gap-2"
-              >
-                <UserPlus className="h-4 w-4" />
-                Friend Request
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => showTestNotification('like')}
-                className="gap-2"
-              >
-                <Heart className="h-4 w-4" />
-                Like
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => showTestNotification('game')}
-                className="gap-2"
-              >
-                <Gamepad2 className="h-4 w-4" />
-                Game Invite
-              </Button>
-            </div>
-          </div>
-
           <div>
             <h3 className="text-base font-medium mb-4">General</h3>
             <div className="space-y-4">

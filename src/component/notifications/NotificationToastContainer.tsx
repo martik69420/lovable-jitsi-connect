@@ -35,15 +35,6 @@ const NotificationToastContainer: React.FC = () => {
       }
       return newToasts;
     });
-
-    // Play notification sound
-    try {
-      const audio = new Audio('/notification-sound.mp3');
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
-    } catch (e) {
-      // Ignore audio errors
-    }
   }, []);
 
   // Remove a toast
