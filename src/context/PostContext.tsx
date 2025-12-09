@@ -47,9 +47,10 @@ export type PostContextType = {
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
+  updatePost: (postId: string, content: string) => Promise<void>;
   fetchPosts: (type?: string) => Promise<void>;
   loading: boolean;
-  isLoading: boolean; // Add this line to fix the error
+  isLoading: boolean;
   createPost: (content: string, images?: string[]) => Promise<Post | null>;
   commentOnPost: (postId: string, content: string) => Promise<void>;
   likeComment: (postId: string, commentId: string) => Promise<void>;
@@ -578,6 +579,51 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser, fetchPosts]);
 
+  // Function to update a post
+  const updatePost = useCallback(async (postId: string, content: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Not authenticated",
+        description: "You must be logged in to update a post.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Optimistically update the state
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId ? { ...post, content } : post
+        )
+      );
+
+      const { error } = await supabase
+        .from('posts')
+        .update({ content, updated_at: new Date().toISOString() })
+        .match({ id: postId, user_id: currentUser.id });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Post updated",
+        description: "Your post has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error updating post:", error.message);
+      toast({
+        title: "Error updating post",
+        description: error.message,
+        variant: "destructive",
+      });
+
+      // Revert optimistic update on error
+      fetchPosts();
+    }
+  }, [currentUser, fetchPosts]);
+
   // Function to save a post
   const savePost = useCallback(async (postId: string) => {
     if (!currentUser) {
@@ -662,10 +708,11 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addPost, 
       likePost, 
       unlikePost, 
-      deletePost, 
+      deletePost,
+      updatePost,
       fetchPosts, 
       loading,
-      isLoading: loading, // Add this line to fix the error
+      isLoading: loading,
       createPost,
       commentOnPost,
       likeComment,

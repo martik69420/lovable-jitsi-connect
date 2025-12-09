@@ -260,8 +260,8 @@ const PostForm: React.FC = () => {
             </div>
           )}
           
-          {/* Poll Creator - only show when poll is active */}
-          <PollCreator poll={poll} onPollChange={setPoll} />
+          {/* Poll Creator - shown when poll is active */}
+          {poll && <PollCreator poll={poll} onPollChange={setPoll} />}
           
           <div className="flex justify-between items-center rounded-none">
             <div className="flex gap-2">
@@ -275,6 +275,7 @@ const PostForm: React.FC = () => {
                 <AtSign className="h-4 w-4 mr-2" />
                 Mention
               </Button>
+              {!poll && <PollCreator poll={poll} onPollChange={setPoll} />}
               <Button
                 type="button"
                 variant="ghost"
