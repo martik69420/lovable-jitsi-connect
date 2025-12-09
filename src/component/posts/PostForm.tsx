@@ -8,12 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import TwitterMentionInput from '@/components/mentions/TwitterMentionInput';
 import { useMentions } from '@/components/common/MentionsProvider';
 import { supabase } from '@/integrations/supabase/client';
+import PollCreator, { PollData } from '@/component/post/PollCreator';
 
 const PostForm: React.FC = () => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [poll, setPoll] = useState<PollData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { createPost } = usePost();
   const { toast } = useToast();
@@ -102,16 +104,37 @@ const PostForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && selectedImages.length === 0) {
+    if (!content.trim() && selectedImages.length === 0 && !poll) {
       toast({
         title: "Can't create empty post",
-        description: "Please write something or add an image.",
+        description: "Please write something, add an image, or create a poll.",
         variant: "destructive"
       });
       return;
     }
     
-    if (isSubmitting) return; // Prevent double submission
+    // Validate poll if exists
+    if (poll) {
+      if (!poll.question.trim()) {
+        toast({
+          title: "Poll needs a question",
+          description: "Please add a question to your poll.",
+          variant: "destructive"
+        });
+        return;
+      }
+      const validOptions = poll.options.filter(o => o.trim());
+      if (validOptions.length < 2) {
+        toast({
+          title: "Poll needs options",
+          description: "Please add at least 2 options to your poll.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
       // Upload images first if any
@@ -123,6 +146,16 @@ const PostForm: React.FC = () => {
       // Create post with images
       const postData = await createPost(content, imageUrls);
 
+      // Create poll if exists
+      if (postData && poll) {
+        const validOptions = poll.options.filter(o => o.trim());
+        await supabase.from('polls').insert({
+          post_id: postData.id,
+          question: poll.question,
+          options: validOptions
+        });
+      }
+
       // Send notifications to mentioned users only if post was created successfully
       if (postData && mentionedUserIds.length > 0 && user) {
         for (const userId of mentionedUserIds) {
@@ -133,6 +166,7 @@ const PostForm: React.FC = () => {
               type: 'mention',
               content: `${user.displayName || user.username} mentioned you in a post`,
               related_id: postData.id,
+              url: `/post/${postData.id}`,
               is_read: false
             });
           }
@@ -142,6 +176,7 @@ const PostForm: React.FC = () => {
       setContent('');
       setSelectedImages([]);
       setImagePreviews([]);
+      setPoll(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -225,6 +260,9 @@ const PostForm: React.FC = () => {
             </div>
           )}
           
+          {/* Poll Creator - only show when poll is active */}
+          <PollCreator poll={poll} onPollChange={setPoll} />
+          
           <div className="flex justify-between items-center rounded-none">
             <div className="flex gap-2">
               <Button
@@ -252,7 +290,7 @@ const PostForm: React.FC = () => {
             
             <Button
               type="submit"
-              disabled={isSubmitting || (content.trim() === '' && selectedImages.length === 0)}
+              disabled={isSubmitting || (content.trim() === '' && selectedImages.length === 0 && !poll)}
             >
               {isSubmitting ? (
                 <>

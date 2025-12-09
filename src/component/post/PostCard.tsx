@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,19 @@ import { useToast } from '@/hooks/use-toast';
 import type { Post } from '@/context/PostContext';
 import { motion } from 'framer-motion';
 import CombinedContentRenderer from '@/components/mentions/CombinedContentRenderer';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import PollDisplay from './PollDisplay';
 
 interface PostCardProps {
   post: Post;
+}
+
+interface Poll {
+  id: string;
+  question: string;
+  options: string[];
+  ends_at?: string;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
@@ -27,12 +37,39 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [poll, setPoll] = useState<Poll | null>(null);
   const { likePost, unlikePost, deletePost, commentOnPost, savePost, unsavePost } = usePost();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const isLiked = user ? post.likes.includes(user.id) : false;
   const isOwnPost = user ? post.userId === user.id : false;
+
+  // Fetch poll for this post
+  useEffect(() => {
+    const fetchPoll = async () => {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('id, question, options, ends_at')
+        .eq('post_id', post.id)
+        .single();
+
+      if (!error && data) {
+        setPoll({
+          ...data,
+          options: data.options as string[]
+        });
+      }
+    };
+    fetchPoll();
+  }, [post.id]);
+
+  const handleUserClick = () => {
+    if (post.user?.username) {
+      navigate(`/profile/${post.user.username}`);
+    }
+  };
 
   const handleLike = async () => {
     if (!user) {
@@ -179,8 +216,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       <Card className="mb-4 shadow-sm border-border/50 hover:shadow-md transition-shadow">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10 border border-border">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer group"
+              onClick={handleUserClick}
+            >
+              <Avatar className="h-10 w-10 border border-border group-hover:ring-2 group-hover:ring-primary/20 transition-all">
                 <AvatarImage 
                   src={post.user?.avatar || '/placeholder.svg'} 
                   alt={post.user?.displayName || 'User'} 
@@ -191,7 +231,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-sm hover:underline cursor-pointer">
+                  <p className="font-semibold text-sm hover:underline">
                     {post.user?.displayName || 'Unknown User'}
                   </p>
                   {post.user?.isAdmin && (
@@ -202,7 +242,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>@{post.user?.username || 'unknown'}</span>
+                  <span className="group-hover:text-primary transition-colors">@{post.user?.username || 'unknown'}</span>
                   <span>·</span>
                   <span>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
                 </div>
@@ -239,6 +279,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             />
             
             {renderImages()}
+            
+            {/* Poll Display */}
+            {poll && <PollDisplay poll={poll} postId={post.id} />}
             
             <Separator className="my-4" />
             
