@@ -508,6 +508,76 @@ export type Database = {
           },
         ]
       }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_index: number
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_index: number
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_index?: number
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          multiple_choice: boolean | null
+          options: Json
+          post_id: string | null
+          question: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          multiple_choice?: boolean | null
+          options?: Json
+          post_id?: string | null
+          question: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          multiple_choice?: boolean | null
+          options?: Json
+          post_id?: string | null
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_reports: {
         Row: {
           created_at: string | null
@@ -1024,8 +1094,8 @@ export type Database = {
       }
       is_group_member: { Args: { group_uuid: string }; Returns: boolean }
       validate_password:
-        | { Args: { password: string; username: string }; Returns: boolean }
         | { Args: { password: string }; Returns: boolean }
+        | { Args: { password: string; username: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

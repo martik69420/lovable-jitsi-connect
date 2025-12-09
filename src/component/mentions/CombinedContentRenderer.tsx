@@ -1,5 +1,6 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CombinedContentRendererProps {
   content: string;
@@ -7,10 +8,18 @@ interface CombinedContentRendererProps {
 }
 
 const CombinedContentRenderer: React.FC<CombinedContentRendererProps> = ({ content, className = '' }) => {
+  const navigate = useNavigate();
+  
   // Enhanced URL regex that matches various URL patterns
   const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/g;
   // Mention regex to match @username patterns
   const mentionRegex = /@(\w+)/g;
+  
+  const handleMentionClick = (username: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    navigate(`/profile/${username}`);
+  };
   
   const renderContentWithLinksAndMentions = (text: string) => {
     // Split text by URLs first
@@ -47,12 +56,8 @@ const CombinedContentRenderer: React.FC<CombinedContentRendererProps> = ({ conte
             return (
               <span
                 key={`mention-${index}-${mentionIndex}`}
-                className="text-primary font-medium hover:underline cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // You can add navigation to user profile here
-                  console.log('Navigate to user:', mentionPart);
-                }}
+                className="text-blue-500 font-medium hover:underline cursor-pointer"
+                onClick={(e) => handleMentionClick(mentionPart, e)}
               >
                 @{mentionPart}
               </span>

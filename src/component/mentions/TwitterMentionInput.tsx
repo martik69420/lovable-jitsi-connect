@@ -204,15 +204,14 @@ const TwitterMentionInput: React.FC<TwitterMentionInputProps> = ({
         {showSuggestions && (
           <motion.div 
             ref={suggestionsRef}
-            initial={{ opacity: 0, y: -5, scale: 0.95 }}
+            initial={{ opacity: 0, y: 5, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -5, scale: 0.95 }}
+            exit={{ opacity: 0, y: 5, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 bg-popover border border-border rounded-lg shadow-xl overflow-hidden w-72"
+            className="absolute z-[100] bg-popover border border-border rounded-lg shadow-xl overflow-hidden w-72 left-0"
             style={{ 
-              top: `${mentionPosition.top}px`, 
-              left: `${mentionPosition.left}px`,
-              position: 'fixed'
+              top: '100%',
+              marginTop: '4px'
             }}
           >
             <Command className="rounded-lg" shouldFilter={false}>
