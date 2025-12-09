@@ -38,7 +38,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [poll, setPoll] = useState<Poll | null>(null);
-  const { likePost, unlikePost, deletePost, commentOnPost, savePost, unsavePost } = usePost();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(post.content);
+  const { likePost, unlikePost, deletePost, updatePost, commentOnPost, savePost, unsavePost } = usePost();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -68,6 +70,38 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const handleUserClick = () => {
     if (post.user?.username) {
       navigate(`/profile/${post.user.username}`);
+    }
+  };
+
+  const handleEditStart = () => {
+    setEditedContent(post.content);
+    setIsEditing(true);
+  };
+
+  const handleEditSave = async () => {
+    if (editedContent.trim() === '') {
+      toast({
+        title: "Cannot save empty post",
+        description: "Please add some content to your post.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (editedContent !== post.content) {
+      await updatePost(post.id, editedContent);
+    }
+    setIsEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setEditedContent(post.content);
+    setIsEditing(false);
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleEditCancel();
     }
   };
 
@@ -257,9 +291,14 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {isOwnPost ? (
-                  <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                    Delete Post
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={handleEditStart}>
+                      Edit Post
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                      Delete Post
+                    </DropdownMenuItem>
+                  </>
                 ) : (
                   <DropdownMenuItem onClick={handleReport}>
                     <Flag className="h-4 w-4 mr-2" />
@@ -273,10 +312,42 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         
         <CardContent className="pt-0">
           <div className="space-y-3">
-            <CombinedContentRenderer 
-              content={post.content}
-              className="text-sm leading-relaxed whitespace-pre-wrap break-words"
-            />
+            {isEditing ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                  className="w-full min-h-[80px] p-3 text-sm leading-relaxed whitespace-pre-wrap break-words bg-muted/50 border border-primary/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEditCancel}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleEditSave}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${isOwnPost ? 'cursor-text hover:bg-muted/30 rounded-lg p-1 -m-1 transition-colors' : ''}`}
+                onClick={isOwnPost ? handleEditStart : undefined}
+              >
+                <CombinedContentRenderer 
+                  content={post.content}
+                  className=""
+                />
+              </div>
+            )}
             
             {renderImages()}
             
