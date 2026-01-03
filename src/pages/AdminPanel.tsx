@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle } from 'lucide-react';
+import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface AdminUser {
@@ -46,6 +46,15 @@ interface AdminReport {
   reported_user_id?: string;
 }
 
+interface AdminStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalPosts: number;
+  totalMessages: number;
+  pendingReports: number;
+  newUsersToday: number;
+}
+
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -54,6 +63,14 @@ const AdminPanel: React.FC = () => {
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState<AdminStats>({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalPosts: 0,
+    totalMessages: 0,
+    pendingReports: 0,
+    newUsersToday: 0,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +147,27 @@ const AdminPanel: React.FC = () => {
 
       if (reportsError) throw reportsError;
       setReports(reportsData || []);
+
+      // Fetch message count
+      const { count: messageCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true });
+
+      // Calculate stats
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const newUsersToday = (usersData || []).filter(u => 
+        new Date(u.created_at) >= today
+      ).length;
+
+      setStats({
+        totalUsers: usersData?.length || 0,
+        activeUsers: (usersData || []).filter(u => u.is_online).length,
+        totalPosts: postsData?.length || 0,
+        totalMessages: messageCount || 0,
+        pendingReports: (reportsData || []).filter(r => r.status === 'pending').length,
+        newUsersToday,
+      });
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast({
@@ -251,13 +289,72 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
 
+        {/* Stats Dashboard */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-500" />
+                <span className="text-sm text-muted-foreground">Total Users</span>
+              </div>
+              <p className="text-2xl font-bold mt-2">{stats.totalUsers}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-green-500" />
+                <span className="text-sm text-muted-foreground">Online Now</span>
+              </div>
+              <p className="text-2xl font-bold mt-2">{stats.activeUsers}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-500" />
+                <span className="text-sm text-muted-foreground">Total Posts</span>
+              </div>
+              <p className="text-2xl font-bold mt-2">{stats.totalPosts}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-orange-500" />
+                <span className="text-sm text-muted-foreground">Messages</span>
+              </div>
+              <p className="text-2xl font-bold mt-2">{stats.totalMessages}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Flag className="h-5 w-5 text-red-500" />
+                <span className="text-sm text-muted-foreground">Pending Reports</span>
+              </div>
+              <p className="text-2xl font-bold mt-2">{stats.pendingReports}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-cyan-500" />
+                <span className="text-sm text-muted-foreground">New Today</span>
+              </div>
+              <p className="text-2xl font-bold mt-2">{stats.newUsersToday}</p>
+            </CardContent>
+          </Card>
+        </div>
+
         <AdminFeatures />
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             <TabsTrigger value="posts">Posts ({posts.length})</TabsTrigger>
             <TabsTrigger value="reports">Reports ({reports.filter(r => r.status === 'pending').length})</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -402,6 +499,98 @@ const AdminPanel: React.FC = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="analytics">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Platform Analytics
+                </CardTitle>
+                <CardDescription>View platform usage and engagement metrics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-4 flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      User Activity
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Active users (24h)</span>
+                        <span className="font-medium">{stats.activeUsers}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">New registrations today</span>
+                        <span className="font-medium">{stats.newUsersToday}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Total registered users</span>
+                        <span className="font-medium">{stats.totalUsers}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-4 flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Content Stats
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Total posts</span>
+                        <span className="font-medium">{stats.totalPosts}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Total messages</span>
+                        <span className="font-medium">{stats.totalMessages}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Pending reports</span>
+                        <span className="font-medium text-destructive">{stats.pendingReports}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-4 flex items-center gap-2">
+                      <Database className="h-4 w-4" />
+                      Storage & Data
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Database tables active</span>
+                        <span className="font-medium">Active</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">File storage</span>
+                        <span className="font-medium">Configured</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-4 flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Moderation Queue
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Pending reports</span>
+                        <span className="font-medium text-amber-500">{reports.filter(r => r.status === 'pending').length}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Resolved reports</span>
+                        <span className="font-medium text-green-500">{reports.filter(r => r.status === 'resolved').length}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Rejected reports</span>
+                        <span className="font-medium text-muted-foreground">{reports.filter(r => r.status === 'rejected').length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="settings">
             <Card>
               <CardHeader>
@@ -427,6 +616,16 @@ const AdminPanel: React.FC = () => {
                     <h3 className="font-medium mb-2">Notification Settings</h3>
                     <p className="text-sm text-muted-foreground mb-3">Manage platform-wide notifications</p>
                     <Button variant="outline">Configure Notifications</Button>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-2">Security Settings</h3>
+                    <p className="text-sm text-muted-foreground mb-3">Configure authentication and security options</p>
+                    <Button variant="outline">Configure Security</Button>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-2">Backup & Export</h3>
+                    <p className="text-sm text-muted-foreground mb-3">Export data and configure backups</p>
+                    <Button variant="outline">Manage Backups</Button>
                   </div>
                 </div>
               </CardContent>
