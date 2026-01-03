@@ -15,6 +15,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
+import { useFriendRequests } from "@/hooks/use-friend-requests";
 
 // Import icons
 import { 
@@ -37,11 +39,10 @@ import { motion } from "framer-motion";
 const NAV_ITEMS = [
   { icon: Home, labelKey: 'nav.home', href: '/', tooltip: 'Go to homepage' },
   { icon: Search, labelKey: 'nav.search', href: '/search', tooltip: 'Find people and content' },
-  { icon: MessagesSquare, labelKey: 'nav.messages', href: '/messages', tooltip: 'Chat with friends' },
-  { icon: Users, labelKey: 'nav.friends', href: '/friends', tooltip: 'Manage your connections' },
+  { icon: MessagesSquare, labelKey: 'nav.messages', href: '/messages', tooltip: 'Chat with friends', badgeType: 'messages' as const },
+  { icon: Users, labelKey: 'nav.friends', href: '/friends', tooltip: 'Manage your connections', badgeType: 'friends' as const },
   { icon: UserPlus, labelKey: 'nav.addFriends', href: '/add-friends', tooltip: 'Grow your network' },
   { icon: Gamepad2, labelKey: 'nav.games', href: '/games', tooltip: 'Play games for fun' },
-  
   { icon: Settings, labelKey: 'nav.settings', href: '/settings', tooltip: 'Customize your experience' },
 ];
 
@@ -52,6 +53,8 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState(location.pathname);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { unreadCount } = useUnreadMessages();
+  const { requestCount } = useFriendRequests();
 
   // Check if user has admin role
   useEffect(() => {
@@ -78,6 +81,12 @@ const Sidebar = () => {
   const handleNavClick = (href: string) => {
     setActiveItem(href);
     navigate(href);
+  };
+
+  const getBadgeCount = (badgeType?: string) => {
+    if (badgeType === 'messages') return unreadCount;
+    if (badgeType === 'friends') return requestCount;
+    return 0;
   };
 
   return (
@@ -152,14 +161,21 @@ const Sidebar = () => {
                   )}
                   onClick={() => handleNavClick(item.href)}
                 >
-                  <div className="flex items-center w-full">
-                    <item.icon className={cn(
-                      "h-5 w-5 mr-3", 
-                      isActive ? "text-primary-foreground" : "text-muted-foreground"
-                    )} />
-                    <span>{t(item.labelKey)}</span>
-                    {item.labelKey === 'nav.games' && (
-                      <Sparkles className="h-3.5 w-3.5 ml-2 text-amber-400" />
+                  <div className="flex items-center w-full justify-between">
+                    <div className="flex items-center">
+                      <item.icon className={cn(
+                        "h-5 w-5 mr-3", 
+                        isActive ? "text-primary-foreground" : "text-muted-foreground"
+                      )} />
+                      <span>{t(item.labelKey)}</span>
+                      {item.labelKey === 'nav.games' && (
+                        <Sparkles className="h-3.5 w-3.5 ml-2 text-amber-400" />
+                      )}
+                    </div>
+                    {(item as any).badgeType && getBadgeCount((item as any).badgeType) > 0 && (
+                      <span className="bg-destructive text-destructive-foreground text-xs font-medium px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                        {getBadgeCount((item as any).badgeType) > 99 ? '99+' : getBadgeCount((item as any).badgeType)}
+                      </span>
                     )}
                   </div>
                 </Button>
