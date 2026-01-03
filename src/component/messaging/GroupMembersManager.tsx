@@ -61,21 +61,40 @@ const GroupMembersManager: React.FC<GroupMembersManagerProps> = ({
     if (!user) return;
     
     try {
-      // Fetch members first
+      // Fetch members first - get user_ids from group_members
       const { data: membersData, error: membersError } = await supabase
         .from('group_members')
-        .select(`
-          id,
-          user_id,
-          role,
-          profiles:user_id (username, display_name, avatar_url)
-        `)
+        .select('id, user_id, role')
         .eq('group_id', groupId);
 
       if (membersError) throw membersError;
       
-      const membersList = membersData as any || [];
-      setMembers(membersList);
+      const membersList = membersData || [];
+      
+      // Fetch profiles for all member user_ids
+      const memberUserIds = membersList.map(m => m.user_id);
+      let memberProfiles: Record<string, any> = {};
+      
+      if (memberUserIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', memberUserIds);
+        
+        if (profilesError) throw profilesError;
+        
+        profilesData?.forEach(p => {
+          memberProfiles[p.id] = p;
+        });
+      }
+      
+      // Combine members with their profiles
+      const membersWithProfiles = membersList.map(m => ({
+        ...m,
+        profiles: memberProfiles[m.user_id] || { username: 'Unknown', display_name: 'Unknown', avatar_url: null }
+      }));
+      
+      setMembers(membersWithProfiles);
       
       // Find current user's role
       const userMember = membersList.find((m: any) => m.user_id === user?.id);
@@ -83,56 +102,55 @@ const GroupMembersManager: React.FC<GroupMembersManagerProps> = ({
         setCurrentUserRole(userMember.role);
       }
 
-      // Now fetch friends with current member IDs - check both directions
+      // Fetch friends - check both directions
       const { data: friendsAsUser, error: friendsError1 } = await supabase
         .from('friends')
-        .select(`
-          friend_id,
-          profiles:friend_id (id, username, display_name, avatar_url)
-        `)
+        .select('friend_id')
         .eq('user_id', user.id)
         .eq('status', 'accepted');
 
       const { data: friendsAsFriend, error: friendsError2 } = await supabase
         .from('friends')
-        .select(`
-          user_id,
-          profiles:user_id (id, username, display_name, avatar_url)
-        `)
+        .select('user_id')
         .eq('friend_id', user.id)
         .eq('status', 'accepted');
 
       if (friendsError1) throw friendsError1;
       if (friendsError2) throw friendsError2;
 
-      // Combine friends from both directions
-      const friendsList: Friend[] = [];
-      
+      // Collect all friend IDs
+      const friendIds: string[] = [];
       friendsAsUser?.forEach((f: any) => {
-        if (f.profiles) {
-          friendsList.push({
-            id: f.profiles.id,
-            username: f.profiles.username,
-            display_name: f.profiles.display_name,
-            avatar_url: f.profiles.avatar_url
-          });
+        if (f.friend_id && !friendIds.includes(f.friend_id)) {
+          friendIds.push(f.friend_id);
         }
       });
-      
       friendsAsFriend?.forEach((f: any) => {
-        if (f.profiles && !friendsList.find(friend => friend.id === f.profiles.id)) {
-          friendsList.push({
-            id: f.profiles.id,
-            username: f.profiles.username,
-            display_name: f.profiles.display_name,
-            avatar_url: f.profiles.avatar_url
-          });
+        if (f.user_id && !friendIds.includes(f.user_id)) {
+          friendIds.push(f.user_id);
         }
       });
 
-      // Filter out friends who are already members using fresh member data
-      const memberIds = membersList.map((m: any) => m.user_id);
-      const availableFriends = friendsList.filter(f => !memberIds.includes(f.id));
+      // Fetch profiles for all friends
+      let friendsList: Friend[] = [];
+      if (friendIds.length > 0) {
+        const { data: friendProfiles, error: friendProfilesError } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', friendIds);
+        
+        if (friendProfilesError) throw friendProfilesError;
+        
+        friendsList = (friendProfiles || []).map(p => ({
+          id: p.id,
+          username: p.username,
+          display_name: p.display_name,
+          avatar_url: p.avatar_url
+        }));
+      }
+
+      // Filter out friends who are already members
+      const availableFriends = friendsList.filter(f => !memberUserIds.includes(f.id));
       
       setFriends(availableFriends);
     } catch (error) {

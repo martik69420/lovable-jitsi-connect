@@ -49,28 +49,40 @@ export function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) {
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+  const stopRecording = (): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      if (mediaRecorderRef.current && isRecording) {
+        const mediaRecorder = mediaRecorderRef.current;
+        
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          // Stop all tracks
+          mediaRecorder.stream.getTracks().forEach(track => track.stop());
+          resolve(audioBlob);
+        };
+        
+        mediaRecorder.stop();
+        setIsRecording(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        setRecordingTime(0);
+      } else {
+        resolve(null);
       }
-      setRecordingTime(0);
-    }
+    });
   };
 
-  const handleSend = () => {
-    stopRecording();
-    if (chunksRef.current.length > 0) {
-      const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+  const handleSend = async () => {
+    const audioBlob = await stopRecording();
+    if (audioBlob && audioBlob.size > 0) {
       onSend(audioBlob);
       chunksRef.current = [];
     }
   };
 
-  const handleCancel = () => {
-    stopRecording();
+  const handleCancel = async () => {
+    await stopRecording();
     setRecordingTime(0);
     chunksRef.current = [];
     onCancel();
