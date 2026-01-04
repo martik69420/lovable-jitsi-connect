@@ -20,6 +20,7 @@ import {
   Gamepad
 } from 'lucide-react';
 import { Badge } from '@/component/ui/badge';
+import { Sheet, SheetTrigger } from '@/component/ui/sheet';
 import { useAuth } from '@/context/auth';
 import { useNotification } from '@/context/NotificationContext';
 import { cn } from '@/lib/utils';
@@ -103,8 +104,8 @@ const Navbar = () => {
           <div className="flex items-center ml-auto space-x-2">
             {user && (
               <>
-                <DropdownMenu open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
-                  <DropdownMenuTrigger asChild>
+                <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
+                  <SheetTrigger asChild>
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -119,9 +120,9 @@ const Navbar = () => {
                         </span>
                       ) : null}
                     </Button>
-                  </DropdownMenuTrigger>
+                  </SheetTrigger>
                   {!isMobile && <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />}
-                </DropdownMenu>
+                </Sheet>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
