@@ -1,10 +1,12 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
+import ChatStreak from './ChatStreak';
+import { useChatStreak } from '@/hooks/use-chat-streak';
 import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette } from 'lucide-react';
 import {
   DropdownMenu,
@@ -71,6 +73,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onOpenThemeSelector
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showMembersManager, setShowMembersManager] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -78,10 +81,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
+  const isGroup = isGroupChat || contact?.isGroup;
+  
+  // Get streak data for direct messages only
+  const { streakCount, isActive: streakActive } = useChatStreak(
+    user?.id,
+    !isGroup ? contact?.id || null : null
+  );
+
   if (!contact) return null;
 
   const displayName = contact.name || contact.displayName || contact.username || 'Unknown';
-  const isGroup = isGroupChat || contact.isGroup;
 
   const handleLeaveGroup = () => {
     if (isGroup && contact.id && onLeaveGroup) {
@@ -134,9 +144,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           )}
         </div>
         <div>
-          <h3 className="font-semibold text-lg line-clamp-1">
-            {displayName}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-lg line-clamp-1">
+              {displayName}
+            </h3>
+            {/* Streak indicator for direct messages */}
+            {!isGroup && streakCount > 0 && (
+              <ChatStreak 
+                streakCount={streakCount} 
+                isActive={streakActive} 
+                size="sm" 
+              />
+            )}
+          </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {isGroup ? (
               <span>{contact.memberCount || 0} members</span>
