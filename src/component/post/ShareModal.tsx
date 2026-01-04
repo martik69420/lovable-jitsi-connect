@@ -248,20 +248,21 @@ export const ShareButton: React.FC<{ postId: string; postTitle?: string }> = ({
   
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2 font-normal rounded-full">
-            <Share2 className="h-4 w-4" />
-            <span>Share</span>
-          </Button>
-        </DialogTrigger>
-        <ShareModal 
-          open={open}
-          onOpenChange={setOpen}
-          postId={postId}
-          postTitle={postTitle}
-        />
-      </Dialog>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="gap-2 font-normal rounded-full"
+        onClick={() => setOpen(true)}
+      >
+        <Share2 className="h-4 w-4" />
+        <span>Share</span>
+      </Button>
+      <ShareModal 
+        open={open}
+        onOpenChange={setOpen}
+        postId={postId}
+        postTitle={postTitle}
+      />
     </>
   );
 };
