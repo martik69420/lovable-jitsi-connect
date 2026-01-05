@@ -30,13 +30,35 @@ interface NotificationMenuProps {
   onClose?: () => void;
 }
 
-// Sound utility
+// Sound utility - now respects quiet hours
 const playNotificationSound = () => {
   try {
     const preferences = localStorage.getItem('notificationPreferences');
-    const soundEnabled = preferences ? JSON.parse(preferences).soundEnabled : true;
+    if (!preferences) return;
     
-    if (!soundEnabled) return;
+    const prefs = JSON.parse(preferences);
+    
+    // Check if sound is enabled
+    if (!prefs.soundEnabled) return;
+    
+    // Check quiet hours
+    if (prefs.quietHoursEnabled) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      
+      const [startHour, startMin] = (prefs.quietHoursStart || '22:00').split(':').map(Number);
+      const [endHour, endMin] = (prefs.quietHoursEnd || '08:00').split(':').map(Number);
+      
+      const startTime = startHour * 60 + startMin;
+      const endTime = endHour * 60 + endMin;
+
+      // Handle overnight quiet hours
+      if (startTime > endTime) {
+        if (currentTime >= startTime || currentTime < endTime) return;
+      } else {
+        if (currentTime >= startTime && currentTime < endTime) return;
+      }
+    }
 
     // Create a simple beep using Web Audio API
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -326,29 +348,33 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
       }
     } catch (e) {}
 
-    // First filter by preferences
-    let filtered = notifications.filter(n => {
-      switch (n.type) {
-        case 'like': return prefs.likes;
-        case 'comment': return prefs.comments;
-        case 'friend': return prefs.friends;
-        case 'mention': return prefs.mentions;
-        case 'message': return prefs.messages;
-        case 'system': return prefs.system;
-        default: return true;
-      }
-    });
+    // First filter by preferences (only when on "all" tab)
+    let filtered = notifications;
+    
+    if (activeFilter === 'all') {
+      filtered = notifications.filter(n => {
+        switch (n.type) {
+          case 'like': return prefs.likes;
+          case 'comment': return prefs.comments;
+          case 'friend': return prefs.friends;
+          case 'mention': return prefs.mentions;
+          case 'message': return prefs.messages;
+          case 'system': return prefs.system;
+          default: return true;
+        }
+      });
+    }
 
     // Then filter by active tab
     switch (activeFilter) {
       case 'likes':
-        return filtered.filter(n => n.type === 'like');
+        return notifications.filter(n => n.type === 'like');
       case 'comments':
-        return filtered.filter(n => n.type === 'comment');
+        return notifications.filter(n => n.type === 'comment');
       case 'friends':
-        return filtered.filter(n => n.type === 'friend');
+        return notifications.filter(n => n.type === 'friend');
       case 'mentions':
-        return filtered.filter(n => n.type === 'mention');
+        return notifications.filter(n => n.type === 'mention');
       default:
         return filtered;
     }
@@ -444,17 +470,6 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
           </div>
 
           <div className="px-6 py-3 border-b flex gap-2">
-            {!isNotificationPermissionGranted && 'Notification' in window && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleNotificationPermission} 
-                className="h-8 text-xs"
-              >
-                <Bell className="h-3 w-3 mr-1" />
-                {notificationTexts.enable}
-              </Button>
-            )}
             {unreadCount > 0 && (
               <Button variant="outline" size="sm" onClick={markAllAsRead} className="h-8 text-xs">
                 <Check className="h-3 w-3 mr-1" />
