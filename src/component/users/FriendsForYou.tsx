@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, UserPlus, ArrowRight, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -46,25 +46,25 @@ const FriendsForYou: React.FC = () => {
       
       let filteredUsers = users || [];
       
-      // Filter out users that are already friends
-      const { data: friends } = await supabase
+      // Filter out users that are already friends or have pending requests (both directions)
+      const { data: friendsAsSender } = await supabase
         .from('friends')
-        .select('friend_id, status')
+        .select('friend_id')
         .eq('user_id', user.id);
         
-      const { data: friendRequests } = await supabase
+      const { data: friendsAsReceiver } = await supabase
         .from('friends')
-        .select('user_id, status')
+        .select('user_id')
         .eq('friend_id', user.id);
         
-      const friendIds = new Set([
-        ...(friends?.map(f => f.friend_id) || []),
-        ...(friendRequests?.map(f => f.user_id) || [])
+      const excludedIds = new Set([
+        ...(friendsAsSender?.map(f => f.friend_id) || []),
+        ...(friendsAsReceiver?.map(f => f.user_id) || [])
       ]);
       
-      // Filter out existing friends
+      // Filter out existing friends and pending requests
       const enhancedUsers = filteredUsers
-        .filter(u => !friendIds.has(u.id));
+        .filter(u => !excludedIds.has(u.id));
         
       setFriendSuggestions(enhancedUsers);
     } catch (error) {
@@ -212,17 +212,6 @@ const FriendsForYou: React.FC = () => {
         </>
       )}
       
-      <div className="mt-6 text-center">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full group"
-          onClick={() => navigate('/add-friends')}
-        >
-          {t('friends.findMoreFriends')}
-          <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
-        </Button>
-      </div>
     </>
   );
 };
