@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX, UserCheck, ExternalLink } from 'lucide-react';
+import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX, UserCheck, ExternalLink, ClipboardList } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -93,13 +93,28 @@ interface DailyStats {
   messages: number;
 }
 
+interface AuditLogEntry {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+  admin_profile?: {
+    username: string;
+    display_name: string;
+  };
+}
+
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { isAdmin, loading: adminLoading, grantAdminRole, revokeAdminRole, checkUserIsAdmin, banUser, unbanUser, isUserBanned, adminDeletePost } = useAdmin();
+  const { isAdmin, loading: adminLoading, grantAdminRole, revokeAdminRole, checkUserIsAdmin, banUser, unbanUser, isUserBanned, adminDeletePost, getAuditLogs } = useAdmin();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
@@ -286,6 +301,10 @@ const AdminPanel: React.FC = () => {
         pendingReports: (reportsData || []).filter(r => r.status === 'pending').length,
         newUsersToday,
       });
+
+      // Fetch audit logs
+      const logs = await getAuditLogs(100);
+      setAuditLogs(logs);
     } catch (error) {
       console.error('Error fetching admin data:', error);
       toast({
@@ -298,10 +317,15 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const deletePost = async (postId: string) => {
+  const deletePost = async (postId: string, authorUsername?: string) => {
     try {
-      await adminDeletePost(postId);
+      await adminDeletePost(postId, authorUsername);
       setPosts(posts.filter(p => p.id !== postId));
+      
+      // Refresh audit logs
+      const logs = await getAuditLogs(100);
+      setAuditLogs(logs);
+      
       toast({
         title: "Success",
         description: "Post deleted successfully"
@@ -316,17 +340,21 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const toggleUserAdmin = async (userId: string, hasAdminRole: boolean) => {
+  const toggleUserAdmin = async (userId: string, hasAdminRole: boolean, username?: string) => {
     try {
       if (hasAdminRole) {
-        await revokeAdminRole(userId);
+        await revokeAdminRole(userId, username);
       } else {
-        await grantAdminRole(userId);
+        await grantAdminRole(userId, username);
       }
 
       setUsers(users.map(u => 
         u.id === userId ? { ...u, hasAdminRole: !hasAdminRole } : u
       ));
+      
+      // Refresh audit logs
+      const logs = await getAuditLogs(100);
+      setAuditLogs(logs);
       
       toast({
         title: "Success",
@@ -346,10 +374,15 @@ const AdminPanel: React.FC = () => {
     if (!userToBan) return;
     
     try {
-      await banUser(userToBan.id, banReason, true);
+      await banUser(userToBan.id, banReason, true, undefined, userToBan.username);
       setUsers(users.map(u => 
         u.id === userToBan.id ? { ...u, isBanned: true } : u
       ));
+      
+      // Refresh audit logs
+      const logs = await getAuditLogs(100);
+      setAuditLogs(logs);
+      
       toast({
         title: "Success",
         description: `${userToBan.display_name} has been banned`
@@ -366,12 +399,17 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleUnbanUser = async (userId: string) => {
+  const handleUnbanUser = async (userId: string, username?: string) => {
     try {
-      await unbanUser(userId);
+      await unbanUser(userId, username);
       setUsers(users.map(u => 
         u.id === userId ? { ...u, isBanned: false } : u
       ));
+      
+      // Refresh audit logs
+      const logs = await getAuditLogs(100);
+      setAuditLogs(logs);
+      
       toast({
         title: "Success",
         description: "User has been unbanned"
@@ -510,11 +548,12 @@ const AdminPanel: React.FC = () => {
         <AdminFeatures />
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
             <TabsTrigger value="posts">Posts ({posts.length})</TabsTrigger>
             <TabsTrigger value="reports">Reports ({reports.filter(r => r.status === 'pending').length})</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="audit">Audit Log</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -562,7 +601,7 @@ const AdminPanel: React.FC = () => {
                         <Button
                           variant={u.hasAdminRole ? "destructive" : "default"}
                           size="sm"
-                          onClick={() => toggleUserAdmin(u.id, u.hasAdminRole || false)}
+                          onClick={() => toggleUserAdmin(u.id, u.hasAdminRole || false, u.username)}
                         >
                           {u.hasAdminRole ? 'Remove Admin' : 'Make Admin'}
                         </Button>
@@ -570,7 +609,7 @@ const AdminPanel: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleUnbanUser(u.id)}
+                            onClick={() => handleUnbanUser(u.id, u.username)}
                           >
                             <UserCheck className="h-4 w-4 mr-1" />
                             Unban
@@ -613,7 +652,7 @@ const AdminPanel: React.FC = () => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => deletePost(post.id)}
+                          onClick={() => deletePost(post.id, post.profiles?.username)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -714,7 +753,7 @@ const AdminPanel: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                deletePost(report.post_id!);
+                                deletePost(report.post_id!, report.post?.profiles?.username);
                                 updateReportStatus(report.id, 'resolved');
                               }}
                             >
@@ -876,6 +915,77 @@ const AdminPanel: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="audit">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  Audit Log
+                </CardTitle>
+                <CardDescription>Track all admin actions and changes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {auditLogs.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No audit logs found
+                    </div>
+                  ) : (
+                    auditLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                        <div className={`p-2 rounded-full ${
+                          log.action.includes('ban') ? 'bg-red-100 dark:bg-red-900/30' :
+                          log.action.includes('admin') ? 'bg-purple-100 dark:bg-purple-900/30' :
+                          log.action.includes('delete') ? 'bg-orange-100 dark:bg-orange-900/30' :
+                          'bg-blue-100 dark:bg-blue-900/30'
+                        }`}>
+                          {log.action.includes('ban') && <Ban className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                          {log.action.includes('unban') && <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />}
+                          {log.action.includes('grant_admin') && <Shield className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+                          {log.action.includes('revoke_admin') && <UserX className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+                          {log.action.includes('delete') && <Trash2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">
+                              {log.action === 'ban_user' && 'User Banned'}
+                              {log.action === 'unban_user' && 'User Unbanned'}
+                              {log.action === 'grant_admin' && 'Admin Granted'}
+                              {log.action === 'revoke_admin' && 'Admin Revoked'}
+                              {log.action === 'delete_post' && 'Post Deleted'}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {log.target_type}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {log.details && typeof log.details === 'object' && (
+                              <>
+                                {(log.details as Record<string, unknown>).username && (
+                                  <span>Target: @{String((log.details as Record<string, unknown>).username)} • </span>
+                                )}
+                                {(log.details as Record<string, unknown>).author && (
+                                  <span>Author: @{String((log.details as Record<string, unknown>).author)} • </span>
+                                )}
+                                {(log.details as Record<string, unknown>).reason && (
+                                  <span>Reason: {String((log.details as Record<string, unknown>).reason)} • </span>
+                                )}
+                              </>
+                            )}
+                            By {log.admin_profile?.display_name || 'Admin'}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(log.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
