@@ -891,6 +891,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bans: {
+        Row: {
+          banned_at: string | null
+          banned_by: string
+          expires_at: string | null
+          id: string
+          is_permanent: boolean | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string | null
+          banned_by: string
+          expires_at?: string | null
+          id?: string
+          is_permanent?: boolean | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_at?: string | null
+          banned_by?: string
+          expires_at?: string | null
+          id?: string
+          is_permanent?: boolean | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string

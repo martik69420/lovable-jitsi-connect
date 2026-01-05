@@ -2,17 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
+import { useAdmin } from '@/hooks/use-admin';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminFeatures from '@/components/admin/AdminFeatures';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX } from 'lucide-react';
+import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX, UserCheck, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface AdminUser {
   id: string;
@@ -22,6 +41,8 @@ interface AdminUser {
   is_admin: boolean;
   created_at: string;
   is_online: boolean;
+  hasAdminRole?: boolean;
+  isBanned?: boolean;
 }
 
 interface AdminPost {
@@ -29,6 +50,7 @@ interface AdminPost {
   content: string;
   user_id: string;
   created_at: string;
+  images?: string[];
   profiles: {
     username: string;
     display_name: string;
@@ -44,6 +66,15 @@ interface AdminReport {
   user_id: string;
   post_id?: string;
   reported_user_id?: string;
+  post?: {
+    content: string;
+    user_id: string;
+    images?: string[];
+    profiles?: {
+      username: string;
+      display_name: string;
+    };
+  };
 }
 
 interface AdminStats {
@@ -55,14 +86,23 @@ interface AdminStats {
   newUsersToday: number;
 }
 
+interface DailyStats {
+  date: string;
+  users: number;
+  posts: number;
+  messages: number;
+}
+
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { isAdmin, loading: adminLoading, grantAdminRole, revokeAdminRole, checkUserIsAdmin, banUser, unbanUser, isUserBanned, adminDeletePost } = useAdmin();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     activeUsers: 0,
@@ -72,6 +112,15 @@ const AdminPanel: React.FC = () => {
     newUsersToday: 0,
   });
 
+  // Ban dialog state
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [userToBan, setUserToBan] = useState<AdminUser | null>(null);
+  const [banReason, setBanReason] = useState('');
+
+  // Post preview dialog
+  const [postPreviewOpen, setPostPreviewOpen] = useState(false);
+  const [previewPost, setPreviewPost] = useState<AdminPost | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -80,19 +129,9 @@ const AdminPanel: React.FC = () => {
         navigate('/login');
         return;
       }
-      if (!user?.id) return;
-
-      // Check admin role using user_roles table (not profile flag)
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (!data) {
+      if (adminLoading) return;
+      
+      if (!isAdmin) {
         toast({
           title: 'Access Denied',
           description: "You don't have admin privileges.",
@@ -102,14 +141,16 @@ const AdminPanel: React.FC = () => {
         return;
       }
 
-      fetchAdminData();
+      if (!cancelled) {
+        fetchAdminData();
+      }
     };
 
     guard();
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user?.id, navigate]);
+  }, [isAuthenticated, isAdmin, adminLoading, navigate]);
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -121,7 +162,28 @@ const AdminPanel: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (usersError) throw usersError;
-      setUsers(usersData || []);
+
+      // Fetch admin roles for all users
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'admin');
+
+      // Fetch banned users
+      const { data: bansData } = await supabase
+        .from('user_bans')
+        .select('user_id');
+
+      const adminUserIds = new Set(rolesData?.map(r => r.user_id) || []);
+      const bannedUserIds = new Set(bansData?.map(b => b.user_id) || []);
+
+      const usersWithRoles = (usersData || []).map(u => ({
+        ...u,
+        hasAdminRole: adminUserIds.has(u.id),
+        isBanned: bannedUserIds.has(u.id)
+      }));
+
+      setUsers(usersWithRoles);
 
       // Fetch posts with user info
       const { data: postsData, error: postsError } = await supabase
@@ -139,19 +201,75 @@ const AdminPanel: React.FC = () => {
       if (postsError) throw postsError;
       setPosts(postsData || []);
 
-      // Fetch reports
+      // Fetch reports with post data
       const { data: reportsData, error: reportsError } = await supabase
         .from('post_reports')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (reportsError) throw reportsError;
-      setReports(reportsData || []);
+
+      // Fetch post data for each report
+      const reportsWithPosts = await Promise.all(
+        (reportsData || []).map(async (report) => {
+          if (report.post_id) {
+            const { data: postData } = await supabase
+              .from('posts')
+              .select(`
+                content,
+                user_id,
+                images,
+                profiles:user_id (
+                  username,
+                  display_name
+                )
+              `)
+              .eq('id', report.post_id)
+              .single();
+            return { ...report, post: postData };
+          }
+          return report;
+        })
+      );
+
+      setReports(reportsWithPosts);
 
       // Fetch message count
       const { count: messageCount } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true });
+
+      // Calculate daily stats for the last 7 days
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        return date.toISOString().split('T')[0];
+      });
+
+      const dailyStatsData = last7Days.map(date => {
+        const dayStart = new Date(date);
+        const dayEnd = new Date(date);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+
+        const usersCount = (usersData || []).filter(u => {
+          const created = new Date(u.created_at);
+          return created >= dayStart && created < dayEnd;
+        }).length;
+
+        const postsCount = (postsData || []).filter(p => {
+          const created = new Date(p.created_at);
+          return created >= dayStart && created < dayEnd;
+        }).length;
+
+        return {
+          date: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+          users: usersCount,
+          posts: postsCount,
+          messages: 0
+        };
+      });
+
+      setDailyStats(dailyStatsData);
 
       // Calculate stats
       const today = new Date();
@@ -182,13 +300,7 @@ const AdminPanel: React.FC = () => {
 
   const deletePost = async (postId: string) => {
     try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', postId);
-
-      if (error) throw error;
-
+      await adminDeletePost(postId);
       setPosts(posts.filter(p => p.id !== postId));
       toast({
         title: "Success",
@@ -204,28 +316,71 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const toggleUserAdmin = async (userId: string, currentStatus: boolean) => {
+  const toggleUserAdmin = async (userId: string, hasAdminRole: boolean) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_admin: !currentStatus })
-        .eq('id', userId);
-
-      if (error) throw error;
+      if (hasAdminRole) {
+        await revokeAdminRole(userId);
+      } else {
+        await grantAdminRole(userId);
+      }
 
       setUsers(users.map(u => 
-        u.id === userId ? { ...u, is_admin: !currentStatus } : u
+        u.id === userId ? { ...u, hasAdminRole: !hasAdminRole } : u
       ));
       
       toast({
         title: "Success",
-        description: `User ${!currentStatus ? 'promoted to' : 'demoted from'} admin`
+        description: `User ${!hasAdminRole ? 'promoted to' : 'demoted from'} admin`
       });
     } catch (error) {
       console.error('Error updating user admin status:', error);
       toast({
         title: "Error",
         description: "Failed to update user status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBanUser = async () => {
+    if (!userToBan) return;
+    
+    try {
+      await banUser(userToBan.id, banReason, true);
+      setUsers(users.map(u => 
+        u.id === userToBan.id ? { ...u, isBanned: true } : u
+      ));
+      toast({
+        title: "Success",
+        description: `${userToBan.display_name} has been banned`
+      });
+      setBanDialogOpen(false);
+      setUserToBan(null);
+      setBanReason('');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to ban user",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      await unbanUser(userId);
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, isBanned: false } : u
+      ));
+      toast({
+        title: "Success",
+        description: "User has been unbanned"
+      });
+    } catch (error) {
+      console.error('Error unbanning user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unban user",
         variant: "destructive"
       });
     }
@@ -256,6 +411,11 @@ const AdminPanel: React.FC = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const openPostPreview = (post: AdminPost) => {
+    setPreviewPost(post);
+    setPostPreviewOpen(true);
   };
 
   if (loading) {
@@ -380,25 +540,54 @@ const AdminPanel: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  {filteredUsers.map((u) => (
+                    <div key={u.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${user.is_online ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        <div className={`w-3 h-3 rounded-full ${u.is_online ? 'bg-green-500' : 'bg-gray-400'}`} />
                         <div>
-                          <div className="font-medium">{user.display_name}</div>
-                          <div className="text-sm text-muted-foreground">@{user.username}</div>
-                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                          <div className="font-medium flex items-center gap-2">
+                            {u.display_name}
+                            {u.isBanned && (
+                              <Badge variant="destructive" className="text-xs">Banned</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground">@{u.username}</div>
+                          <div className="text-sm text-muted-foreground">{u.email}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {user.is_admin && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">Admin</span>}
+                        {u.hasAdminRole && (
+                          <Badge className="bg-primary/10 text-primary">Admin</Badge>
+                        )}
                         <Button
-                          variant={user.is_admin ? "destructive" : "default"}
+                          variant={u.hasAdminRole ? "destructive" : "default"}
                           size="sm"
-                          onClick={() => toggleUserAdmin(user.id, user.is_admin)}
+                          onClick={() => toggleUserAdmin(u.id, u.hasAdminRole || false)}
                         >
-                          {user.is_admin ? 'Remove Admin' : 'Make Admin'}
+                          {u.hasAdminRole ? 'Remove Admin' : 'Make Admin'}
                         </Button>
+                        {u.isBanned ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUnbanUser(u.id)}
+                          >
+                            <UserCheck className="h-4 w-4 mr-1" />
+                            Unban
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setUserToBan(u);
+                              setBanDialogOpen(true);
+                            }}
+                          >
+                            <Ban className="h-4 w-4 mr-1" />
+                            Ban
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -457,17 +646,52 @@ const AdminPanel: React.FC = () => {
                             {new Date(report.created_at).toLocaleDateString()}
                           </div>
                         </div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                        <Badge className={
+                          report.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-500' :
+                          report.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500' :
+                          'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-500'
+                        }>
                           {report.status}
-                        </span>
+                        </Badge>
                       </div>
+                      
+                      {/* Report details */}
                       {report.details && (
-                        <p className="text-sm mb-3">{report.details}</p>
+                        <p className="text-sm mb-3 text-muted-foreground">{report.details}</p>
                       )}
+
+                      {/* Post Preview */}
+                      {report.post && (
+                        <div className="bg-muted/50 rounded-lg p-3 mb-3 border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-muted-foreground">
+                              Reported post by @{report.post.profiles?.username || 'unknown'}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/post/${report.post_id}`)}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                          <p className="text-sm line-clamp-3">{report.post.content}</p>
+                          {report.post.images && report.post.images.length > 0 && (
+                            <div className="flex gap-2 mt-2">
+                              {report.post.images.slice(0, 3).map((img, i) => (
+                                <img 
+                                  key={i} 
+                                  src={img} 
+                                  alt="" 
+                                  className="w-16 h-16 object-cover rounded"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {report.status === 'pending' && (
                         <div className="flex gap-2">
                           <Button
@@ -485,6 +709,19 @@ const AdminPanel: React.FC = () => {
                             <Ban className="h-4 w-4 mr-1" />
                             Reject
                           </Button>
+                          {report.post_id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                deletePost(report.post_id!);
+                                updateReportStatus(report.id, 'resolved');
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete Post
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -509,80 +746,133 @@ const AdminPanel: React.FC = () => {
                 <CardDescription>View platform usage and engagement metrics</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-medium mb-4 flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
-                      User Activity
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Active users (24h)</span>
-                        <span className="font-medium">{stats.activeUsers}</span>
+                <div className="space-y-6">
+                  {/* Charts */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-medium mb-4">User Signups (Last 7 Days)</h3>
+                      <div className="h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={dailyStats}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="date" className="text-xs" />
+                            <YAxis className="text-xs" />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'hsl(var(--background))', 
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px'
+                              }} 
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="users" 
+                              stroke="hsl(var(--primary))" 
+                              fill="hsl(var(--primary) / 0.2)" 
+                              strokeWidth={2}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">New registrations today</span>
-                        <span className="font-medium">{stats.newUsersToday}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Total registered users</span>
-                        <span className="font-medium">{stats.totalUsers}</span>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-medium mb-4">Posts (Last 7 Days)</h3>
+                      <div className="h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={dailyStats}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="date" className="text-xs" />
+                            <YAxis className="text-xs" />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'hsl(var(--background))', 
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px'
+                              }} 
+                            />
+                            <Bar dataKey="posts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-medium mb-4 flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Content Stats
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Total posts</span>
-                        <span className="font-medium">{stats.totalPosts}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Total messages</span>
-                        <span className="font-medium">{stats.totalMessages}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Pending reports</span>
-                        <span className="font-medium text-destructive">{stats.pendingReports}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-medium mb-4 flex items-center gap-2">
-                      <Database className="h-4 w-4" />
-                      Storage & Data
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Database tables active</span>
-                        <span className="font-medium">Active</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">File storage</span>
-                        <span className="font-medium">Configured</span>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-medium mb-4 flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        User Activity
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Active users (24h)</span>
+                          <span className="font-medium">{stats.activeUsers}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">New registrations today</span>
+                          <span className="font-medium">{stats.newUsersToday}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Total registered users</span>
+                          <span className="font-medium">{stats.totalUsers}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h3 className="font-medium mb-4 flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      Moderation Queue
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Pending reports</span>
-                        <span className="font-medium text-amber-500">{reports.filter(r => r.status === 'pending').length}</span>
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-medium mb-4 flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Content Stats
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Total posts</span>
+                          <span className="font-medium">{stats.totalPosts}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Total messages</span>
+                          <span className="font-medium">{stats.totalMessages}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Pending reports</span>
+                          <span className="font-medium text-destructive">{stats.pendingReports}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Resolved reports</span>
-                        <span className="font-medium text-green-500">{reports.filter(r => r.status === 'resolved').length}</span>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-medium mb-4 flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        Moderation Queue
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Pending reports</span>
+                          <span className="font-medium text-amber-500">{reports.filter(r => r.status === 'pending').length}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Resolved reports</span>
+                          <span className="font-medium text-green-500">{reports.filter(r => r.status === 'resolved').length}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Rejected reports</span>
+                          <span className="font-medium text-muted-foreground">{reports.filter(r => r.status === 'rejected').length}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Rejected reports</span>
-                        <span className="font-medium text-muted-foreground">{reports.filter(r => r.status === 'rejected').length}</span>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-medium mb-4 flex items-center gap-2">
+                        <Database className="h-4 w-4" />
+                        Storage & Data
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Database tables active</span>
+                          <span className="font-medium">Active</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">File storage</span>
+                          <span className="font-medium">Configured</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -633,6 +923,76 @@ const AdminPanel: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Ban User Dialog */}
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ban User</DialogTitle>
+            <DialogDescription>
+              Ban {userToBan?.display_name} (@{userToBan?.username}) from the platform.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Reason for ban (optional)"
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleBanUser}>
+              <Ban className="h-4 w-4 mr-1" />
+              Ban User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Post Preview Dialog */}
+      <Dialog open={postPreviewOpen} onOpenChange={setPostPreviewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Post Preview</DialogTitle>
+          </DialogHeader>
+          {previewPost && (
+            <div className="py-4">
+              <div className="text-sm text-muted-foreground mb-2">
+                By @{previewPost.profiles?.username}
+              </div>
+              <p className="whitespace-pre-wrap">{previewPost.content}</p>
+              {previewPost.images && previewPost.images.length > 0 && (
+                <div className="flex gap-2 mt-3">
+                  {previewPost.images.map((img, i) => (
+                    <img key={i} src={img} alt="" className="w-24 h-24 object-cover rounded" />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPostPreviewOpen(false)}>
+              Close
+            </Button>
+            {previewPost && (
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  deletePost(previewPost.id);
+                  setPostPreviewOpen(false);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete Post
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

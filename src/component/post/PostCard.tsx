@@ -5,11 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, ExternalLink, Crown, Flag } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, ExternalLink, Crown, Flag, Trash2, Shield } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 import { usePost } from '@/context/PostContext';
 import { useAuth } from '@/context/auth';
+import { useAdmin } from '@/hooks/use-admin';
 import CommentSection from './CommentSection';
 import ShareModal from './ShareModal';
 import ReportModal from '@/components/ReportModal';
@@ -42,11 +43,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [editedContent, setEditedContent] = useState(post.content);
   const { likePost, unlikePost, deletePost, updatePost, commentOnPost, savePost, unsavePost } = usePost();
   const { user } = useAuth();
+  const { isAdmin, adminDeletePost } = useAdmin();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const isLiked = user ? post.likes.includes(user.id) : false;
   const isOwnPost = user ? post.userId === user.id : false;
+  const canDelete = isOwnPost || isAdmin;
 
   // Fetch poll for this post
   useEffect(() => {
@@ -150,10 +153,15 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        await deletePost(post.id);
+        if (isAdmin && !isOwnPost) {
+          // Admin deleting someone else's post
+          await adminDeletePost(post.id);
+        } else {
+          await deletePost(post.id);
+        }
         toast({
           title: "Post deleted",
-          description: "Your post has been deleted successfully.",
+          description: isOwnPost ? "Your post has been deleted successfully." : "Post has been deleted by admin.",
         });
       } catch (error) {
         console.error('Error deleting post:', error);
@@ -290,20 +298,25 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {isOwnPost ? (
+                {isOwnPost && (
+                  <DropdownMenuItem onClick={handleEditStart}>
+                    Edit Post
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {isAdmin && !isOwnPost ? 'Delete (Admin)' : 'Delete Post'}
+                  </DropdownMenuItem>
+                )}
+                {!isOwnPost && (
                   <>
-                    <DropdownMenuItem onClick={handleEditStart}>
-                      Edit Post
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                      Delete Post
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleReport}>
+                      <Flag className="h-4 w-4 mr-2" />
+                      Report Post
                     </DropdownMenuItem>
                   </>
-                ) : (
-                  <DropdownMenuItem onClick={handleReport}>
-                    <Flag className="h-4 w-4 mr-2" />
-                    Report Post
-                  </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
