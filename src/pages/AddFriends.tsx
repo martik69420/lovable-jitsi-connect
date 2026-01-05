@@ -79,12 +79,36 @@ const AddFriends = () => {
     setSearchResults([]);
     
     try {
+      // Get all existing friend relationships (both directions, any status)
+      const { data: friendsAsSender } = await supabase
+        .from('friends')
+        .select('friend_id, status')
+        .eq('user_id', user.id);
+        
+      const { data: friendsAsReceiver } = await supabase
+        .from('friends')
+        .select('user_id, status')
+        .eq('friend_id', user.id);
+      
+      // Create sets for filtering
+      const existingFriendIds = new Set<string>();
+      const pendingRequestIds = new Set<string>();
+      
+      friendsAsSender?.forEach(f => {
+        if (f.status === 'accepted') existingFriendIds.add(f.friend_id);
+        if (f.status === 'pending') pendingRequestIds.add(f.friend_id);
+      });
+      friendsAsReceiver?.forEach(f => {
+        if (f.status === 'accepted') existingFriendIds.add(f.user_id);
+        if (f.status === 'pending') pendingRequestIds.add(f.user_id);
+      });
+
       // First, search for users by username
       let { data: usernameResults, error: usernameError } = await supabase
         .from('profiles')
         .select('*')
         .ilike('username', `%${searchTerm}%`)
-        .neq('id', user.id); // Exclude the current user
+        .neq('id', user.id);
         
       if (usernameError) {
         console.error("Error searching by username:", usernameError);
@@ -96,24 +120,23 @@ const AddFriends = () => {
         .from('profiles')
         .select('*')
         .ilike('display_name', `%${searchTerm}%`)
-        .neq('id', user.id); // Exclude the current user
+        .neq('id', user.id);
         
       if (displayNameError) {
         console.error("Error searching by display name:", displayNameError);
         throw displayNameError;
       }
       
-      // Combine the results, removing duplicates
+      // Combine the results, removing duplicates and existing friends
       const combinedResults = [...(usernameResults || []), ...(displayNameResults || [])];
       const uniqueResults = Array.from(new Set(combinedResults.map(a => a.id)))
-        .map(id => {
-          return combinedResults.find(a => a.id === id);
-        });
+        .map(id => combinedResults.find(a => a.id === id))
+        .filter(result => result && !existingFriendIds.has(result.id));
         
       // Mark already sent requests
       const resultsWithStatus = uniqueResults.map(result => ({
         ...result,
-        requestSent: sentRequests[result.id] || false
+        requestSent: pendingRequestIds.has(result!.id) || sentRequests[result!.id] || false
       }));
       
       setSearchResults(resultsWithStatus as any[]);
