@@ -3,83 +3,29 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Bell, Heart, MessageSquare, UserPlus, AtSign, Megaphone, Clock } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, AtSign, Megaphone, Clock, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/auth';
-
-interface NotificationPreference {
-  likes: boolean;
-  comments: boolean;
-  friends: boolean;
-  mentions: boolean;
-  messages: boolean;
-  system: boolean;
-  quietHoursEnabled: boolean;
-  quietHoursStart: string;
-  quietHoursEnd: string;
-  soundEnabled: boolean;
-}
+import { useNotificationPreferences, NotificationPreferences as NotifPrefs } from '@/hooks/use-notification-preferences';
 
 export function NotificationPreferences() {
-  const { user } = useAuth();
+  const { preferences, savePreferences, isLoading } = useNotificationPreferences();
   const { toast } = useToast();
-  const [preferences, setPreferences] = useState<NotificationPreference>({
-    likes: true,
-    comments: true,
-    friends: true,
-    mentions: true,
-    messages: true,
-    system: true,
-    quietHoursEnabled: false,
-    quietHoursStart: '22:00',
-    quietHoursEnd: '08:00',
-    soundEnabled: true,
-  });
+  const [localPrefs, setLocalPrefs] = useState<NotifPrefs>(preferences);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadPreferences();
-  }, []);
+    setLocalPrefs(preferences);
+  }, [preferences]);
 
-  const loadPreferences = () => {
-    try {
-      const saved = localStorage.getItem('notificationPreferences');
-      if (saved) {
-        setPreferences(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error('Error loading preferences:', error);
-    }
-  };
-
-  const savePreferences = async () => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save to localStorage for immediate use
-      localStorage.setItem('notificationPreferences', JSON.stringify(preferences));
-
-      // Also save to Supabase user_settings if user is logged in
-      if (user?.id) {
-        await supabase
-          .from('user_settings')
-          .upsert({
-            user_id: user.id,
-            notif_post_likes: preferences.likes,
-            notif_comment_replies: preferences.comments,
-            notif_friend_requests: preferences.friends,
-            notif_mentions: preferences.mentions,
-            notif_messages: preferences.messages,
-            notif_announcements: preferences.system,
-          }, { onConflict: 'user_id' });
-      }
-
+      await savePreferences(localPrefs);
       toast({
         title: 'Success',
         description: 'Notification preferences saved',
       });
     } catch (error) {
-      console.error('Error saving preferences:', error);
       toast({
         title: 'Error',
         description: 'Failed to save preferences',
@@ -90,9 +36,17 @@ export function NotificationPreferences() {
     }
   };
 
-  const updatePreference = (key: keyof NotificationPreference, value: boolean | string) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
+  const updatePreference = (key: keyof NotifPrefs, value: boolean | string) => {
+    setLocalPrefs(prev => ({ ...prev, [key]: value }));
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -103,9 +57,11 @@ export function NotificationPreferences() {
         </p>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <Heart className="h-5 w-5 text-red-500" />
+              <div className="p-2 rounded-full bg-red-500/10">
+                <Heart className="h-4 w-4 text-red-500" />
+              </div>
               <div>
                 <Label htmlFor="likes" className="text-sm font-medium">Likes</Label>
                 <p className="text-xs text-muted-foreground">When someone likes your posts</p>
@@ -113,14 +69,16 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="likes"
-              checked={preferences.likes}
+              checked={localPrefs.likes}
               onCheckedChange={(checked) => updatePreference('likes', checked)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <div className="p-2 rounded-full bg-blue-500/10">
+                <MessageSquare className="h-4 w-4 text-blue-500" />
+              </div>
               <div>
                 <Label htmlFor="comments" className="text-sm font-medium">Comments</Label>
                 <p className="text-xs text-muted-foreground">When someone comments on your posts</p>
@@ -128,14 +86,16 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="comments"
-              checked={preferences.comments}
+              checked={localPrefs.comments}
               onCheckedChange={(checked) => updatePreference('comments', checked)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <UserPlus className="h-5 w-5 text-green-500" />
+              <div className="p-2 rounded-full bg-green-500/10">
+                <UserPlus className="h-4 w-4 text-green-500" />
+              </div>
               <div>
                 <Label htmlFor="friends" className="text-sm font-medium">Friend Requests</Label>
                 <p className="text-xs text-muted-foreground">When someone sends you a friend request</p>
@@ -143,14 +103,16 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="friends"
-              checked={preferences.friends}
+              checked={localPrefs.friends}
               onCheckedChange={(checked) => updatePreference('friends', checked)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <AtSign className="h-5 w-5 text-purple-500" />
+              <div className="p-2 rounded-full bg-purple-500/10">
+                <AtSign className="h-4 w-4 text-purple-500" />
+              </div>
               <div>
                 <Label htmlFor="mentions" className="text-sm font-medium">Mentions</Label>
                 <p className="text-xs text-muted-foreground">When someone mentions you</p>
@@ -158,14 +120,16 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="mentions"
-              checked={preferences.mentions}
+              checked={localPrefs.mentions}
               onCheckedChange={(checked) => updatePreference('mentions', checked)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <div className="p-2 rounded-full bg-blue-500/10">
+                <MessageSquare className="h-4 w-4 text-blue-500" />
+              </div>
               <div>
                 <Label htmlFor="messages" className="text-sm font-medium">Messages</Label>
                 <p className="text-xs text-muted-foreground">When you receive new messages</p>
@@ -173,14 +137,16 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="messages"
-              checked={preferences.messages}
+              checked={localPrefs.messages}
               onCheckedChange={(checked) => updatePreference('messages', checked)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <Megaphone className="h-5 w-5 text-orange-500" />
+              <div className="p-2 rounded-full bg-orange-500/10">
+                <Megaphone className="h-4 w-4 text-orange-500" />
+              </div>
               <div>
                 <Label htmlFor="system" className="text-sm font-medium">System</Label>
                 <p className="text-xs text-muted-foreground">Important updates and announcements</p>
@@ -188,7 +154,7 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="system"
-              checked={preferences.system}
+              checked={localPrefs.system}
               onCheckedChange={(checked) => updatePreference('system', checked)}
             />
           </div>
@@ -201,9 +167,11 @@ export function NotificationPreferences() {
         <h3 className="text-lg font-semibold mb-4">Sound & Quiet Hours</h3>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <Bell className="h-5 w-5" />
+              <div className="p-2 rounded-full bg-primary/10">
+                <Volume2 className="h-4 w-4 text-primary" />
+              </div>
               <div>
                 <Label htmlFor="sound" className="text-sm font-medium">Notification Sound</Label>
                 <p className="text-xs text-muted-foreground">Play sound for new notifications</p>
@@ -211,35 +179,37 @@ export function NotificationPreferences() {
             </div>
             <Switch
               id="sound"
-              checked={preferences.soundEnabled}
+              checked={localPrefs.soundEnabled}
               onCheckedChange={(checked) => updatePreference('soundEnabled', checked)}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5" />
+              <div className="p-2 rounded-full bg-muted">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </div>
               <div>
                 <Label htmlFor="quietHours" className="text-sm font-medium">Quiet Hours</Label>
-                <p className="text-xs text-muted-foreground">Mute notifications during specific hours</p>
+                <p className="text-xs text-muted-foreground">Mute all notifications during these hours</p>
               </div>
             </div>
             <Switch
               id="quietHours"
-              checked={preferences.quietHoursEnabled}
+              checked={localPrefs.quietHoursEnabled}
               onCheckedChange={(checked) => updatePreference('quietHoursEnabled', checked)}
             />
           </div>
 
-          {preferences.quietHoursEnabled && (
-            <div className="ml-8 space-y-3 p-3 bg-muted/50 rounded-lg">
+          {localPrefs.quietHoursEnabled && (
+            <div className="ml-4 p-4 bg-muted/50 rounded-lg border space-y-3">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <Label htmlFor="quietStart" className="text-xs text-muted-foreground">Start Time</Label>
                   <input
                     id="quietStart"
                     type="time"
-                    value={preferences.quietHoursStart}
+                    value={localPrefs.quietHoursStart}
                     onChange={(e) => updatePreference('quietHoursStart', e.target.value)}
                     className="w-full mt-1 px-3 py-2 bg-background border rounded-md text-sm"
                   />
@@ -249,19 +219,22 @@ export function NotificationPreferences() {
                   <input
                     id="quietEnd"
                     type="time"
-                    value={preferences.quietHoursEnd}
+                    value={localPrefs.quietHoursEnd}
                     onChange={(e) => updatePreference('quietHoursEnd', e.target.value)}
                     className="w-full mt-1 px-3 py-2 bg-background border rounded-md text-sm"
                   />
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                No notifications will be shown during quiet hours
+              </p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button onClick={savePreferences} disabled={isSaving}>
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? 'Saving...' : 'Save Preferences'}
         </Button>
       </div>
