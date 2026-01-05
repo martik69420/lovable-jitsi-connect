@@ -102,9 +102,9 @@ const ContactsList: React.FC<ContactsListProps> = ({
       <div className="border-b p-4 dark:border-gray-800 sticky top-0 bg-background z-10">
         <h2 className="text-xl font-bold mb-3">Messages</h2>
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search contacts" className="pl-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            <Input placeholder="Search contacts" className="pl-9 w-full" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
           <GroupChatCreator createGroup={createGroup} onGroupCreated={onGroupCreated} />
         </div>
