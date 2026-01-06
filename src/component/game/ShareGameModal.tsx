@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Send, Search, Terminal, Gamepad, Rocket, Circle } from "lucide-react";
+import { Send, Search, Gamepad, Rocket, Circle } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -19,7 +19,7 @@ import { useAuth } from "@/context/auth";
 interface ShareGameModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  gameType: 'snake' | 'tetris' | 'pong' | 'asteroids';
+  gameType: 'pong' | 'asteroids' | 'geometrydash';
 }
 
 interface Contact {
@@ -31,20 +31,6 @@ interface Contact {
 }
 
 const gameData = {
-  snake: {
-    name: 'Snake',
-    description: 'Classic snake game',
-    icon: Terminal,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10'
-  },
-  tetris: {
-    name: 'Tetris',
-    description: 'Stack blocks and clear lines',
-    icon: Gamepad,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10'
-  },
   pong: {
     name: 'Pong',
     description: '2-player ping pong',
@@ -58,6 +44,13 @@ const gameData = {
     icon: Rocket,
     color: 'text-orange-500',
     bgColor: 'bg-orange-500/10'
+  },
+  geometrydash: {
+    name: 'Geometry Dash',
+    description: 'Rhythm-based platformer race',
+    icon: Gamepad,
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500/10'
   }
 };
 

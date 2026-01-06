@@ -99,7 +99,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     const randomNum = Math.floor(100 + Math.random() * 900);
     const username = user.username || user.displayName || 'player';
     const shortName = username.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const newRoomId = `${shortName}${randomNum}`;
+    const newRoomId = `ast_${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
     setWaiting(true);
@@ -115,7 +115,8 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
 
   const joinRoom = async (id: string) => {
     if (!user) return;
-    setRoomId(id);
+    const roomIdToJoin = id.startsWith('ast_') ? id : `ast_${id}`;
+    setRoomId(roomIdToJoin);
     setIsHost(false);
     
     const ship = initShip();
@@ -123,7 +124,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
       shipRef.current = ship;
     }
     
-    joinChannel(id, false);
+    joinChannel(roomIdToJoin, false);
   };
 
   const joinChannel = (id: string, host: boolean) => {
@@ -131,7 +132,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
       supabase.removeChannel(channelRef.current);
     }
 
-    const channel = supabase.channel(`asteroids_${id}`, {
+    const channel = supabase.channel(`room_${id}`, {
       config: { broadcast: { self: false } },
     });
 
@@ -488,9 +489,14 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Waiting for players... Room: {roomId}</span>
+                <span>Waiting for players...</span>
               </div>
-              <Button onClick={startGame} variant="secondary">
+              <div className="bg-muted/50 px-4 py-2 rounded-lg">
+                <span className="text-sm">Room Code: </span>
+                <span className="font-mono font-bold text-primary">{roomId?.replace('ast_', '')}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Share this code with friends • Players: {players.size}</p>
+              <Button onClick={startGame} variant="secondary" className="mt-2">
                 Start with Current Players
               </Button>
             </div>
@@ -505,16 +511,20 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Enter room ID"
-                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  placeholder="Enter room code"
+                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm w-40"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       joinRoom((e.target as HTMLInputElement).value);
                     }
                   }}
                 />
-                <Button variant="outline" size="sm">
-                  <Users className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={(e) => {
+                  const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                  if (input.value) joinRoom(input.value);
+                }}>
+                  <Users className="h-4 w-4 mr-1" />
+                  Join
                 </Button>
               </div>
             </>

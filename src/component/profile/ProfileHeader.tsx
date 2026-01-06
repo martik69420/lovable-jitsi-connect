@@ -181,7 +181,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({
                 className="gap-2"
               >
                 <UserMinus className="h-4 w-4" />
-                Unfollow
+                Remove Friend
               </Button>
             ) : (
               <Button 
@@ -191,7 +191,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = memo(({
                 className="gap-2"
               >
                 <UserPlus className="h-4 w-4" />
-                Follow
+                Add Friend
               </Button>
             )}
             <Button 
