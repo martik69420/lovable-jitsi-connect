@@ -8,14 +8,14 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useGame } from '@/context/GameContext';
 import { 
-  Terminal, 
   Gamepad, 
   Crown, 
   Trophy, 
   Users,
   Rocket,
   Circle,
-  Share2
+  Share2,
+  Zap
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -27,9 +27,9 @@ const Games = () => {
   const { toast } = useToast();
   const { bestScores, gameScores, gameState, isLoading } = useGame();
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<'snake' | 'tetris' | 'pong' | 'asteroids'>('snake');
+  const [selectedGame, setSelectedGame] = useState<'pong' | 'asteroids' | 'geometrydash'>('pong');
 
-  const handleShareGame = (gameType: 'snake' | 'tetris' | 'pong' | 'asteroids') => {
+  const handleShareGame = (gameType: 'pong' | 'asteroids' | 'geometrydash') => {
     setSelectedGame(gameType);
     setShareModalOpen(true);
   };
@@ -50,7 +50,7 @@ const Games = () => {
             <Trophy className="h-5 w-5 text-yellow-600" />
             <div className="text-foreground">
               <span className="font-medium">
-                {t('games.yourProgress')}: <span className="text-primary">{gameState.progress.snake.gamesPlayed + gameState.progress.tetris.gamesPlayed}</span>
+                {t('games.yourProgress')}: <span className="text-primary">{gameState.progress.tetris.gamesPlayed}</span>
               </span>
             </div>
           </div>
@@ -62,7 +62,7 @@ const Games = () => {
             <Users className="h-5 w-5 text-primary" />
             <h2 className="text-xl font-semibold">Multiplayer Games</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Pong Game Card */}
             <Card className="hover:shadow-md transition-shadow duration-200 border-primary/20">
               <CardHeader className="pb-3">
@@ -126,6 +126,38 @@ const Games = () => {
                 </Button>
               </CardFooter>
             </Card>
+
+            {/* Geometry Dash Game Card */}
+            <Card className="hover:shadow-md transition-shadow duration-200 border-primary/20">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Zap className="w-5 h-5 text-yellow-500" />
+                      Geometry Dash
+                    </CardTitle>
+                    <CardDescription>Rhythm-based platformer</CardDescription>
+                  </div>
+                  <Badge className="bg-primary/10 text-primary border-0">
+                    <Users className="w-3 h-3 mr-1" />
+                    Race
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <p className="text-sm text-muted-foreground">
+                  Jump, fly and flip through levels. Create & share your own!
+                </p>
+              </CardContent>
+              <CardFooter className="gap-2">
+                <Button onClick={() => navigate('/games/geometrydash')} className="flex-1">
+                  Play Now
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleShareGame('geometrydash')}>
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         </div>
 
@@ -136,42 +168,6 @@ const Games = () => {
             <h2 className="text-xl font-semibold">Single Player</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Snake Game Card */}
-            <Card className="hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <Terminal className="w-5 h-5 text-green-600" />
-                      {t('games.snake')}
-                    </CardTitle>
-                    <CardDescription>{t('games.classicSnake')}</CardDescription>
-                  </div>
-                  <Badge variant="secondary" className="font-medium">
-                    <Crown className="w-3 h-3 mr-1" />
-                    {bestScores.snake}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t('games.progress')}</span>
-                    <span className="font-medium">{gameState.progress.snake.gamesPlayed} {t('games.gamesPlayed')}</span>
-                  </div>
-                  <Progress value={Math.min(gameState.progress.snake.gamesPlayed * 10, 100)} className="h-2" />
-                </div>
-              </CardContent>
-              <CardFooter className="gap-2">
-                <Button onClick={() => navigate('/games/snake')} className="flex-1">
-                  {t('games.playNow')}
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => handleShareGame('snake')}>
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </CardFooter>
-            </Card>
-
             {/* Tetris Game Card */}
             <Card className="hover:shadow-md transition-shadow duration-200">
               <CardHeader className="pb-3">
@@ -198,12 +194,9 @@ const Games = () => {
                   <Progress value={Math.min(gameState.progress.tetris.gamesPlayed * 10, 100)} className="h-2" />
                 </div>
               </CardContent>
-              <CardFooter className="gap-2">
-                <Button onClick={() => navigate('/games/tetris')} className="flex-1">
+              <CardFooter>
+                <Button onClick={() => navigate('/games/tetris')} className="w-full">
                   {t('games.playNow')}
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => handleShareGame('tetris')}>
-                  <Share2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -217,16 +210,10 @@ const Games = () => {
             <h2 className="text-xl font-semibold">{t('games.yourStatistics')}</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-muted/50 p-4 rounded-lg text-center">
-              <Badge variant="outline" className="mb-2">{t('games.snake')}</Badge>
-              <p className="text-2xl font-bold">{bestScores.snake}</p>
-              <p className="text-sm text-muted-foreground">{t('games.bestScore')}</p>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-muted/50 p-4 rounded-lg text-center">
               <Badge variant="outline" className="mb-2">{t('games.total')}</Badge>
-              <p className="text-2xl font-bold">{gameState.progress.snake.gamesPlayed + gameState.progress.tetris.gamesPlayed}</p>
+              <p className="text-2xl font-bold">{gameState.progress.tetris.gamesPlayed}</p>
               <p className="text-sm text-muted-foreground">{t('games.gamesPlayed')}</p>
             </div>
             
@@ -242,7 +229,7 @@ const Games = () => {
       <ShareGameModal 
         open={shareModalOpen} 
         onOpenChange={setShareModalOpen} 
-        gameType={selectedGame} 
+        gameType={selectedGame as any} 
       />
     </AppLayout>
   );

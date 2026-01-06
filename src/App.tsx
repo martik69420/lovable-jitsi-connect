@@ -24,7 +24,6 @@ const Friends = lazy(() => import('./pages/Friends'));
 const AddFriends = lazy(() => import('./pages/AddFriends'));
 const Games = lazy(() => import('./pages/Games'));
 const Profile = lazy(() => import('./pages/Profile'));
-const Snake = lazy(() => import('./pages/games/Snake'));
 const Tetris = lazy(() => import('@/pages/games/Tetris'));
 const Post = lazy(() => import('@/pages/Post'));
 const FriendRequests = lazy(() => import('./pages/FriendRequests'));
@@ -34,6 +33,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 const TicTacToe = lazy(() => import('./pages/games/TicTacToe'));
 const Pong = lazy(() => import('./pages/games/Pong'));
 const Asteroids = lazy(() => import('./pages/games/Asteroids'));
+const GeometryDash = lazy(() => import('./pages/games/GeometryDash'));
 
 // Initialize React Query client
 const queryClient = new QueryClient({
@@ -76,11 +76,11 @@ function App() {
                         <Route path="/friend-requests" element={<FriendRequests />} />
                         <Route path="/add-friends" element={<AddFriends />} />
                         <Route path="/games" element={<Games />} />
-                        <Route path="/games/snake" element={<Snake />} />
                         <Route path="/games/tetris" element={<Tetris />} />
                         <Route path="/games/tictactoe" element={<TicTacToe />} />
                         <Route path="/games/pong" element={<Pong />} />
                         <Route path="/games/asteroids" element={<Asteroids />} />
+                        <Route path="/games/geometrydash" element={<GeometryDash />} />
                         <Route path="/achievements" element={<Achievements />} />
                         <Route path="/post/:postId" element={<Post />} />
                         <Route path="/profile/:username" element={<Profile />} />

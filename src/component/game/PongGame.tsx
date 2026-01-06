@@ -58,7 +58,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
     const randomNum = Math.floor(100 + Math.random() * 900);
     const username = user.username || user.displayName || 'player';
     const shortName = username.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, '');
-    const newRoomId = `${shortName}${randomNum}`;
+    const newRoomId = `pong_${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
     setWaiting(true);
@@ -67,9 +67,10 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
 
   const joinRoom = async (id: string) => {
     if (!user) return;
-    setRoomId(id);
+    const roomIdToJoin = id.startsWith('pong_') ? id : `pong_${id}`;
+    setRoomId(roomIdToJoin);
     setIsHost(false);
-    joinChannel(id, false);
+    joinChannel(roomIdToJoin, false);
   };
 
   const joinChannel = (id: string, host: boolean) => {
@@ -77,7 +78,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
       supabase.removeChannel(channelRef.current);
     }
 
-    const channel = supabase.channel(`pong_${id}`, {
+    const channel = supabase.channel(`room_${id}`, {
       config: { broadcast: { self: false } },
     });
 
@@ -86,12 +87,15 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
         if (host && payload.userId !== user?.id) {
           setOpponent(payload.username);
           setWaiting(false);
-          channel.send({
-            type: 'broadcast',
-            event: 'game_start',
-            payload: { hostId: user?.id, hostUsername: user?.username },
-          });
-          setGameState(prev => ({ ...prev, gameStarted: true }));
+          // Send game start to the joining player
+          setTimeout(() => {
+            channel.send({
+              type: 'broadcast',
+              event: 'game_start',
+              payload: { hostId: user?.id, hostUsername: user?.username },
+            });
+            setGameState(prev => ({ ...prev, gameStarted: true }));
+          }, 500);
         }
       })
       .on('broadcast', { event: 'game_start' }, ({ payload }) => {
@@ -116,8 +120,13 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
           }));
         }
       })
-      .subscribe(() => {
-        if (!host) {
+      .on('broadcast', { event: 'player_leave' }, () => {
+        setOpponent(null);
+        setGameState(prev => ({ ...prev, gameStarted: false }));
+        setWaiting(true);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED' && !host) {
           channel.send({
             type: 'broadcast',
             event: 'player_join',
@@ -301,9 +310,16 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
       {!gameState.gameStarted && (
         <div className="flex flex-col items-center gap-4">
           {waiting ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Waiting for opponent... Room: {roomId}</span>
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Waiting for opponent...</span>
+              </div>
+              <div className="bg-muted/50 px-4 py-2 rounded-lg">
+                <span className="text-sm">Room Code: </span>
+                <span className="font-mono font-bold text-primary">{roomId?.replace('pong_', '')}</span>
+              </div>
+              <p className="text-xs">Share this code with a friend to play together</p>
             </div>
           ) : (
             <>
@@ -316,16 +332,20 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Enter room ID"
-                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  placeholder="Enter room code"
+                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm w-40"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       joinRoom((e.target as HTMLInputElement).value);
                     }
                   }}
                 />
-                <Button variant="outline" size="sm">
-                  <Users className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={(e) => {
+                  const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                  if (input.value) joinRoom(input.value);
+                }}>
+                  <Users className="h-4 w-4 mr-1" />
+                  Join
                 </Button>
               </div>
             </>
