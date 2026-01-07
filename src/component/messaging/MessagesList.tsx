@@ -410,14 +410,22 @@ const MessagesList: React.FC<MessagesListProps> = ({
                   )}
 
                   {/* Shared Game Preview */}
-                  {message.content?.startsWith('[GAME:') && (
-                    <div className="mb-2">
-                      <GamePreview 
-                        gameType={message.content.replace('[GAME:', '').replace(']', '') as 'snake' | 'tetris' | 'pong' | 'asteroids'} 
-                        compact 
-                      />
-                    </div>
-                  )}
+                  {message.content?.startsWith('[GAME:') && (() => {
+                    // Parse game type and optional room code from [GAME:type:roomcode] or [GAME:type]
+                    const match = message.content.match(/\[GAME:([^:\]]+)(?::([^\]]+))?\]/);
+                    if (!match) return null;
+                    const gameType = match[1] as 'snake' | 'tetris' | 'pong' | 'asteroids' | 'geometrydash';
+                    const roomCode = match[2];
+                    return (
+                      <div className="mb-2">
+                        <GamePreview 
+                          gameType={gameType}
+                          roomCode={roomCode}
+                          compact 
+                        />
+                      </div>
+                    );
+                  })()}
 
                   {/* Voice Message */}
                   {message.media_url && message.media_type === 'audio' && (

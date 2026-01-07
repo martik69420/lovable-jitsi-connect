@@ -188,8 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          data: userData || {},
-          emailRedirectTo: undefined // Remove email confirmation
+          data: userData || {}
         }
       });
 

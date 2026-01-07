@@ -152,10 +152,13 @@ const ShareGameModal: React.FC<ShareGameModalProps> = ({
     if (!user) return;
     
     try {
-      // Share game using a special format in content
+      // Generate a unique room code for the game
+      const roomCode = `${gameType}_${user.username?.slice(0, 6) || 'user'}${Math.floor(100 + Math.random() * 900)}`;
+      
+      // Share game invite with room code
       const messageData: any = {
         sender_id: user.id,
-        content: `[GAME:${gameType}]`,
+        content: `[GAME:${gameType}:${roomCode}]`,
         is_read: false
       };
 
@@ -178,8 +181,8 @@ const ShareGameModal: React.FC<ShareGameModalProps> = ({
       
       onOpenChange(false);
       
-      // Navigate to the game page
-      window.location.href = `/games/${gameType}`;
+      // Navigate to the game page with room code as host
+      window.location.href = `/games/${gameType}?room=${roomCode}&host=true`;
     } catch (error) {
       console.error('Error sharing game:', error);
       toast({
