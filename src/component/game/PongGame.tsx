@@ -138,7 +138,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
     channelRef.current = channel;
   };
 
-  // Handle paddle movement
+  // Handle paddle movement with mouse and keyboard
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const canvas = canvasRef.current;
@@ -161,9 +161,41 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
       });
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!gameState.gameStarted) return;
+      
+      const PADDLE_SPEED = 20;
+      let newPaddle = localPaddle;
+      
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        newPaddle = Math.max(0, localPaddle - PADDLE_SPEED);
+      } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+        newPaddle = Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, localPaddle + PADDLE_SPEED);
+      } else {
+        return; // Don't process other keys
+      }
+      
+      e.preventDefault();
+      setLocalPaddle(newPaddle);
+      setGameState(prev => ({
+        ...prev,
+        [isHost ? 'paddle1' : 'paddle2']: newPaddle,
+      }));
+
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'paddle_move',
+        payload: { position: newPaddle },
+      });
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [gameState.gameStarted, isHost]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [gameState.gameStarted, isHost, localPaddle]);
 
   // Game loop (host only)
   useEffect(() => {
@@ -354,7 +386,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
       )}
 
       <p className="text-sm text-muted-foreground">
-        Move your mouse up and down to control your paddle
+        Use mouse, arrow keys (↑/↓), or W/S to control your paddle
       </p>
     </div>
   );

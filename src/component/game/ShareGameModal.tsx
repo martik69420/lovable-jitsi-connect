@@ -172,11 +172,14 @@ const ShareGameModal: React.FC<ShareGameModalProps> = ({
       if (error) throw error;
 
       toast({
-        title: "Game shared!",
-        description: `${game?.name || 'Game'} shared to ${isGroup ? 'group' : 'chat'} successfully.`,
+        title: "Game invite sent!",
+        description: `${game?.name || 'Game'} invite sent! Joining game...`,
       });
       
       onOpenChange(false);
+      
+      // Navigate to the game page
+      window.location.href = `/games/${gameType}`;
     } catch (error) {
       console.error('Error sharing game:', error);
       toast({
