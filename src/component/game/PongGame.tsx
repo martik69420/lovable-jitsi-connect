@@ -8,6 +8,8 @@ import { Play, Users, Loader2 } from 'lucide-react';
 
 interface PongGameProps {
   onGameEnd?: (score: number) => void;
+  initialRoomCode?: string | null;
+  initialIsHost?: boolean;
 }
 
 interface GameState {
@@ -17,6 +19,7 @@ interface GameState {
   score1: number;
   score2: number;
   gameStarted: boolean;
+  countdown: number;
 }
 
 const CANVAS_WIDTH = 600;
@@ -25,7 +28,7 @@ const PADDLE_HEIGHT = 80;
 const PADDLE_WIDTH = 10;
 const BALL_SIZE = 10;
 
-const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
+const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initialIsHost }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { user } = useAuth();
   const [gameState, setGameState] = useState<GameState>({
@@ -35,6 +38,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
     score1: 0,
     score2: 0,
     gameStarted: false,
+    countdown: 0,
   });
   const [isHost, setIsHost] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -51,6 +55,20 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
       vx: (Math.random() > 0.5 ? 1 : -1) * 4,
       vy: (Math.random() - 0.5) * 6,
     };
+  }, []);
+
+  const startCountdown = useCallback(() => {
+    setGameState(prev => ({ ...prev, countdown: 3 }));
+    
+    const countdownInterval = setInterval(() => {
+      setGameState(prev => {
+        if (prev.countdown <= 1) {
+          clearInterval(countdownInterval);
+          return { ...prev, countdown: 0, gameStarted: true };
+        }
+        return { ...prev, countdown: prev.countdown - 1 };
+      });
+    }, 1000);
   }, []);
 
   const createRoom = async () => {
@@ -87,21 +105,21 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
         if (host && payload.userId !== user?.id) {
           setOpponent(payload.username);
           setWaiting(false);
-          // Send game start to the joining player
+          // Start countdown
           setTimeout(() => {
             channel.send({
               type: 'broadcast',
-              event: 'game_start',
+              event: 'game_countdown',
               payload: { hostId: user?.id, hostUsername: user?.username },
             });
-            setGameState(prev => ({ ...prev, gameStarted: true }));
+            startCountdown();
           }, 500);
         }
       })
-      .on('broadcast', { event: 'game_start' }, ({ payload }) => {
+      .on('broadcast', { event: 'game_countdown' }, ({ payload }) => {
         if (!host) {
           setOpponent(payload.hostUsername);
-          setGameState(prev => ({ ...prev, gameStarted: true }));
+          startCountdown();
         }
       })
       .on('broadcast', { event: 'paddle_move' }, ({ payload }) => {
@@ -304,6 +322,17 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
     ctx.textAlign = 'center';
     ctx.fillText(gameState.score1.toString(), CANVAS_WIDTH / 4, 60);
     ctx.fillText(gameState.score2.toString(), (CANVAS_WIDTH * 3) / 4, 60);
+
+    // Countdown overlay
+    if (gameState.countdown > 0) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.font = 'bold 120px sans-serif';
+      ctx.fillStyle = '#00ff88';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(gameState.countdown.toString(), CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+    }
   }, [gameState]);
 
   // Cleanup
@@ -317,6 +346,22 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd }) => {
       }
     };
   }, []);
+
+  // Auto-join room from URL parameters
+  useEffect(() => {
+    if (!user || !initialRoomCode) return;
+    
+    if (initialIsHost) {
+      // Host: create the room with the specified code
+      setRoomId(initialRoomCode);
+      setIsHost(true);
+      setWaiting(true);
+      joinChannel(initialRoomCode, true);
+    } else {
+      // Guest: join the room
+      joinRoom(initialRoomCode);
+    }
+  }, [user, initialRoomCode, initialIsHost]);
 
   return (
     <div className="flex flex-col items-center gap-4">

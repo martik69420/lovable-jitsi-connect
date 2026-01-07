@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
@@ -7,6 +7,10 @@ import PongGame from '@/component/game/PongGame';
 
 const Pong: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const roomCode = searchParams.get('room');
+  const isHost = searchParams.get('host') === 'true';
 
   return (
     <AppLayout>
@@ -27,7 +31,7 @@ const Pong: React.FC = () => {
         </div>
         
         <div className="flex justify-center">
-          <PongGame />
+          <PongGame initialRoomCode={roomCode} initialIsHost={isHost} />
         </div>
       </div>
     </AppLayout>

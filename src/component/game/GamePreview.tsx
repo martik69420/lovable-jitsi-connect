@@ -13,8 +13,9 @@ import {
 } from 'lucide-react';
 
 interface GamePreviewProps {
-  gameType: 'snake' | 'tetris' | 'pong' | 'asteroids';
+  gameType: 'snake' | 'tetris' | 'pong' | 'asteroids' | 'geometrydash';
   compact?: boolean;
+  roomCode?: string;
 }
 
 const gameData = {
@@ -49,10 +50,18 @@ const gameData = {
     color: 'text-orange-500',
     bgColor: 'bg-orange-500/10',
     route: '/games/asteroids'
+  },
+  geometrydash: {
+    name: 'Geometry Dash',
+    description: 'Rhythm-based platformer!',
+    icon: Gamepad,
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500/10',
+    route: '/games/geometry-dash'
   }
 };
 
-const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true }) => {
+const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true, roomCode }) => {
   const navigate = useNavigate();
   const game = gameData[gameType];
   
@@ -70,7 +79,12 @@ const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true }) =
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(game.route);
+    // If there's a room code, join as guest
+    if (roomCode) {
+      navigate(`${game.route}?room=${roomCode}`);
+    } else {
+      navigate(game.route);
+    }
   };
 
   return (
@@ -86,10 +100,14 @@ const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true }) =
             </div>
             <div>
               <h4 className="font-semibold text-sm">{game.name}</h4>
-              <p className="text-[10px] text-muted-foreground">{game.description}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {roomCode ? 'You\'re invited to play!' : game.description}
+              </p>
             </div>
           </div>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Game</Badge>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {roomCode ? 'Invite' : 'Game'}
+          </Badge>
         </div>
         
         <div className="flex items-center justify-between mt-3">
@@ -99,7 +117,7 @@ const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true }) =
             onClick={handlePlay}
           >
             <Play className="h-3 w-3" />
-            Play Now
+            {roomCode ? 'Join Game' : 'Play Now'}
           </Button>
           <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
