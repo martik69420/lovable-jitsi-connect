@@ -283,12 +283,10 @@ const Messages = () => {
                         onTogglePin={(id:string, isPinned:boolean) => pinMessage(id, !isPinned)}
                         onForward={(m:any) => setForwardMessage(m)}
                       />
-                      {selectedUserId && (
-                        <div className="mt-auto">
-                          <TypingIndicator receiverId={selectedUserId} />
-                        </div>
-                      )}
                     </div>
+                    {selectedUserId && (
+                      <TypingIndicator receiverId={selectedUserId} />
+                    )}
                   </div>
                   <div className="bg-background/95 backdrop-blur-sm">
                     <MessageInput 

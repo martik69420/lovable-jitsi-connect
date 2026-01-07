@@ -291,6 +291,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   size="icon"
                   className="text-muted-foreground hover:text-primary"
                   disabled={isSending || disabled}
+                  onClick={() => setShowEmojiPicker(true)}
                 >
                   <Smile className="h-5 w-5" />
                   <span className="sr-only">Add emoji</span>

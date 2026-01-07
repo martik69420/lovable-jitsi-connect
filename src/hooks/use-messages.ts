@@ -253,70 +253,62 @@ const useMessages = (): UseMessagesResult => {
         return;
       }
 
+      let data: any[] = [];
+      let error: any = null;
+
       if (isGroup) {
         console.log('Fetching group messages for group:', contactId);
-
-        const { data, error } = await supabase
+        const result = await supabase
           .from('messages' as any)
           .select('*')
           .eq('group_id', contactId)
           .order('created_at', { ascending: true });
-
-        if (error) {
-          console.error('Error fetching group messages:', error);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch sender profiles for all messages
-        const messagesWithProfiles = await Promise.all((data || []).map(async (msg: any) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar_url')
-            .eq('id', msg.sender_id)
-            .single();
-
-          return {
-            ...msg,
-            sender: profile,
-            reactions: (msg.reactions || {}) as Record<string, string[]>
-          };
-        }));
-
-        setMessages(messagesWithProfiles as Message[]);
+        data = result.data || [];
+        error = result.error;
       } else {
         console.log('Fetching messages between', user.id, 'and', contactId);
-
-        const { data, error } = await supabase
+        const result = await supabase
           .from('messages' as any)
           .select('*')
           .is('group_id', null)
           .or(`and(sender_id.eq.${user.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${user.id})`)
           .order('created_at', { ascending: true });
-
-        if (error) {
-          console.error('Error fetching messages:', error);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch sender profiles for all messages
-        const messagesWithProfiles = await Promise.all((data || []).map(async (msg: any) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar_url')
-            .eq('id', msg.sender_id)
-            .single();
-
-          return {
-            ...msg,
-            sender: profile,
-            reactions: (msg.reactions || {}) as Record<string, string[]>
-          };
-        }));
-
-        setMessages(messagesWithProfiles as Message[]);
+        data = result.data || [];
+        error = result.error;
       }
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        setLoading(false);
+        return;
+      }
+
+      // Batch fetch all unique sender profiles in one query
+      const uniqueSenderIds = [...new Set(data.map(msg => msg.sender_id))];
+      
+      let profilesMap: Record<string, any> = {};
+      if (uniqueSenderIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url')
+          .in('id', uniqueSenderIds);
+        
+        if (profiles) {
+          profilesMap = profiles.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      }
+
+      // Map messages with profiles from cache
+      const messagesWithProfiles = data.map((msg: any) => ({
+        ...msg,
+        sender: profilesMap[msg.sender_id] || null,
+        reactions: (msg.reactions || {}) as Record<string, string[]>
+      }));
+
+      setMessages(messagesWithProfiles as Message[]);
       
     } catch (error) {
       console.error('Error fetching messages:', error);
