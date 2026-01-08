@@ -9,6 +9,7 @@ import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 import { Card } from '@/component/ui/card';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAdmin } from '@/hooks/use-admin';
 import useMessages from '@/hooks/use-messages';
 import { MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,10 +17,13 @@ import { useChatPreferences } from '@/hooks/use-chat-preferences';
 import { ThemeSelector } from '@/component/messaging/ThemeSelectorDialog';
 import PinnedMessages from '@/component/messaging/PinnedMessages';
 import ForwardMessageDialog from '@/component/messaging/ForwardMessageDialog';
+import VideoCallModal from '@/component/messaging/VideoCallModal';
+import { useIncomingCalls } from '@/hooks/use-incoming-calls';
 
 const Messages = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isAdmin } = useAdmin();
   const [searchParams] = useSearchParams();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -28,6 +32,10 @@ const Messages = () => {
   const [isSending, setIsSending] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<any | null>(null);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  
+  // Incoming calls (admin feature)
+  const { incomingCall, clearIncomingCall } = useIncomingCalls();
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
   
@@ -251,6 +259,7 @@ const Messages = () => {
                         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
                       onOpenThemeSelector={() => setShowThemeSelector(true)}
+                      onStartVideoCall={() => setShowVideoCall(true)}
                     />
                   </div>
                   <div 
@@ -350,6 +359,41 @@ const Messages = () => {
           }
         }}
       />
+
+      {/* Video Call Modal - Admin only */}
+      {isAdmin && selectedUser && !isGroupChat && (
+        <VideoCallModal
+          open={showVideoCall}
+          onClose={() => setShowVideoCall(false)}
+          contact={{
+            id: selectedUser.id,
+            username: selectedUser.username,
+            displayName: selectedUser.displayName,
+            avatar: selectedUser.avatar
+          }}
+        />
+      )}
+
+      {/* Incoming Call Modal - Admin only */}
+      {isAdmin && incomingCall && (
+        <VideoCallModal
+          open={!!incomingCall}
+          onClose={clearIncomingCall}
+          contact={{
+            id: incomingCall.callerId,
+            username: incomingCall.callerUsername,
+            displayName: incomingCall.callerDisplayName,
+            avatar: incomingCall.callerAvatar
+          }}
+          isIncoming
+          callerId={incomingCall.callerId}
+          callerInfo={{
+            username: incomingCall.callerUsername,
+            displayName: incomingCall.callerDisplayName,
+            avatar: incomingCall.callerAvatar
+          }}
+        />
+      )}
     </AppLayout>
   );
 };
