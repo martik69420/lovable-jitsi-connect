@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/auth';
+import { useAdmin } from '@/hooks/use-admin';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
 import ChatStreak from './ChatStreak';
 import { useChatStreak } from '@/hooks/use-chat-streak';
-import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette, Video } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,9 +55,10 @@ interface ChatHeaderProps {
   isMuted?: boolean;
   isCreator?: boolean;
   onOpenThemeSelector?: () => void;
+  onStartVideoCall?: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ 
+const ChatHeader: React.FC<ChatHeaderProps> = ({
   contact, 
   onOpenUserActions, 
   onBack, 
@@ -70,10 +72,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onMessageSelect,
   isMuted = false,
   isCreator = false,
-  onOpenThemeSelector
+  onOpenThemeSelector,
+  onStartVideoCall
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [showMembersManager, setShowMembersManager] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -172,6 +176,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-1">
+        {/* Video call button - Admin only */}
+        {isAdmin && !isGroup && onStartVideoCall && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-primary"
+            onClick={onStartVideoCall}
+            title="Start video call"
+          >
+            <Video className="h-5 w-5" />
+          </Button>
+        )}
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">

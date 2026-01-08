@@ -280,17 +280,27 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     };
   }, [gameState.gameStarted, isHost, localPaddle]);
 
-  // Game loop (host only)
+  // Game loop (host controls ball physics)
   useEffect(() => {
-    if (!isHost || !gameState.gameStarted) return;
+    if (!gameState.gameStarted || gameState.gameOver) return;
+    
+    // Only the host calculates ball physics
+    if (!isHost && roomId) return;
 
-    const gameLoop = () => {
+    let lastTime = performance.now();
+    
+    const gameLoop = (currentTime: number) => {
+      const deltaTime = (currentTime - lastTime) / 16.67; // Normalize to ~60fps
+      lastTime = currentTime;
+      
       setGameState(prev => {
+        if (!prev.gameStarted || prev.gameOver) return prev;
+        
         let { ball, paddle1, paddle2, score1, score2 } = prev;
         
-        // Move ball
-        let newX = ball.x + ball.vx;
-        let newY = ball.y + ball.vy;
+        // Move ball with delta time for smooth movement
+        let newX = ball.x + ball.vx * deltaTime;
+        let newY = ball.y + ball.vy * deltaTime;
         let newVx = ball.vx;
         let newVy = ball.vy;
 
@@ -300,60 +310,71 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
           newY = Math.max(0, Math.min(CANVAS_HEIGHT - BALL_SIZE, newY));
         }
 
-        // Paddle collision
-        if (newX <= PADDLE_WIDTH + 10 && newY + BALL_SIZE >= paddle1 && newY <= paddle1 + PADDLE_HEIGHT) {
-          newVx = Math.abs(newVx) * 1.05;
+        // Paddle collision (left paddle)
+        if (newX <= PADDLE_WIDTH + 10 && 
+            newX >= 0 &&
+            newY + BALL_SIZE >= paddle1 && 
+            newY <= paddle1 + PADDLE_HEIGHT) {
+          newVx = Math.abs(newVx) * 1.02; // Slight speed increase
+          newX = PADDLE_WIDTH + 11; // Prevent sticking
           newVy += (newY - (paddle1 + PADDLE_HEIGHT / 2)) * 0.1;
         }
-        if (newX >= CANVAS_WIDTH - PADDLE_WIDTH - 20 && newY + BALL_SIZE >= paddle2 && newY <= paddle2 + PADDLE_HEIGHT) {
-          newVx = -Math.abs(newVx) * 1.05;
+        
+        // Paddle collision (right paddle)
+        if (newX >= CANVAS_WIDTH - PADDLE_WIDTH - 20 && 
+            newX <= CANVAS_WIDTH - PADDLE_WIDTH &&
+            newY + BALL_SIZE >= paddle2 && 
+            newY <= paddle2 + PADDLE_HEIGHT) {
+          newVx = -Math.abs(newVx) * 1.02; // Slight speed increase
+          newX = CANVAS_WIDTH - PADDLE_WIDTH - 21; // Prevent sticking
           newVy += (newY - (paddle2 + PADDLE_HEIGHT / 2)) * 0.1;
         }
 
-        // Score
+        // Cap ball speed
+        const maxSpeed = 12;
+        newVx = Math.max(-maxSpeed, Math.min(maxSpeed, newVx));
+        newVy = Math.max(-maxSpeed, Math.min(maxSpeed, newVy));
+
+        // Score - ball goes past left side
         if (newX <= 0) {
           score2++;
           if (score2 >= WIN_SCORE) {
-            // Player 2 wins
             channelRef.current?.send({
               type: 'broadcast',
               event: 'game_over',
               payload: { winner: 'player2', score1, score2 },
             });
-            return { ...prev, score1, score2, gameStarted: false, gameOver: true, winner: 'player2' };
+            return { ...prev, score1, score2, gameStarted: false, gameOver: true, winner: 'player2' as const };
           }
           const reset = resetBall();
-          newX = reset.x;
-          newY = reset.y;
-          newVx = reset.vx;
-          newVy = reset.vy;
+          return { ...prev, score1, score2, ball: reset };
         }
+        
+        // Score - ball goes past right side
         if (newX >= CANVAS_WIDTH) {
           score1++;
           if (score1 >= WIN_SCORE) {
-            // Player 1 wins
             channelRef.current?.send({
               type: 'broadcast',
               event: 'game_over',
               payload: { winner: 'player1', score1, score2 },
             });
-            return { ...prev, score1, score2, gameStarted: false, gameOver: true, winner: 'player1' };
+            return { ...prev, score1, score2, gameStarted: false, gameOver: true, winner: 'player1' as const };
           }
           const reset = resetBall();
-          newX = reset.x;
-          newY = reset.y;
-          newVx = reset.vx;
-          newVy = reset.vy;
+          return { ...prev, score1, score2, ball: reset };
         }
 
         const newBall = { x: newX, y: newY, vx: newVx, vy: newVy };
         
-        // Broadcast ball position
-        channelRef.current?.send({
-          type: 'broadcast',
-          event: 'ball_update',
-          payload: { ball: newBall, score1, score2 },
-        });
+        // Broadcast ball position to opponent
+        if (channelRef.current && roomId) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'ball_update',
+            payload: { ball: newBall, score1, score2 },
+          });
+        }
 
         return { ...prev, ball: newBall, score1, score2 };
       });
@@ -365,7 +386,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [isHost, gameState.gameStarted, resetBall]);
+  }, [isHost, roomId, gameState.gameStarted, gameState.gameOver, resetBall]);
 
   // Render
   useEffect(() => {
