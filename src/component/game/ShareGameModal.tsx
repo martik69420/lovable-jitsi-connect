@@ -70,15 +70,17 @@ const ShareGameModal: React.FC<ShareGameModalProps> = ({
   const Icon = game?.icon || Gamepad;
 
   useEffect(() => {
-    if (open && user) {
+    if (user) {
       fetchContactsAndGroups();
     }
-  }, [open, user]);
+  }, [user]);
 
   const fetchContactsAndGroups = async () => {
     if (!user) return;
     
-    setLoading(true);
+    if (contacts.length === 0 && groups.length === 0) {
+      setLoading(true);
+    }
     try {
       // Fetch friends
       const { data: friendsData, error: friendsError } = await supabase

@@ -19,7 +19,10 @@ interface GameState {
   score1: number;
   score2: number;
   gameStarted: boolean;
-  countdown: number;
+  gameOver: boolean;
+  winner: 'player1' | 'player2' | null;
+  playAgainRequested: boolean;
+  opponentPlayAgainRequested: boolean;
 }
 
 const CANVAS_WIDTH = 600;
@@ -38,8 +41,12 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     score1: 0,
     score2: 0,
     gameStarted: false,
-    countdown: 0,
+    gameOver: false,
+    winner: null,
+    playAgainRequested: false,
+    opponentPlayAgainRequested: false,
   });
+  const WIN_SCORE = 10;
   const [isHost, setIsHost] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [opponent, setOpponent] = useState<string | null>(null);
@@ -57,19 +64,44 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     };
   }, []);
 
-  const startCountdown = useCallback(() => {
-    setGameState(prev => ({ ...prev, countdown: 3 }));
-    
-    const countdownInterval = setInterval(() => {
-      setGameState(prev => {
-        if (prev.countdown <= 1) {
-          clearInterval(countdownInterval);
-          return { ...prev, countdown: 0, gameStarted: true };
-        }
-        return { ...prev, countdown: prev.countdown - 1 };
-      });
-    }, 1000);
-  }, []);
+  const startGame = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: true,
+      gameOver: false,
+      winner: null,
+      score1: 0,
+      score2: 0,
+      ball: resetBall(),
+      playAgainRequested: false,
+      opponentPlayAgainRequested: false,
+    }));
+  }, [resetBall]);
+
+  const requestPlayAgain = useCallback(() => {
+    setGameState(prev => {
+      if (prev.opponentPlayAgainRequested) {
+        // Both requested, start new game
+        return {
+          ...prev,
+          gameStarted: true,
+          gameOver: false,
+          winner: null,
+          score1: 0,
+          score2: 0,
+          ball: resetBall(),
+          playAgainRequested: false,
+          opponentPlayAgainRequested: false,
+        };
+      }
+      return { ...prev, playAgainRequested: true };
+    });
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'play_again_request',
+      payload: { userId: user?.id },
+    });
+  }, [user?.id, resetBall]);
 
   const createRoom = async () => {
     if (!user) return;
@@ -105,21 +137,42 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
         if (host && payload.userId !== user?.id) {
           setOpponent(payload.username);
           setWaiting(false);
-          // Start countdown
+          // Start game immediately
           setTimeout(() => {
             channel.send({
               type: 'broadcast',
-              event: 'game_countdown',
+              event: 'game_start',
               payload: { hostId: user?.id, hostUsername: user?.username },
             });
-            startCountdown();
+            startGame();
           }, 500);
         }
       })
-      .on('broadcast', { event: 'game_countdown' }, ({ payload }) => {
+      .on('broadcast', { event: 'game_start' }, ({ payload }) => {
         if (!host) {
           setOpponent(payload.hostUsername);
-          startCountdown();
+          startGame();
+        }
+      })
+      .on('broadcast', { event: 'play_again_request' }, ({ payload }) => {
+        if (payload.userId !== user?.id) {
+          setGameState(prev => {
+            if (prev.playAgainRequested) {
+              // Both requested, start new game
+              return {
+                ...prev,
+                gameStarted: true,
+                gameOver: false,
+                winner: null,
+                score1: 0,
+                score2: 0,
+                ball: resetBall(),
+                playAgainRequested: false,
+                opponentPlayAgainRequested: false,
+              };
+            }
+            return { ...prev, opponentPlayAgainRequested: true };
+          });
         }
       })
       .on('broadcast', { event: 'paddle_move' }, ({ payload }) => {
@@ -138,9 +191,21 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
           }));
         }
       })
+      .on('broadcast', { event: 'game_over' }, ({ payload }) => {
+        if (!host) {
+          setGameState(prev => ({
+            ...prev,
+            score1: payload.score1,
+            score2: payload.score2,
+            gameStarted: false,
+            gameOver: true,
+            winner: payload.winner,
+          }));
+        }
+      })
       .on('broadcast', { event: 'player_leave' }, () => {
         setOpponent(null);
-        setGameState(prev => ({ ...prev, gameStarted: false }));
+        setGameState(prev => ({ ...prev, gameStarted: false, gameOver: false }));
         setWaiting(true);
       })
       .subscribe((status) => {
@@ -248,6 +313,15 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
         // Score
         if (newX <= 0) {
           score2++;
+          if (score2 >= WIN_SCORE) {
+            // Player 2 wins
+            channelRef.current?.send({
+              type: 'broadcast',
+              event: 'game_over',
+              payload: { winner: 'player2', score1, score2 },
+            });
+            return { ...prev, score1, score2, gameStarted: false, gameOver: true, winner: 'player2' };
+          }
           const reset = resetBall();
           newX = reset.x;
           newY = reset.y;
@@ -256,6 +330,15 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
         }
         if (newX >= CANVAS_WIDTH) {
           score1++;
+          if (score1 >= WIN_SCORE) {
+            // Player 1 wins
+            channelRef.current?.send({
+              type: 'broadcast',
+              event: 'game_over',
+              payload: { winner: 'player1', score1, score2 },
+            });
+            return { ...prev, score1, score2, gameStarted: false, gameOver: true, winner: 'player1' };
+          }
           const reset = resetBall();
           newX = reset.x;
           newY = reset.y;
@@ -323,15 +406,21 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     ctx.fillText(gameState.score1.toString(), CANVAS_WIDTH / 4, 60);
     ctx.fillText(gameState.score2.toString(), (CANVAS_WIDTH * 3) / 4, 60);
 
-    // Countdown overlay
-    if (gameState.countdown > 0) {
+    // Game over overlay
+    if (gameState.gameOver) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      ctx.font = 'bold 120px sans-serif';
+      ctx.font = 'bold 48px sans-serif';
       ctx.fillStyle = '#00ff88';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(gameState.countdown.toString(), CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+      const winnerText = (gameState.winner === 'player1' && isHost) || (gameState.winner === 'player2' && !isHost) 
+        ? 'You Win!' 
+        : 'You Lose!';
+      ctx.fillText(winnerText, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
+      ctx.font = '24px sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillText('First to 10 wins', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20);
     }
   }, [gameState]);
 
@@ -384,7 +473,21 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
         />
       </Card>
 
-      {!gameState.gameStarted && (
+      {gameState.gameOver && (
+        <div className="flex flex-col items-center gap-4">
+          <Button onClick={requestPlayAgain} disabled={gameState.playAgainRequested} className="gap-2">
+            <Play className="h-4 w-4" />
+            {gameState.playAgainRequested 
+              ? (gameState.opponentPlayAgainRequested ? 'Starting...' : 'Waiting for opponent...') 
+              : 'Play Again'}
+          </Button>
+          {gameState.opponentPlayAgainRequested && !gameState.playAgainRequested && (
+            <p className="text-sm text-muted-foreground">Opponent wants to play again!</p>
+          )}
+        </div>
+      )}
+
+      {!gameState.gameStarted && !gameState.gameOver && (
         <div className="flex flex-col items-center gap-4">
           {waiting ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
