@@ -9,6 +9,7 @@ import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 import { Card } from '@/component/ui/card';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
+import { useNotification } from '@/context/NotificationContext';
 import { useAdmin } from '@/hooks/use-admin';
 import useMessages from '@/hooks/use-messages';
 import { MessageCircle } from 'lucide-react';
@@ -24,6 +25,7 @@ const Messages = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { isAdmin } = useAdmin();
+  const { markAsReadByType } = useNotification();
   const [searchParams] = useSearchParams();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -128,6 +130,8 @@ const Messages = () => {
           // Mark messages as read after fetching
           setTimeout(() => {
             markMessagesAsRead(selectedUserId);
+            // Also mark message notifications from this sender as read
+            markAsReadByType('message', selectedUserId);
           }, 300);
         }
       };
