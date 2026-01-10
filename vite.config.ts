@@ -19,7 +19,6 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: [
-      { find: "@/components", replacement: path.resolve(__dirname, "./src/component") },
       { find: "@", replacement: path.resolve(__dirname, "./src") },
     ],
   },

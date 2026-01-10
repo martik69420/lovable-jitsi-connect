@@ -13,8 +13,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/component/ui/dialog';
+import { Button } from '@/component/ui/button';
 import {
   Form,
   FormControl,
@@ -22,15 +22,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/component/ui/form';
+import { Textarea } from '@/component/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/component/ui/select';
 
 type ReportReason = 'spam' | 'inappropriate' | 'harassment' | 'hate_speech' | 'violence' | 'other';
 
