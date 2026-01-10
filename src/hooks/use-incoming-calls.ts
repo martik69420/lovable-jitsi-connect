@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
@@ -7,36 +7,99 @@ interface IncomingCall {
   callerUsername?: string;
   callerDisplayName?: string;
   callerAvatar?: string | null;
+  channelId: string;
 }
 
 export const useIncomingCalls = () => {
   const { user } = useAuth();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
+  const channelsRef = useRef<Map<string, any>>(new Map());
+  const friendsRef = useRef<string[]>([]);
 
   useEffect(() => {
     if (!user?.id) return;
 
-    // Listen for incoming calls from all potential callers
-    // We create a channel that listens for calls to this user
-    const channel = supabase.channel(`incoming_calls_${user.id}`, {
-      config: { broadcast: { self: false } }
-    });
+    // Fetch friends to set up call listeners for each potential caller
+    const setupCallListeners = async () => {
+      try {
+        // Get all friends (accepted friend requests in either direction)
+        const { data: friendsData } = await supabase
+          .from('friends')
+          .select('user_id, friend_id')
+          .eq('status', 'accepted')
+          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
-    channel
-      .on('broadcast', { event: 'call_request' }, ({ payload }) => {
-        if (payload.targetId === user.id) {
-          setIncomingCall({
-            callerId: payload.callerId,
-            callerUsername: payload.callerUsername,
-            callerDisplayName: payload.callerDisplayName,
-            callerAvatar: payload.callerAvatar
+        if (!friendsData) return;
+
+        // Extract friend IDs
+        const friendIds = friendsData.map(f => 
+          f.user_id === user.id ? f.friend_id : f.user_id
+        ).filter(Boolean) as string[];
+
+        friendsRef.current = friendIds;
+
+        // Create a channel for each friend to listen for their calls
+        friendIds.forEach(friendId => {
+          const channelId = [user.id, friendId].sort().join('_');
+          
+          // Skip if already listening
+          if (channelsRef.current.has(channelId)) return;
+
+          const channel = supabase.channel(`call_${channelId}`, {
+            config: { broadcast: { self: false } }
           });
+
+          channel
+            .on('broadcast', { event: 'call_request' }, ({ payload }) => {
+              if (payload.targetId === user.id) {
+                console.log('Incoming call from:', payload.callerId);
+                setIncomingCall({
+                  callerId: payload.callerId,
+                  callerUsername: payload.callerUsername,
+                  callerDisplayName: payload.callerDisplayName,
+                  callerAvatar: payload.callerAvatar,
+                  channelId
+                });
+              }
+            })
+            .subscribe((status) => {
+              console.log(`Call listener for ${channelId}:`, status);
+            });
+
+          channelsRef.current.set(channelId, channel);
+        });
+      } catch (error) {
+        console.error('Error setting up call listeners:', error);
+      }
+    };
+
+    setupCallListeners();
+
+    // Also listen for friend list changes to update listeners
+    const friendsChannel = supabase
+      .channel('friends_changes_for_calls')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friends',
+          filter: `or(user_id.eq.${user.id},friend_id.eq.${user.id})`
+        },
+        () => {
+          // Refresh listeners when friends change
+          setupCallListeners();
         }
-      })
+      )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      // Clean up all channels
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current.clear();
+      supabase.removeChannel(friendsChannel);
     };
   }, [user?.id]);
 
