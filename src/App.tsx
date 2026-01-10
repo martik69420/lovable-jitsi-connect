@@ -1,11 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from './context/ThemeContext';
-import { LanguageProvider } from './context/LanguageContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { PostProvider } from './context/PostContext';
-import { GameProvider } from './context/GameContext';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { LanguageProvider } from '@/context/LanguageContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { PostProvider } from '@/context/PostContext';
+import { GameProvider } from '@/context/GameContext';
 import { Toaster } from './component/ui/toaster';
 import { AuthProvider } from './context/auth';
 import { TooltipProvider } from '@/component/ui/tooltip';
