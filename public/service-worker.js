@@ -1,6 +1,6 @@
 
 // Service Worker for Campus Connect App
-const CACHE_NAME = 'campus-connect-cache-v1';
+const CACHE_NAME = 'campus-connect-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -44,43 +44,59 @@ self.addEventListener('fetch', (event) => {
   if (!event.request.url.startsWith('http')) {
     return;
   }
-  
+
   // Only cache GET requests
   if (event.request.method !== 'GET') {
     return fetch(event.request);
   }
-  
+
+  const url = new URL(event.request.url);
+
+  // IMPORTANT: never cache dev/Vite module requests or hot-reload timestamped URLs
+  // (Caching these can cause stale JS and "two React contexts" style bugs.)
+  if (
+    url.searchParams.has('t') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.includes('vite') ||
+    url.pathname.endsWith('.ts') ||
+    url.pathname.endsWith('.tsx') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css')
+  ) {
+    return event.respondWith(fetch(event.request));
+  }
+
   event.respondWith(
-    caches.match(event.request)
+    caches
+      .match(event.request)
       .then((response) => {
         // Cache hit - return the response from the cached version
         if (response) {
           return response;
         }
-        
+
         // Not in cache - fetch from network
-        return fetch(event.request)
-          .then((response) => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            // Clone the response
-            const responseToCache = response.clone();
-            
-            // Open the cache and put the fetched response in it
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                try {
-                  cache.put(event.request, responseToCache);
-                } catch (error) {
-                  console.log('Caching failed:', error);
-                }
-              });
-              
+        return fetch(event.request).then((response) => {
+          // Check if we received a valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
+          }
+
+          // Clone the response
+          const responseToCache = response.clone();
+
+          // Open the cache and put the fetched response in it
+          caches.open(CACHE_NAME).then((cache) => {
+            try {
+              cache.put(event.request, responseToCache);
+            } catch (error) {
+              console.log('Caching failed:', error);
+            }
           });
+
+          return response;
+        });
       })
       .catch(() => {
         // If both cache and network fail, show offline page
