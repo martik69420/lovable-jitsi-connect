@@ -63,6 +63,7 @@ function App() {
                 <NotificationProvider>
                   <PostProvider>
                     <UnreadMessagesTitle />
+                    <NotificationToastContainer />
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
                         <Route path="/" element={<Home />} />
@@ -89,7 +90,6 @@ function App() {
                       </Routes>
                     </Suspense>
                     <Toaster />
-                    <NotificationToastContainer />
                   </PostProvider>
                 </NotificationProvider>
               </GameProvider>
