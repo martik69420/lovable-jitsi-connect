@@ -50,6 +50,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
   const handleReply = () => {
     if (notification.type === 'message' && notification.sender?.id) {
       navigate(`/messages?user=${notification.sender.id}`);
+      // Mark as read when navigating to the message
+      onMarkAsRead();
     }
     onAction?.('reply');
     handleDismiss();
@@ -64,12 +66,15 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
 
   const handleAcceptFriend = () => {
     onAction?.('accept');
+    // Mark as read when accepting
+    onMarkAsRead();
     handleDismiss();
   };
 
   const handleJoinGame = () => {
     if (notification.relatedId) {
       navigate(`/games/${notification.relatedId}`);
+      onMarkAsRead();
     }
     onAction?.('join');
     handleDismiss();
@@ -78,6 +83,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
   const handleViewPost = () => {
     if (notification.relatedId) {
       navigate(`/post/${notification.relatedId}`);
+      // Mark as read when viewing the related content
+      onMarkAsRead();
     }
     handleDismiss();
   };
