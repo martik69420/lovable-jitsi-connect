@@ -36,6 +36,7 @@ export interface NotificationContextProps {
   fetchNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  markAsReadByType: (type: Notification['type'], relatedId?: string) => Promise<void>;
   clearAllNotifications: () => Promise<void>;
   showMessageNotifications: boolean;
   showLikeNotifications: boolean;
@@ -317,6 +318,45 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Function to mark notifications as read by type and optionally by relatedId
+  const markAsReadByType = async (type: Notification['type'], relatedId?: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user?.id) {
+        let query = supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('user_id', session.user.id)
+          .eq('type', type)
+          .eq('is_read', false);
+        
+        if (relatedId) {
+          query = query.eq('related_id', relatedId);
+        }
+        
+        await query;
+      }
+      
+      // Update local state
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => {
+          if (notification.type === type && !notification.read) {
+            if (relatedId) {
+              return notification.relatedId === relatedId 
+                ? { ...notification, read: true } 
+                : notification;
+            }
+            return { ...notification, read: true };
+          }
+          return notification;
+        })
+      );
+    } catch (error) {
+      console.error("Error marking notifications as read by type:", error);
+    }
+  };
+
   // Function to mark all notifications as read
   const markAllAsRead = async () => {
     try {
@@ -440,6 +480,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       fetchNotifications,
       markAsRead,
       markAllAsRead,
+      markAsReadByType,
       clearAllNotifications,
       showMessageNotifications,
       showLikeNotifications,
