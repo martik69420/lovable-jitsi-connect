@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/component/ui/dialog';
 import { Button } from '@/component/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Maximize, Minimize } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
@@ -43,8 +43,10 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   
+  const containerRef = useRef<HTMLDivElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -105,6 +107,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const handleEndCall = useCallback((sendEvent = true) => {
     console.log('Ending call, sendEvent:', sendEvent);
     
+    // Exit fullscreen if active
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    
     if (sendEvent && channelRef.current && targetId) {
       channelRef.current.send({
         type: 'broadcast',
@@ -132,6 +139,51 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     }
     pendingCandidatesRef.current = [];
   }, []);
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement && containerRef.current) {
+        await containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (e) {
+      console.error('Fullscreen error:', e);
+    }
+  }, []);
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Picture-in-Picture when tab loses focus
+  useEffect(() => {
+    if (!open || callStatus !== 'connected') return;
+
+    const handleVisibilityChange = async () => {
+      if (document.hidden && remoteVideoRef.current && callStatus === 'connected') {
+        try {
+          if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+            await remoteVideoRef.current.requestPictureInPicture();
+          }
+        } catch (e) {
+          console.log('PiP not available:', e);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [open, callStatus]);
 
   useEffect(() => {
     if (!open || !user?.id || !targetId || !channelId) return;
@@ -410,13 +462,39 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         <DialogTitle className="sr-only">Video Call with {displayName}</DialogTitle>
         
         {/* Remote Video (fullscreen) */}
-        <div className="relative w-full h-full bg-gray-800">
+        <div ref={containerRef} className="relative w-full h-full bg-gray-800">
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
             className="w-full h-full object-cover"
           />
+          
+          {/* Top bar with fullscreen button */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={displayInfo?.avatar || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {displayName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-white font-medium">{displayName}</p>
+                {callStatus === 'connected' && (
+                  <p className="text-gray-300 text-sm">{formatDuration(callDuration)}</p>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
+              onClick={toggleFullscreen}
+            >
+              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+            </Button>
+          </div>
           
           {/* Calling/Ringing overlay */}
           {(callStatus === 'calling' || callStatus === 'ringing' || callStatus === 'connecting' || callStatus === 'idle') && (
@@ -470,8 +548,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             </div>
           )}
           
-          {/* Local Video (picture-in-picture) */}
-          <div className="absolute bottom-24 right-4 w-48 h-36 rounded-lg overflow-hidden bg-gray-700 shadow-lg">
+          {/* Local Video (picture-in-picture style) */}
+          <div className="absolute bottom-24 right-4 w-48 h-36 rounded-lg overflow-hidden bg-gray-700 shadow-lg border-2 border-gray-600">
             <video
               ref={localVideoRef}
               autoPlay
@@ -486,44 +564,40 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             )}
           </div>
           
-          {/* Call Duration */}
-          {callStatus === 'connected' && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 px-4 py-2 rounded-full">
-              <span className="text-white font-mono">{formatDuration(callDuration)}</span>
-            </div>
-          )}
-          
-          {/* Controls - show when connected */}
-          {callStatus === 'connected' && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="lg"
-                className={`rounded-full h-14 w-14 ${isMuted ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                onClick={toggleMute}
-              >
-                {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="lg"
-                className={`rounded-full h-14 w-14 ${isVideoOff ? 'bg-red-500/20 text-red-500' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                onClick={toggleVideo}
-              >
-                {isVideoOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
-              </Button>
-              
-              <Button
-                variant="destructive"
-                size="lg"
-                className="rounded-full h-14 w-14"
-                onClick={() => handleEndCall()}
-              >
-                <PhoneOff className="h-6 w-6" />
-              </Button>
-            </div>
-          )}
+          {/* Bottom controls bar */}
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-3 p-4 bg-gradient-to-t from-black/80 to-transparent">
+            {/* Mute button */}
+            <Button
+              variant="ghost"
+              size="lg"
+              className={`rounded-full h-12 w-12 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              onClick={toggleMute}
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </Button>
+            
+            {/* Video toggle button */}
+            <Button
+              variant="ghost"
+              size="lg"
+              className={`rounded-full h-12 w-12 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              onClick={toggleVideo}
+              title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
+            >
+              {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+            </Button>
+            
+            {/* Hang up button - prominent red */}
+            <Button
+              size="lg"
+              className="rounded-full h-14 w-14 bg-red-500 hover:bg-red-600 text-white"
+              onClick={() => handleEndCall()}
+              title="End call"
+            >
+              <PhoneOff className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
