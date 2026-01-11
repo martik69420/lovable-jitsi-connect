@@ -11,6 +11,7 @@ import { AuthProvider } from './context/auth';
 import { TooltipProvider } from '@/component/ui/tooltip';
 import UnreadMessagesTitle from '@/component/system/UnreadMessagesTitle';
 import NotificationToastContainer from '@/component/notifications/NotificationToastContainer';
+import GlobalCallHandler from '@/component/calling/GlobalCallHandler';
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import('./pages/Home'));
@@ -64,6 +65,7 @@ function App() {
                   <PostProvider>
                     <UnreadMessagesTitle />
                     <NotificationToastContainer />
+                    <GlobalCallHandler />
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
                         <Route path="/" element={<Home />} />

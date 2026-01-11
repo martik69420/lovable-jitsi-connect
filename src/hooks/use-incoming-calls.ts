@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 
@@ -62,6 +62,12 @@ export const useIncomingCalls = () => {
                 });
               }
             })
+            .on('broadcast', { event: 'call_end' }, ({ payload }) => {
+              // Clear incoming call if the caller ended it
+              if (incomingCall?.callerId === payload.callerId || payload.targetId === user.id) {
+                setIncomingCall(null);
+              }
+            })
             .subscribe((status) => {
               console.log(`Call listener for ${channelId}:`, status);
             });
@@ -103,9 +109,23 @@ export const useIncomingCalls = () => {
     };
   }, [user?.id]);
 
-  const clearIncomingCall = () => {
+  const clearIncomingCall = useCallback(() => {
+    // Send rejection to the caller before clearing
+    if (incomingCall && channelsRef.current.has(incomingCall.channelId)) {
+      const channel = channelsRef.current.get(incomingCall.channelId);
+      channel?.send({
+        type: 'broadcast',
+        event: 'call_rejected',
+        payload: { targetId: incomingCall.callerId }
+      });
+    }
     setIncomingCall(null);
-  };
+  }, [incomingCall]);
 
-  return { incomingCall, clearIncomingCall };
+  const acceptIncomingCall = useCallback(() => {
+    // Just clear the state - the acceptance is handled in the VideoCallModal
+    setIncomingCall(null);
+  }, []);
+
+  return { incomingCall, clearIncomingCall, acceptIncomingCall };
 };
