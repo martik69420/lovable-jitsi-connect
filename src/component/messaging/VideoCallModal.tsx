@@ -312,7 +312,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                   }
                 }, 30000);
               } else {
-                setCallStatus('ringing');
+                // For incoming calls that were already accepted from the overlay,
+                // immediately send acceptance and start connecting
+                setCallStatus('connecting');
+                channel.send({
+                  type: 'broadcast',
+                  event: 'call_accepted',
+                  payload: { accepterId: user.id, targetId: callerId }
+                });
               }
             }
           });
