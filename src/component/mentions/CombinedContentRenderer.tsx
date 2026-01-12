@@ -56,7 +56,7 @@ const CombinedContentRenderer: React.FC<CombinedContentRendererProps> = ({ conte
             return (
               <span
                 key={`mention-${index}-${mentionIndex}`}
-                className="text-blue-500 font-medium hover:underline cursor-pointer"
+                className="text-blue-600 font-medium hover:underline cursor-pointer"
                 onClick={(e) => handleMentionClick(mentionPart, e)}
               >
                 @{mentionPart}
