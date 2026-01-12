@@ -41,7 +41,7 @@ const PostList: React.FC<PostListProps> = ({
   return (
     <AnimatePresence>
       <div className="space-y-4">
-        {posts.map((post) => (
+        {posts.map((post, index) => (
           <motion.div
             key={post.id}
             initial={{ opacity: 0, y: 20 }}
@@ -49,7 +49,7 @@ const PostList: React.FC<PostListProps> = ({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <PostCard post={post} />
+            <PostCard post={post} priority={index === 0} />
           </motion.div>
         ))}
       </div>
