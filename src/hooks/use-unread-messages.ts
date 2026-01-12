@@ -18,7 +18,8 @@ export const useUnreadMessages = () => {
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', user.id)
-        .eq('is_read', false);
+        .eq('is_read', false)
+        .is('group_id', null); // Only count direct messages
 
       if (error) {
         console.error('Error fetching unread count:', error);
@@ -52,19 +53,32 @@ export const useUnreadMessages = () => {
     // Initial fetch
     fetchUnreadCount();
 
-    // Set up real-time subscription
+    // Set up real-time subscription for new messages and read status changes
     const channel = supabase
       .channel('unread_messages_tracker')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages',
           filter: `receiver_id=eq.${user.id}`
         },
         () => {
-          // Refresh unread count when messages change
+          // New message received - refresh count
+          fetchUnreadCount();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiver_id=eq.${user.id}`
+        },
+        () => {
+          // Message read status changed - refresh count
           fetchUnreadCount();
         }
       )

@@ -13,6 +13,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useNotification } from '@/context/NotificationContext';
 import { useAdmin } from '@/hooks/use-admin';
 import useMessages from '@/hooks/use-messages';
+import { useUnreadMessages } from '@/hooks/use-unread-messages';
 import { MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useChatPreferences } from '@/hooks/use-chat-preferences';
@@ -28,6 +29,7 @@ const Messages = () => {
   const { t } = useLanguage();
   const { isAdmin } = useAdmin();
   const { markAsReadByType } = useNotification();
+  const { fetchUnreadCount } = useUnreadMessages();
   const [searchParams] = useSearchParams();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -130,10 +132,12 @@ const Messages = () => {
           setSelectedUser(friend);
           
           // Mark messages as read after fetching
-          setTimeout(() => {
-            markMessagesAsRead(selectedUserId);
+          setTimeout(async () => {
+            await markMessagesAsRead(selectedUserId);
             // Also mark message notifications from this sender as read
-            markAsReadByType('message', selectedUserId);
+            await markAsReadByType('message', selectedUserId);
+            // Refresh unread count badge
+            fetchUnreadCount();
           }, 300);
         }
       };
