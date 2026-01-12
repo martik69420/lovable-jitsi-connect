@@ -62,7 +62,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
         .from('polls')
         .select('id, question, options, ends_at')
         .eq('post_id', post.id)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         setPoll({

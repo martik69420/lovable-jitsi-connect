@@ -93,7 +93,6 @@ const Sidebar = () => {
     <div className="w-64 flex-shrink-0 border-r border-border flex flex-col h-screen fixed left-0 top-0 overflow-y-auto z-30 bg-background backdrop-blur-sm">
       <div className="p-4">
         <Link to="/" onClick={() => setActiveItem('/')} className="font-bold text-xl flex items-center">
-          <img src="/logo.svg" alt="Logo" className="mr-2 h-6 w-6" />
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500">
             Campus Connect
           </span>

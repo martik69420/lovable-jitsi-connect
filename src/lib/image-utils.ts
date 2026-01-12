@@ -13,8 +13,8 @@ interface ImageTransformOptions {
 }
 
 /**
- * Transforms a Supabase Storage URL to use the image transformation API
- * This serves properly sized and optimized images
+ * Returns the original URL without transformation
+ * Image transformation API requires Supabase Pro plan - disabled to avoid 403 errors
  */
 export function getOptimizedImageUrl(
   originalUrl: string | null | undefined,
@@ -22,29 +22,9 @@ export function getOptimizedImageUrl(
 ): string {
   if (!originalUrl) return '/placeholder.svg';
   
-  // Only transform Supabase storage URLs
-  if (!originalUrl.includes(SUPABASE_URL) || !originalUrl.includes('/storage/v1/object/public/')) {
-    return originalUrl;
-  }
-
-  const { width, height, quality = 75, format = 'webp' } = options;
-
-  // Extract the bucket and path from the URL
-  // Original: https://xxx.supabase.co/storage/v1/object/public/bucket/path
-  // Transform to: https://xxx.supabase.co/storage/v1/render/image/public/bucket/path?width=X&format=webp
-  const transformedUrl = originalUrl.replace(
-    '/storage/v1/object/public/',
-    '/storage/v1/render/image/public/'
-  );
-
-  const params = new URLSearchParams();
-  if (width) params.set('width', width.toString());
-  if (height) params.set('height', height.toString());
-  params.set('quality', quality.toString());
-  if (format !== 'origin') params.set('format', format);
-
-  const separator = transformedUrl.includes('?') ? '&' : '?';
-  return `${transformedUrl}${separator}${params.toString()}`;
+  // Return original URL without transformation to avoid 403 errors
+  // Supabase image transformation API requires Pro plan
+  return originalUrl;
 }
 
 /**
