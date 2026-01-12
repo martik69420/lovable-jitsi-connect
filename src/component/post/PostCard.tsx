@@ -25,6 +25,7 @@ import { getOptimizedPostImageUrl } from '@/lib/image-utils';
 
 interface PostCardProps {
   post: Post;
+  priority?: boolean;
 }
 
 interface Poll {
@@ -34,7 +35,7 @@ interface Poll {
   ends_at?: string;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
   const [showComments, setShowComments] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -223,6 +224,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           // In a real implementation, you'd store the display type with each image
           const isPreview = true; // This would come from your image data structure
           const optimizedUrl = getOptimizedPostImageUrl(imageUrl, 1200);
+          // First image of first post should be eagerly loaded for LCP
+          const isLCPCandidate = priority && index === 0;
           
           if (isPreview) {
             return (
@@ -232,7 +235,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                   alt={`Post image ${index + 1}`}
                   className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
                   onClick={() => window.open(imageUrl, '_blank')}
-                  loading="lazy"
+                  loading={isLCPCandidate ? "eager" : "lazy"}
+                  fetchPriority={isLCPCandidate ? "high" : undefined}
                   width={914}
                   height={384}
                 />
