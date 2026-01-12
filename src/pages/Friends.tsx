@@ -48,11 +48,7 @@ const Friends = () => {
     }
   }, [activeTab, user?.id, fetchFriends]);
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+  // Show login prompt for unauthenticated users instead of redirecting
 
   const handleMessageFriend = (friendId: string) => {
     navigate(`/messages?userId=${friendId}`);
@@ -77,6 +73,24 @@ const Friends = () => {
         <div className="flex items-center justify-center h-screen">
           <Loader2 className="h-8 w-8 animate-spin" />
           <span className="ml-2">{t('auth.loadingAuth')}</span>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Show login prompt for guests
+  if (!isAuthenticated) {
+    return (
+      <AppLayout>
+        <div className="max-w-4xl mx-auto">
+          <Card className="p-8 text-center">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold mb-2">{t('friends.title')}</h2>
+            <p className="text-muted-foreground mb-4">Sign in to connect with friends and see your friend list.</p>
+            <Button onClick={() => navigate('/login')}>
+              Sign In
+            </Button>
+          </Card>
         </div>
       </AppLayout>
     );

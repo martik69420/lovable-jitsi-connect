@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import NotificationMenu from "@/component/notifications/NotificationMenu";
 
 const TopBar: React.FC = () => {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, isAuthenticated } = useAuth();
   const { unreadCount, fetchNotifications, isLoading } = useNotification();
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
@@ -161,75 +161,83 @@ const TopBar: React.FC = () => {
             <span className="sr-only">Toggle theme</span>
           </Button>
 
-          {/* Notifications */}
-          <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className={cn(
-                  "relative transition-all", 
-                  unreadCount > 0 ? "animate-pulse" : ""
-                )}
-              >
-                <Bell className={cn(
-                  "h-5 w-5 transition-colors",
-                  unreadCount > 0 ? "text-primary" : ""
-                )} />
-                {isLoading ? (
-                  <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full border-2 border-t-transparent border-primary animate-spin" />
-                ) : unreadCount > 0 ? (
-                  <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                ) : null}
-              </Button>
-            </SheetTrigger>
-            <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />
-          </Sheet>
+          {isAuthenticated && user ? (
+            <>
+              {/* Notifications */}
+              <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn(
+                      "relative transition-all", 
+                      unreadCount > 0 ? "animate-pulse" : ""
+                    )}
+                  >
+                    <Bell className={cn(
+                      "h-5 w-5 transition-colors",
+                      unreadCount > 0 ? "text-primary" : ""
+                    )} />
+                    {isLoading ? (
+                      <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full border-2 border-t-transparent border-primary animate-spin" />
+                    ) : unreadCount > 0 ? (
+                      <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    ) : null}
+                  </Button>
+                </SheetTrigger>
+                <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />
+              </Sheet>
 
 
-          {/* User dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar} alt={user?.displayName} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user?.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="flex items-center justify-start gap-2 p-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar} alt={user?.displayName} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user?.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium">{user?.displayName}</span>
-                  <span className="text-xs text-muted-foreground">@{user?.username}</span>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate(`/profile/${user?.username}`)}>
-                <User className="mr-2 h-4 w-4" />
-                <span>{t('nav.profile')}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Bell className="mr-2 h-4 w-4" />
-                <span>{t('nav.settings')}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>{t('auth.logout')}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              {/* User dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar} alt={user?.displayName} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user?.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar} alt={user?.displayName} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user?.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{user?.displayName}</span>
+                      <span className="text-xs text-muted-foreground">@{user?.username}</span>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate(`/profile/${user?.username}`)}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>{t('nav.profile')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    <span>{t('nav.settings')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t('auth.logout')}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <Button onClick={() => navigate('/login')} size="sm">
+              Sign In
+            </Button>
+          )}
         </div>
       </div>
     </header>

@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Navbar from "./Navbar";
@@ -11,16 +11,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const AppLayout = ({ children }: { children?: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const { isLoading } = useAuth();
   const isMobile = useIsMobile();
-
-  React.useEffect(() => {
-    // Only redirect if we're sure the user is not authenticated and auth is not still loading
-    if (!isLoading && !isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, isLoading, navigate]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -32,11 +24,6 @@ const AppLayout = ({ children }: { children?: React.ReactNode }) => {
         </div>
       </div>
     );
-  }
-
-  // If not authenticated, don't render layout
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
   }
 
   return (

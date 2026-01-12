@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import AppLayout from '@/component/layout/AppLayout';
 import ContactsList from '@/component/messaging/ContactsList';
 import ChatHeader from '@/component/messaging/ChatHeader';
@@ -7,6 +7,7 @@ import MessagesList from '@/component/messaging/MessagesList';
 import MessageInput from '@/component/messaging/MessageInput';
 import { TypingIndicator } from '@/component/messaging/TypingIndicator';
 import { Card } from '@/component/ui/card';
+import { Button } from '@/component/ui/button';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
 import { useNotification } from '@/context/NotificationContext';
@@ -22,7 +23,8 @@ import VideoCallModal from '@/component/messaging/VideoCallModal';
 import { useIncomingCalls } from '@/hooks/use-incoming-calls';
 
 const Messages = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { isAdmin } = useAdmin();
   const { markAsReadByType } = useNotification();
@@ -196,6 +198,24 @@ const Messages = () => {
 
   // Get pinned messages
   const pinnedMessages = messages.filter(msg => msg.is_pinned);
+
+  // Show login prompt for guests
+  if (!isAuthenticated) {
+    return (
+      <AppLayout>
+        <div className="max-w-4xl mx-auto py-12">
+          <Card className="p-8 text-center">
+            <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold mb-2">{t('messages.title')}</h2>
+            <p className="text-muted-foreground mb-4">Sign in to send and receive messages with friends.</p>
+            <Button onClick={() => navigate('/login')}>
+              Sign In
+            </Button>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
