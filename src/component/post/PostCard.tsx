@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { usePost } from '@/context/PostContext';
 import { useAuth } from '@/context/auth';
 import { useAdmin } from '@/hooks/use-admin';
-import CommentSection from './CommentSection';
-import ShareModal from './ShareModal';
-import ReportModal from '@/components/ReportModal';
 import { useToast } from '@/hooks/use-toast';
 import type { Post } from '@/context/PostContext';
 import { motion } from 'framer-motion';
@@ -22,6 +19,11 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PollDisplay from './PollDisplay';
 import { getOptimizedPostImageUrl } from '@/lib/image-utils';
+
+// Lazy load components only shown on user interaction
+const CommentSection = lazy(() => import('./CommentSection'));
+const ShareModal = lazy(() => import('./ShareModal'));
+const ReportModal = lazy(() => import('@/components/ReportModal'));
 
 interface PostCardProps {
   post: Post;
@@ -450,7 +452,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
             </div>
             
             {showComments && (
-              <>
+              <Suspense fallback={<div className="py-4 text-center text-muted-foreground text-sm">Loading comments...</div>}>
                 <Separator className="my-4" />
                 <CommentSection 
                   post={post}
@@ -458,26 +460,34 @@ const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
                   setNewComment={setNewComment}
                   handleComment={handleComment}
                 />
-              </>
+              </Suspense>
             )}
           </div>
         </CardContent>
       </Card>
 
-      <ShareModal
-        open={showShareModal}
-        onOpenChange={setShowShareModal}
-        postId={post.id}
-        postTitle={post.content}
-      />
+      {showShareModal && (
+        <Suspense fallback={null}>
+          <ShareModal
+            open={showShareModal}
+            onOpenChange={setShowShareModal}
+            postId={post.id}
+            postTitle={post.content}
+          />
+        </Suspense>
+      )}
 
-      <ReportModal
-        open={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        type="post"
-        targetId={post.id}
-        targetName={post.user?.displayName}
-      />
+      {showReportModal && (
+        <Suspense fallback={null}>
+          <ReportModal
+            open={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            type="post"
+            targetId={post.id}
+            targetName={post.user?.displayName}
+          />
+        </Suspense>
+      )}
     </>
   );
 };
