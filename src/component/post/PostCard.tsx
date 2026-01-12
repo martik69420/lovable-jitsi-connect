@@ -21,6 +21,7 @@ import CombinedContentRenderer from '@/components/mentions/CombinedContentRender
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PollDisplay from './PollDisplay';
+import { getOptimizedPostImageUrl } from '@/lib/image-utils';
 
 interface PostCardProps {
   post: Post;
@@ -221,15 +222,19 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           // For now, we'll default to preview mode since we don't have display type stored
           // In a real implementation, you'd store the display type with each image
           const isPreview = true; // This would come from your image data structure
+          const optimizedUrl = getOptimizedPostImageUrl(imageUrl, 1200);
           
           if (isPreview) {
             return (
               <div key={index} className="rounded-lg overflow-hidden border border-border">
                 <img 
-                  src={imageUrl} 
+                  src={optimizedUrl} 
                   alt={`Post image ${index + 1}`}
                   className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
                   onClick={() => window.open(imageUrl, '_blank')}
+                  loading="lazy"
+                  width={914}
+                  height={384}
                 />
               </div>
             );
