@@ -140,7 +140,15 @@ const Sidebar = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null}
+        ) : (
+          <Button 
+            variant="default" 
+            className="w-full"
+            onClick={() => navigate('/login')}
+          >
+            Sign In
+          </Button>
+        )}
       </div>
 
       <Separator />
@@ -208,16 +216,18 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      <div className="p-4 mt-auto">
-        <Button
-          variant="outline"
-          className="w-full flex items-center justify-center"
-          onClick={handleSignOut}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          {t('auth.signOut')}
-        </Button>
-      </div>
+      {user && (
+        <div className="p-4 mt-auto">
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center"
+            onClick={handleSignOut}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            {t('auth.signOut')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

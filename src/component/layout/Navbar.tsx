@@ -31,7 +31,7 @@ import MobileNavBar from './MobileNavBar';
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { unreadCount, fetchNotifications, isLoading } = useNotification();
   const [notificationMenuOpen, setNotificationMenuOpen] = React.useState(false);
   const isMobile = useIsMobile();
@@ -100,9 +100,8 @@ const Navbar = () => {
             </nav>
           )}
           
-          {/* User Menu & Actions */}
           <div className="flex items-center ml-auto space-x-2">
-            {user && (
+            {isAuthenticated && user ? (
               <>
                 <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
                   <SheetTrigger asChild>
@@ -157,6 +156,10 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
+            ) : (
+              <Button onClick={() => navigate('/login')} size="sm">
+                Sign In
+              </Button>
             )}
           </div>
         </div>

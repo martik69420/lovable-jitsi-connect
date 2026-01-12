@@ -37,44 +37,31 @@ const Index = () => {
   const { toast } = useToast();
   const { isMobile } = useViewport();
 
-  // Authentication check
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+  // No longer redirect to login - allow browsing without auth
 
-  // Fetch posts with error handling
+  // Fetch posts with error handling - works for both authenticated and guest users
   const loadPosts = useCallback(async () => {
-    if (isAuthenticated && user) {
-      setLoadError(null);
-      try {
-        await fetchPosts(activeTab === 'for-you' ? 'feed' : 'latest');
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        setLoadError("Failed to load posts. Please try refreshing.");
-        
-        toast({
-          title: "Failed to load posts",
-          description: "We couldn't retrieve your posts. Please try refreshing.",
-          variant: "destructive",
-        });
-      }
+    setLoadError(null);
+    try {
+      await fetchPosts(activeTab === 'for-you' ? 'feed' : 'latest');
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      setLoadError("Failed to load posts. Please try refreshing.");
+      
+      toast({
+        title: "Failed to load posts",
+        description: "We couldn't retrieve your posts. Please try refreshing.",
+        variant: "destructive",
+      });
     }
-  }, [isAuthenticated, user, activeTab, fetchPosts, toast]);
+  }, [activeTab, fetchPosts, toast]);
   
-  // Initial posts loading
+  // Initial posts loading - works for both authenticated and guest users
   useEffect(() => {
-    let mounted = true;
-    
-    if (isAuthenticated && user && !postsLoading && !posts.length) {
+    if (!postsLoading && !posts.length) {
       loadPosts();
     }
-    
-    return () => {
-      mounted = false;
-    };
-  }, [isAuthenticated, user, loadPosts, postsLoading, posts]);
+  }, [loadPosts, postsLoading, posts]);
 
   // Process posts when they're loaded
   useEffect(() => {

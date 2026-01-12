@@ -13,14 +13,15 @@ import { NotificationSettings } from '@/components/settings/NotificationSettings
 import { PrivacySettings } from '@/components/settings/PrivacySettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, User, Shield, Palette, Globe, Bell, Lock, LogOut } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { ArrowLeft, Search, User, Shield, Palette, Globe, Bell, Lock, LogOut, Settings as SettingsIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState('profile');
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,6 +105,24 @@ const Settings = () => {
         return null;
     }
   };
+
+  // Show login prompt for guests
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <AppLayout>
+        <div className="max-w-4xl mx-auto py-12">
+          <Card className="p-8 text-center">
+            <SettingsIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Settings</h2>
+            <p className="text-muted-foreground mb-4">Sign in to access your account settings.</p>
+            <Button onClick={() => navigate('/login')}>
+              Sign In
+            </Button>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
