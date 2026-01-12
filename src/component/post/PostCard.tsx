@@ -229,11 +229,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
           
           if (isPreview) {
             return (
-              <div key={index} className="rounded-lg overflow-hidden border border-border">
+              <div key={index} className="rounded-lg overflow-hidden border border-border" style={{ aspectRatio: '914 / 384' }}>
                 <img 
                   src={optimizedUrl} 
                   alt={`Post image ${index + 1}`}
-                  className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                  className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
                   onClick={() => window.open(imageUrl, '_blank')}
                   loading={isLCPCandidate ? "eager" : "lazy"}
                   fetchPriority={isLCPCandidate ? "high" : undefined}
