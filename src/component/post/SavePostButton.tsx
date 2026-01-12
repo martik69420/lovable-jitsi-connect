@@ -139,6 +139,7 @@ const SavePostButton: React.FC<SavePostButtonProps> = ({
       <Button
         variant={variant}
         size={size}
+        aria-label={isSaved ? "Unsave post" : "Save post"}
         className={cn(
           `text-muted-foreground hover:text-yellow-500 transition-all duration-300`,
           isSaved && 'text-yellow-500 hover:text-yellow-600',

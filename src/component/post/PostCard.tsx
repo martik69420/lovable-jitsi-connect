@@ -304,7 +304,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Post options">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -423,6 +423,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, priority = false }) => {
                   variant="ghost"
                   size="sm"
                   onClick={handleSave}
+                  aria-label={post.isSaved ? "Unsave post" : "Save post"}
                   className={`transition-colors ${
                     post.isSaved ? 'text-yellow-500' : 'hover:text-yellow-500'
                   }`}
