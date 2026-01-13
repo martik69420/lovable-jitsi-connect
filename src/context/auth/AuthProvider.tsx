@@ -259,10 +259,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Set up auth state listener on mount
   useEffect(() => {
     console.log("Setting up auth listener");
+    let mounted = true;
 
-    // Set up auth state listener
+    // Set up auth state listener FIRST (before checking session)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        if (!mounted) return;
+        
         console.log("Auth state changed:", event);
         
         setSession(newSession);
@@ -271,36 +274,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (newSession?.user) {
             // Delay profile fetch to avoid potential recursive RLS issues
             setTimeout(async () => {
+              if (!mounted) return;
               const userProfile = await fetchUserProfile(newSession.user.id, newSession.user);
-              setIsAuthenticated(!!userProfile);
+              if (mounted) setIsAuthenticated(!!userProfile);
             }, 0);
           }
         } else if (event === 'SIGNED_OUT') {
-          setIsAuthenticated(false);
-          setProfile(null);
-          setUser(null);
+          if (mounted) {
+            setIsAuthenticated(false);
+            setProfile(null);
+            setUser(null);
+          }
         }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      
-      if (session?.user) {
-        try {
-          const userProfile = await fetchUserProfile(session.user.id, session.user);
-          setIsAuthenticated(!!userProfile);
-        } catch (error) {
-          console.error("Error during initialization:", error);
+    // Check for existing session AFTER setting up listener
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          if (mounted) setIsLoading(false);
+          return;
         }
+        
+        if (mounted) {
+          setSession(session);
+          
+          if (session?.user) {
+            try {
+              const userProfile = await fetchUserProfile(session.user.id, session.user);
+              if (mounted) setIsAuthenticated(!!userProfile);
+            } catch (error) {
+              console.error("Error during initialization:", error);
+            }
+          }
+          
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        if (mounted) setIsLoading(false);
       }
-      
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Cleanup subscription
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
