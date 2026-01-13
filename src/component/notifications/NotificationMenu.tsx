@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Bell, MessageSquare, Heart, Check, UserPlus, User, Megaphone, Trash2, AtSign, X, Loader2, Settings as SettingsIcon } from 'lucide-react';
-import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Bell, MessageSquare, Heart, Check, UserPlus, User, Megaphone, Trash2, AtSign, X, Loader2, Settings as SettingsIcon, Mail } from 'lucide-react';
+import { SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { NotificationPreferences } from './NotificationPreferences';
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface NotificationMenuProps {
   onClose?: () => void;
@@ -367,6 +373,8 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
 
     // Then filter by active tab
     switch (activeFilter) {
+      case 'messages':
+        return notifications.filter(n => n.type === 'message');
       case 'likes':
         return notifications.filter(n => n.type === 'like');
       case 'comments':
@@ -436,12 +444,18 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
       <SheetContent side="left" className="w-[400px] sm:w-[450px] p-0">
         <SheetHeader className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-xl font-bold">Notifications</SheetTitle>
+            <div>
+              <SheetTitle className="text-xl font-bold">Notifications</SheetTitle>
+              <SheetDescription className="text-xs mt-1">
+                {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'All caught up!'}
+              </SheetDescription>
+            </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowPreferences(true)}
               className="h-8 w-8"
+              aria-label="Notification settings"
             >
               <SettingsIcon className="h-4 w-4" />
             </Button>
@@ -450,23 +464,58 @@ const NotificationMenu = ({ onClose }: NotificationMenuProps) => {
 
         <Tabs value={activeFilter} onValueChange={setActiveFilter} className="flex-1">
           <div className="px-4 py-3 border-b">
-            <TabsList className="w-full grid grid-cols-5 h-auto">
-              <TabsTrigger value="all" className="text-xs py-2">
-                {notificationTexts.all}
-              </TabsTrigger>
-              <TabsTrigger value="likes" className="text-xs py-2">
-                <Heart className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="comments" className="text-xs py-2">
-                <MessageSquare className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="friends" className="text-xs py-2">
-                <UserPlus className="h-3 w-3" />
-              </TabsTrigger>
-              <TabsTrigger value="mentions" className="text-xs py-2">
-                <AtSign className="h-3 w-3" />
-              </TabsTrigger>
-            </TabsList>
+            <TooltipProvider delayDuration={300}>
+              <TabsList className="w-full grid grid-cols-6 h-auto" aria-label="Filter notifications by type">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="all" className="text-xs py-2" aria-label="All notifications">
+                      {notificationTexts.all}
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom"><p>All notifications</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="messages" className="text-xs py-2" aria-label="Message notifications">
+                      <Mail className="h-3 w-3" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom"><p>Messages</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="likes" className="text-xs py-2" aria-label="Like notifications">
+                      <Heart className="h-3 w-3" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom"><p>Likes</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="comments" className="text-xs py-2" aria-label="Comment notifications">
+                      <MessageSquare className="h-3 w-3" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom"><p>Comments</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="friends" className="text-xs py-2" aria-label="Friend notifications">
+                      <UserPlus className="h-3 w-3" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom"><p>Friends</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger value="mentions" className="text-xs py-2" aria-label="Mention notifications">
+                      <AtSign className="h-3 w-3" />
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom"><p>Mentions</p></TooltipContent>
+                </Tooltip>
+              </TabsList>
+            </TooltipProvider>
           </div>
 
           <div className="px-6 py-3 border-b flex gap-2">
