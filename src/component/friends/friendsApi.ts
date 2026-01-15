@@ -162,6 +162,25 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
       console.error('Error sending friend request:', error);
       throw error;
     }
+
+    // Get sender's profile to include name in notification
+    const { data: senderProfile } = await supabase
+      .from('profiles')
+      .select('display_name, username')
+      .eq('id', userId)
+      .single();
+
+    const senderName = senderProfile?.display_name || senderProfile?.username || 'Someone';
+
+    // Create notification for the friend request recipient
+    await supabase.from('notifications').insert({
+      user_id: friendId,
+      type: 'friend',
+      content: `${senderName} sent you a friend request`,
+      related_id: userId,
+      url: `/friend-requests`,
+      is_read: false
+    });
     
     return true;
   } catch (error) {

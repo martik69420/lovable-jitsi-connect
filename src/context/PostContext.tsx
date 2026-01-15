@@ -344,6 +344,18 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         throw error;
       }
+
+      // Create notification for the post owner (reuse post from line 328)
+      if (post && post.userId !== currentUser.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.userId,
+          type: 'like',
+          content: `${currentUser.displayName || currentUser.username} liked your post`,
+          related_id: currentUser.id,
+          url: `/post/${postId}`,
+          is_read: false
+        });
+      }
     } catch (error: any) {
       console.error("Error liking post:", error.message);
       toast({
@@ -447,6 +459,19 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       );
 
+      // Create notification for the post owner
+      const post = posts.find(p => p.id === postId);
+      if (post && post.userId !== currentUser.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.userId,
+          type: 'comment',
+          content: `${currentUser.displayName || currentUser.username} commented on your post`,
+          related_id: currentUser.id,
+          url: `/post/${postId}`,
+          is_read: false
+        });
+      }
+
       toast({
         title: "Comment added",
         description: "Your comment has been added successfully.",
@@ -531,6 +556,19 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
         post.id === postId ? { ...post, shares: post.shares + 1 } : post
       )
     );
+
+    // Create notification for the post owner
+    const post = posts.find(p => p.id === postId);
+    if (post && post.userId !== currentUser.id) {
+      await supabase.from('notifications').insert({
+        user_id: post.userId,
+        type: 'share',
+        content: `${currentUser.displayName || currentUser.username} shared your post`,
+        related_id: currentUser.id,
+        url: `/post/${postId}`,
+        is_read: false
+      });
+    }
 
     toast({
       title: "Post shared",
@@ -646,6 +684,19 @@ export const PostProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({ user_id: currentUser.id, post_id: postId });
 
       if (error) throw error;
+
+      // Create notification for the post owner
+      const post = posts.find(p => p.id === postId);
+      if (post && post.userId !== currentUser.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.userId,
+          type: 'save',
+          content: `${currentUser.displayName || currentUser.username} saved your post`,
+          related_id: currentUser.id,
+          url: `/post/${postId}`,
+          is_read: false
+        });
+      }
 
       toast({
         title: "Post saved",

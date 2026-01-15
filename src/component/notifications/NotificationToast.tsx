@@ -192,6 +192,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
         return <Gamepad2 className="h-4 w-4 text-purple-500" />;
       case 'share':
         return <Share2 className="h-4 w-4 text-cyan-500" />;
+      case 'save':
+        return <Bookmark className="h-4 w-4 text-orange-500" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
@@ -217,6 +219,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
         return 'Game Invite';
       case 'share':
         return 'Shared with You';
+      case 'save':
+        return 'Post Saved';
       case 'system':
         return 'System';
       default:
@@ -256,18 +260,15 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
       case 'like':
       case 'comment':
       case 'mention':
+      case 'save':
         return [
           { label: 'View Post', icon: <Eye className="h-3.5 w-3.5" />, onClick: handleViewPost, variant: 'default', primary: true },
           { label: 'Reply', icon: <Reply className="h-3.5 w-3.5" />, onClick: handleReply, variant: 'secondary' },
-          { label: 'Like', icon: <Heart className="h-3.5 w-3.5" />, onClick: handleLikePost, variant: 'ghost' },
-          { label: 'Share', icon: <Share2 className="h-3.5 w-3.5" />, onClick: handleSharePost, variant: 'ghost' },
-          { label: 'Save', icon: <Bookmark className="h-3.5 w-3.5" />, onClick: handleSavePost, variant: 'ghost' },
         ];
       case 'share':
         return [
           { label: 'View', icon: <Eye className="h-3.5 w-3.5" />, onClick: handleViewPost, variant: 'default', primary: true },
           { label: 'Reply', icon: <Reply className="h-3.5 w-3.5" />, onClick: handleReply, variant: 'secondary' },
-          { label: 'Save', icon: <Bookmark className="h-3.5 w-3.5" />, onClick: handleSavePost, variant: 'ghost' },
         ];
       default:
         return [
