@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/auth';
-import { useAdmin } from '@/hooks/use-admin';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
@@ -77,7 +76,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [showMembersManager, setShowMembersManager] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -176,14 +174,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Video call button - Admin only */}
-        {isAdmin && !isGroup && onStartVideoCall && (
+        {/* Video call button - Available for all users */}
+        {onStartVideoCall && (
           <Button
             variant="ghost"
             size="icon"
             className="text-muted-foreground hover:text-primary"
             onClick={onStartVideoCall}
-            title="Start video call"
+            title={isGroup ? "Start group video call" : "Start video call"}
           >
             <Video className="h-5 w-5" />
           </Button>

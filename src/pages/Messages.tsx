@@ -11,7 +11,6 @@ import { Button } from '@/component/ui/button';
 import { useAuth } from '@/context/auth';
 import { useLanguage } from '@/context/LanguageContext';
 import { useNotification } from '@/context/NotificationContext';
-import { useAdmin } from '@/hooks/use-admin';
 import useMessages from '@/hooks/use-messages';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 import { MessageCircle } from 'lucide-react';
@@ -27,7 +26,6 @@ const Messages = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { isAdmin } = useAdmin();
   const { markAsReadByType } = useNotification();
   const { fetchUnreadCount } = useUnreadMessages();
   const [searchParams] = useSearchParams();
@@ -388,22 +386,25 @@ const Messages = () => {
         }}
       />
 
-      {/* Video Call Modal - Admin only */}
-      {isAdmin && selectedUser && !isGroupChat && (
+      {/* Video Call Modal - Available for all users */}
+      {selectedUser && (
         <VideoCallModal
           open={showVideoCall}
           onClose={() => setShowVideoCall(false)}
           contact={{
             id: selectedUser.id,
             username: selectedUser.username,
-            displayName: selectedUser.displayName,
-            avatar: selectedUser.avatar
+            displayName: selectedUser.displayName || selectedUser.name,
+            avatar: selectedUser.avatar,
+            name: (selectedUser as any).name,
+            memberCount: (selectedUser as any).memberCount
           }}
+          isGroupCall={isGroupChat}
         />
       )}
 
-      {/* Incoming Call Modal - Admin only */}
-      {isAdmin && incomingCall && (
+      {/* Incoming Call Modal - Available for all users */}
+      {incomingCall && (
         <VideoCallModal
           open={!!incomingCall}
           onClose={clearIncomingCall}

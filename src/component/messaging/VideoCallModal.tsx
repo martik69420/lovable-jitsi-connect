@@ -2,10 +2,30 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/component/ui/dialog';
 import { Button } from '@/component/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Maximize, Minimize } from 'lucide-react';
+import { 
+  Phone, PhoneOff, Mic, MicOff, Video, VideoOff, 
+  Maximize, Minimize, MonitorUp, FlipHorizontal2, Users,
+  MoreVertical
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/component/ui/dropdown-menu';
+
+interface Participant {
+  id: string;
+  username?: string;
+  displayName?: string;
+  avatar?: string | null;
+  stream?: MediaStream;
+  isMuted?: boolean;
+  isVideoOff?: boolean;
+}
 
 interface VideoCallModalProps {
   open: boolean;
@@ -15,6 +35,8 @@ interface VideoCallModalProps {
     username?: string;
     displayName?: string;
     avatar?: string | null;
+    name?: string; // For groups
+    memberCount?: number;
   };
   isIncoming?: boolean;
   callerId?: string;
@@ -23,6 +45,8 @@ interface VideoCallModalProps {
     displayName?: string;
     avatar?: string | null;
   };
+  isGroupCall?: boolean;
+  groupMembers?: Participant[];
 }
 
 const ICE_SERVERS = [
@@ -37,7 +61,9 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   contact,
   isIncoming = false,
   callerId,
-  callerInfo
+  callerInfo,
+  isGroupCall = false,
+  groupMembers = []
 }) => {
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
@@ -45,12 +71,18 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [isCameraFlipped, setIsCameraFlipped] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [participants, setParticipants] = useState<Map<string, Participant>>(new Map());
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   
   const containerRef = useRef<HTMLDivElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const channelRef = useRef<any>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,8 +91,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   const targetId = isIncoming ? callerId : contact.id;
   const displayInfo = isIncoming ? callerInfo : contact;
-  const displayName = displayInfo?.displayName || displayInfo?.username || 'User';
-  const channelId = user?.id && targetId ? [user.id, targetId].sort().join('_') : null;
+  const displayName = displayInfo?.displayName || displayInfo?.username || (contact as any)?.name || 'User';
+  const channelId = user?.id && targetId ? (isGroupCall ? `group_${contact.id}` : [user.id, targetId].sort().join('_')) : null;
 
   const cleanup = useCallback(() => {
     console.log('Cleaning up call resources...');
@@ -82,11 +114,20 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
       });
       localStreamRef.current = null;
     }
+
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+    }
     
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
+
+    // Cleanup group call connections
+    peerConnectionsRef.current.forEach(pc => pc.close());
+    peerConnectionsRef.current.clear();
     
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
@@ -95,6 +136,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     
     pendingCandidatesRef.current = [];
     hasSetRemoteDescRef.current = false;
+    setParticipants(new Map());
+    setIsScreenSharing(false);
   }, []);
 
   const startCallTimer = useCallback(() => {
@@ -107,7 +150,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const handleEndCall = useCallback((sendEvent = true) => {
     console.log('Ending call, sendEvent:', sendEvent);
     
-    // Exit fullscreen if active
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
@@ -116,14 +158,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
       channelRef.current.send({
         type: 'broadcast',
         event: 'call_end',
-        payload: { targetId }
+        payload: { targetId, callerId: user?.id }
       });
     }
     
     setCallStatus('ended');
     cleanup();
     onClose();
-  }, [cleanup, onClose, targetId]);
+  }, [cleanup, onClose, targetId, user?.id]);
 
   const processPendingCandidates = useCallback(async () => {
     const pc = peerConnectionRef.current;
@@ -154,6 +196,129 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
       console.error('Fullscreen error:', e);
     }
   }, []);
+
+  // Flip camera (mirror video)
+  const toggleCameraFlip = useCallback(() => {
+    setIsCameraFlipped(prev => !prev);
+  }, []);
+
+  // Switch between front/back camera on mobile
+  const switchCamera = useCallback(async () => {
+    if (!localStreamRef.current) return;
+
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    
+    try {
+      // Stop current video track
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.stop();
+      }
+
+      // Get new stream with different camera
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: newFacingMode },
+        audio: false
+      });
+
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      
+      // Replace track in peer connection
+      if (peerConnectionRef.current) {
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(newVideoTrack);
+        }
+      }
+
+      // Update local stream
+      localStreamRef.current.removeTrack(videoTrack);
+      localStreamRef.current.addTrack(newVideoTrack);
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+      }
+
+      setFacingMode(newFacingMode);
+      toast.success(`Switched to ${newFacingMode === 'user' ? 'front' : 'back'} camera`);
+    } catch (e) {
+      console.error('Error switching camera:', e);
+      toast.error('Could not switch camera');
+    }
+  }, [facingMode]);
+
+  // Screen sharing
+  const toggleScreenShare = useCallback(async () => {
+    if (!peerConnectionRef.current) return;
+
+    try {
+      if (isScreenSharing) {
+        // Stop screen sharing, switch back to camera
+        if (screenStreamRef.current) {
+          screenStreamRef.current.getTracks().forEach(track => track.stop());
+          screenStreamRef.current = null;
+        }
+
+        // Get camera stream again
+        const cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+          audio: false
+        });
+
+        const videoTrack = cameraStream.getVideoTracks()[0];
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+        }
+
+        // Update local stream
+        const oldVideoTrack = localStreamRef.current?.getVideoTracks()[0];
+        if (oldVideoTrack && localStreamRef.current) {
+          localStreamRef.current.removeTrack(oldVideoTrack);
+          localStreamRef.current.addTrack(videoTrack);
+        }
+
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+        }
+
+        setIsScreenSharing(false);
+        toast.success('Stopped screen sharing');
+      } else {
+        // Start screen sharing
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+
+        screenStreamRef.current = screenStream;
+
+        const videoTrack = screenStream.getVideoTracks()[0];
+        const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+        }
+
+        // Update local video preview
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = screenStream;
+        }
+
+        // Handle when user stops sharing via browser UI
+        videoTrack.onended = () => {
+          toggleScreenShare();
+        };
+
+        setIsScreenSharing(true);
+        toast.success('Started screen sharing');
+      }
+    } catch (e) {
+      console.error('Screen share error:', e);
+      if ((e as Error).name !== 'NotAllowedError') {
+        toast.error('Could not share screen');
+      }
+    }
+  }, [isScreenSharing, facingMode]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -192,11 +357,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
     const setupCall = async () => {
       try {
-        console.log('Setting up call, isIncoming:', isIncoming);
+        console.log('Setting up call, isIncoming:', isIncoming, 'isGroupCall:', isGroupCall);
         
         // Get local media
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { facingMode: 'user' },
           audio: true
         });
         
@@ -352,7 +517,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                     callerUsername: user.username,
                     callerDisplayName: user.displayName,
                     callerAvatar: user.avatar,
-                    targetId
+                    targetId,
+                    isGroupCall
                   }
                 });
                 
@@ -403,7 +569,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         cleanup();
       }
     };
-  }, [open, user?.id, targetId, channelId, isIncoming]);
+  }, [open, user?.id, targetId, channelId, isIncoming, isGroupCall]);
 
   const handleAcceptCall = useCallback(async () => {
     console.log('Accepting call from:', callerId);
@@ -456,146 +622,241 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const participantCount = isGroupCall ? participants.size + 1 : 2;
+
   return (
     <Dialog open={open} onOpenChange={() => handleEndCall()}>
-      <DialogContent className="max-w-4xl h-[80vh] p-0 bg-gray-900 border-none overflow-hidden">
+      <DialogContent className="max-w-4xl w-[95vw] h-[85vh] max-h-[700px] p-0 bg-gray-900 border-gray-800 overflow-hidden rounded-xl">
         <DialogTitle className="sr-only">Video Call with {displayName}</DialogTitle>
         
-        {/* Remote Video (fullscreen) */}
-        <div ref={containerRef} className="relative w-full h-full bg-gray-800">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          
-          {/* Top bar with fullscreen button */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={displayInfo?.avatar || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {displayName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-white font-medium">{displayName}</p>
-                {callStatus === 'connected' && (
-                  <p className="text-gray-300 text-sm">{formatDuration(callDuration)}</p>
+        <div ref={containerRef} className="relative w-full h-full bg-gray-900 flex flex-col">
+          {/* Remote Video Area */}
+          <div className="flex-1 relative min-h-0 bg-gray-800">
+            {isGroupCall && participants.size > 1 ? (
+              // Grid layout for group calls
+              <div className={`w-full h-full grid gap-1 p-1 ${
+                participantCount <= 2 ? 'grid-cols-1' :
+                participantCount <= 4 ? 'grid-cols-2' :
+                participantCount <= 9 ? 'grid-cols-3' : 'grid-cols-4'
+              }`}>
+                {Array.from(participants.values()).map(participant => (
+                  <div key={participant.id} className="relative bg-gray-700 rounded-lg overflow-hidden">
+                    <video
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover"
+                      ref={el => {
+                        if (el && participant.stream) {
+                          el.srcObject = participant.stream;
+                        }
+                      }}
+                    />
+                    <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+                      {participant.displayName || participant.username}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Single remote video for 1:1 calls
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            )}
+            
+            {/* Top bar */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8 border border-white/20">
+                  <AvatarImage src={displayInfo?.avatar || undefined} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    {displayName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-white font-medium text-sm leading-tight">{displayName}</p>
+                  <div className="flex items-center gap-2 text-xs">
+                    {callStatus === 'connected' && (
+                      <span className="text-gray-300">{formatDuration(callDuration)}</span>
+                    )}
+                    {isGroupCall && (
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {participantCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8"
+                  onClick={toggleFullscreen}
+                >
+                  {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Calling/Connecting overlay */}
+            {(callStatus === 'calling' || callStatus === 'ringing' || callStatus === 'connecting' || callStatus === 'idle') && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/95">
+                <Avatar className="h-20 w-20 mb-3">
+                  <AvatarImage src={displayInfo?.avatar || undefined} />
+                  <AvatarFallback className="text-xl bg-primary">
+                    {displayName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="text-xl font-semibold text-white mb-1">{displayName}</h2>
+                <p className="text-gray-400 text-sm">
+                  {callStatus === 'idle' && 'Starting...'}
+                  {callStatus === 'calling' && 'Calling...'}
+                  {callStatus === 'ringing' && 'Incoming call...'}
+                  {callStatus === 'connecting' && 'Connecting...'}
+                </p>
+                
+                {isIncoming && callStatus === 'ringing' && (
+                  <div className="flex gap-4 mt-6">
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      className="rounded-full h-14 w-14"
+                      onClick={handleRejectCall}
+                    >
+                      <PhoneOff className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      size="lg"
+                      className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600"
+                      onClick={handleAcceptCall}
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+                
+                {!isIncoming && callStatus === 'calling' && (
+                  <div className="flex gap-4 mt-6">
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      className="rounded-full h-14 w-14"
+                      onClick={() => handleEndCall()}
+                    >
+                      <PhoneOff className="h-5 w-5" />
+                    </Button>
+                  </div>
                 )}
               </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20"
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-            </Button>
-          </div>
-          
-          {/* Calling/Ringing overlay */}
-          {(callStatus === 'calling' || callStatus === 'ringing' || callStatus === 'connecting' || callStatus === 'idle') && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90">
-              <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={displayInfo?.avatar || undefined} />
-                <AvatarFallback className="text-2xl bg-primary">
-                  {displayName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-2xl font-semibold text-white mb-2">{displayName}</h2>
-              <p className="text-gray-400">
-                {callStatus === 'idle' && 'Starting...'}
-                {callStatus === 'calling' && 'Calling...'}
-                {callStatus === 'ringing' && 'Incoming call...'}
-                {callStatus === 'connecting' && 'Connecting...'}
-              </p>
-              
-              {isIncoming && callStatus === 'ringing' && (
-                <div className="flex gap-4 mt-8">
-                  <Button
-                    size="lg"
-                    variant="destructive"
-                    className="rounded-full h-16 w-16"
-                    onClick={handleRejectCall}
-                  >
-                    <PhoneOff className="h-6 w-6" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="rounded-full h-16 w-16 bg-green-500 hover:bg-green-600"
-                    onClick={handleAcceptCall}
-                  >
-                    <Phone className="h-6 w-6" />
-                  </Button>
-                </div>
-              )}
-              
-              {!isIncoming && callStatus === 'calling' && (
-                <div className="flex gap-4 mt-8">
-                  <Button
-                    size="lg"
-                    variant="destructive"
-                    className="rounded-full h-16 w-16"
-                    onClick={() => handleEndCall()}
-                  >
-                    <PhoneOff className="h-6 w-6" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Local Video (picture-in-picture style) */}
-          <div className="absolute bottom-24 right-4 w-48 h-36 rounded-lg overflow-hidden bg-gray-700 shadow-lg border-2 border-gray-600">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            {isVideoOff && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                <VideoOff className="h-8 w-8 text-gray-400" />
-              </div>
             )}
+            
+            {/* Local Video (PiP style) */}
+            <div 
+              className={`absolute bottom-16 right-3 w-28 sm:w-36 aspect-[4/3] rounded-lg overflow-hidden bg-gray-700 shadow-lg border border-gray-600 ${
+                isCameraFlipped ? 'scale-x-[-1]' : ''
+              }`}
+            >
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              {isVideoOff && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                  <VideoOff className="h-6 w-6 text-gray-400" />
+                </div>
+              )}
+              {isScreenSharing && (
+                <div className="absolute top-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">
+                  Screen
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Bottom controls bar */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gap-3 p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 p-3 bg-gray-900 border-t border-gray-800">
             {/* Mute button */}
             <Button
               variant="ghost"
-              size="lg"
-              className={`rounded-full h-12 w-12 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              size="icon"
+              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleMute}
               title={isMuted ? 'Unmute' : 'Mute'}
             >
-              {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              {isMuted ? <MicOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Mic className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
             
             {/* Video toggle button */}
             <Button
               variant="ghost"
-              size="lg"
-              className={`rounded-full h-12 w-12 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              size="icon"
+              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleVideo}
               title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
             >
-              {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+              {isVideoOff ? <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Video className="h-4 w-4 sm:h-5 sm:w-5" />}
             </Button>
-            
-            {/* Hang up button - prominent red */}
+
+            {/* Flip camera button */}
             <Button
-              size="lg"
-              className="rounded-full h-14 w-14 bg-red-500 hover:bg-red-600 text-white"
+              variant="ghost"
+              size="icon"
+              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isCameraFlipped ? 'bg-primary text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              onClick={toggleCameraFlip}
+              title="Flip camera view"
+            >
+              <FlipHorizontal2 className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+
+            {/* Screen share button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isScreenSharing ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              onClick={toggleScreenShare}
+              title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+            >
+              <MonitorUp className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
+
+            {/* More options dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-10 w-10 sm:h-11 sm:w-11 bg-gray-700 text-white hover:bg-gray-600"
+                >
+                  <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700">
+                <DropdownMenuItem 
+                  onClick={switchCamera}
+                  className="text-white hover:bg-gray-700 cursor-pointer"
+                >
+                  <FlipHorizontal2 className="h-4 w-4 mr-2" />
+                  Switch Camera
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Hang up button */}
+            <Button
+              size="icon"
+              className="rounded-full h-11 w-11 sm:h-12 sm:w-12 bg-red-500 hover:bg-red-600 text-white"
               onClick={() => handleEndCall()}
               title="End call"
             >
-              <PhoneOff className="h-6 w-6" />
+              <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </div>
         </div>
