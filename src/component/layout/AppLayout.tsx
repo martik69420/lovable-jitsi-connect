@@ -5,13 +5,14 @@ import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Navbar from "./Navbar";
 import MobileNavBar from "./MobileNavBar";
+import Footer from "./Footer";
 import { useAuth } from "@/context/auth";
 import { Toaster } from "@/component/ui/toaster";
 import { AnimatePresence, motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const AppLayout = ({ children }: { children?: React.ReactNode }) => {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
   const isMobile = useIsMobile();
 
   // Show loading state while checking authentication
@@ -47,6 +48,8 @@ const AppLayout = ({ children }: { children?: React.ReactNode }) => {
               </motion.div>
             </AnimatePresence>
           </main>
+          {/* Show footer for non-authenticated users for SEO/AdSense content */}
+          {!isAuthenticated && <Footer />}
         </div>
       </div>
       {isMobile && <MobileNavBar />}

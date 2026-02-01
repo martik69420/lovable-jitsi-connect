@@ -9,7 +9,20 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    // Persist session in localStorage for longer sessions
+    persistSession: true,
+    // Auto refresh token before it expires
+    autoRefreshToken: true,
+    // Detect session from URL (for OAuth callbacks)
+    detectSessionInUrl: true,
+    // Storage key for session persistence
+    storageKey: 'campus-fenix-auth',
+    // Use localStorage for session storage
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  },
+});
 
 // Create type helpers for our database tables
 export type TablesInsert<T extends keyof Database['public']['Tables']> = 
