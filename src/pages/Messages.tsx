@@ -38,8 +38,8 @@ const Messages = () => {
   const [forwardMessage, setForwardMessage] = useState<any | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
   
-  // Incoming calls (admin feature)
-  const { incomingCall, clearIncomingCall } = useIncomingCalls();
+  // Incoming calls
+  const { incomingCall, clearIncomingCall, sendCallMessage } = useIncomingCalls();
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
   
@@ -317,6 +317,7 @@ const Messages = () => {
                         onReply={(m:any) => setReplyingTo({ id: m.id, content: m.content, sender: m.sender?.display_name || m.sender?.username || 'Unknown' })}
                         onTogglePin={(id:string, isPinned:boolean) => pinMessage(id, !isPinned)}
                         onForward={(m:any) => setForwardMessage(m)}
+                        onStartCall={() => setShowVideoCall(true)}
                       />
                     </div>
                     {selectedUserId && (
@@ -400,6 +401,11 @@ const Messages = () => {
             memberCount: (selectedUser as any).memberCount
           }}
           isGroupCall={isGroupChat}
+          onCallEnd={(type, duration) => {
+            if (selectedUserId && !isGroupChat) {
+              sendCallMessage(selectedUserId, type, true, duration);
+            }
+          }}
         />
       )}
 

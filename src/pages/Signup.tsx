@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Users, MessageCircle, Gamepad2, Shield, CheckCircle } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -126,23 +126,77 @@ const Signup = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-8"
-      >
-        <h1 className="text-4xl font-bold text-primary">Campus Fenix</h1>
-        <p className="text-muted-foreground mt-2">Word lid van je klas gemeenschap</p>
-      </motion.div>
+    <main className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex-1 flex flex-col lg:flex-row">
+        {/* Left side - Branding & Info (Desktop) */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-purple-600 to-pink-500 p-12 flex-col justify-center text-white">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1 className="text-5xl font-bold mb-4">Campus Fenix</h1>
+            <p className="text-xl opacity-90 mb-8">
+              Word lid van duizenden studenten die al verbonden zijn via Campus Fenix
+            </p>
+            
+            <div className="space-y-4">
+              {[
+                { icon: Users, text: 'Verbind met klasgenoten' },
+                { icon: MessageCircle, text: 'Chat in real-time met vrienden' },
+                { icon: Gamepad2, text: 'Speel games tussen de lessen door' },
+                { icon: Shield, text: 'Veilig en privé platform' }
+              ].map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 * index }}
+                  className="flex items-center gap-3 text-lg"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  {item.text}
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-white/20 space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-300" />
+                <span>100% gratis om te gebruiken</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-300" />
+                <span>Geen advertenties in je berichten</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-300" />
+                <span>Je gegevens worden nooit verkocht</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Right side - Signup Form */}
+        <div className="flex-1 flex items-center justify-center p-4 lg:p-12">
+          <div className="w-full max-w-md">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8 lg:hidden"
+            >
+              <h1 className="text-4xl font-bold text-primary">Campus Fenix</h1>
+              <p className="text-muted-foreground mt-2">Word lid van je klas gemeenschap</p>
+            </motion.div>
       
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="w-full max-w-md"
-      >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
         <Card className="border shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Account Aanmaken</CardTitle>
@@ -273,8 +327,44 @@ const Signup = () => {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
-    </div>
+            </motion.div>
+            
+            {/* Mobile info section */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-8 text-center text-sm text-muted-foreground lg:hidden"
+            >
+              <p className="mb-4">
+                Sluit je aan bij duizenden studenten die Campus Fenix gebruiken om te connecten, delen en leren.
+              </p>
+              <div className="flex justify-center gap-4 flex-wrap">
+                <span>✓ Gratis</span>
+                <span>✓ Veilig</span>
+                <span>✓ Voor studenten</span>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom info section for SEO */}
+      <div className="bg-muted/50 border-t py-8 px-4">
+        <div className="max-w-4xl mx-auto text-center text-sm text-muted-foreground">
+          <h2 className="font-semibold text-foreground mb-2">Waarom Campus Fenix?</h2>
+          <p className="mb-4">
+            Campus Fenix is speciaal ontworpen voor studenten die willen connecten met hun schoolgemeenschap.
+            Of je nu studiegroepen zoekt, campus momenten wilt delen, of verbonden wilt blijven met klasgenoten,
+            ons platform biedt alle tools die je nodig hebt. Met functies zoals real-time berichten, leuke games,
+            slimme notificaties, en een privacy-first design, is Campus Fenix de perfecte metgezel voor je studiereis.
+          </p>
+          <p>
+            © {new Date().getFullYear()} Campus Fenix. Alle rechten voorbehouden. Gemaakt met ❤️ voor studenten.
+          </p>
+        </div>
+      </div>
+    </main>
   );
 };
 

@@ -47,6 +47,7 @@ interface VideoCallModalProps {
   };
   isGroupCall?: boolean;
   groupMembers?: Participant[];
+  onCallEnd?: (type: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer', duration?: number) => void;
 }
 
 const ICE_SERVERS = [
@@ -63,7 +64,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   callerId,
   callerInfo,
   isGroupCall = false,
-  groupMembers = []
+  groupMembers = [],
+  onCallEnd
 }) => {
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
@@ -147,8 +149,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     }, 1000);
   }, []);
 
-  const handleEndCall = useCallback((sendEvent = true) => {
-    console.log('Ending call, sendEvent:', sendEvent);
+  const handleEndCall = useCallback((sendEvent = true, callEndType?: 'outgoing' | 'incoming' | 'no_answer' | 'declined') => {
+    console.log('Ending call, sendEvent:', sendEvent, 'type:', callEndType);
     
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
@@ -161,11 +163,18 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         payload: { targetId, callerId: user?.id }
       });
     }
+
+    // Send call message based on status
+    if (onCallEnd && !isGroupCall) {
+      const type = callEndType || (callStatus === 'connected' ? (isIncoming ? 'incoming' : 'outgoing') : 'no_answer');
+      const duration = callStatus === 'connected' ? callDuration : undefined;
+      onCallEnd(type, duration);
+    }
     
     setCallStatus('ended');
     cleanup();
     onClose();
-  }, [cleanup, onClose, targetId, user?.id]);
+  }, [cleanup, onClose, targetId, user?.id, callStatus, callDuration, isIncoming, isGroupCall, onCallEnd]);
 
   const processPendingCandidates = useCallback(async () => {
     const pc = peerConnectionRef.current;

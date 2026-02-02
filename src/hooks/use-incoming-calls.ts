@@ -8,6 +8,8 @@ interface IncomingCall {
   callerDisplayName?: string;
   callerAvatar?: string | null;
   channelId: string;
+  isVideo?: boolean;
+  startTime?: number;
 }
 
 export const useIncomingCalls = () => {
@@ -15,6 +17,30 @@ export const useIncomingCalls = () => {
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const channelsRef = useRef<Map<string, any>>(new Map());
   const friendsRef = useRef<string[]>([]);
+  const callStartTimeRef = useRef<number | null>(null);
+
+  // Helper to send a call message to the chat
+  const sendCallMessage = useCallback(async (
+    receiverId: string,
+    callType: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer',
+    isVideo: boolean = true,
+    duration?: number
+  ) => {
+    if (!user?.id) return;
+    
+    const content = `[CALL:${callType}:${isVideo}:${duration || ''}]`;
+    
+    try {
+      await supabase.from('messages').insert({
+        sender_id: user.id,
+        receiver_id: receiverId,
+        content,
+        is_read: false
+      });
+    } catch (error) {
+      console.error('Error sending call message:', error);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -53,19 +79,35 @@ export const useIncomingCalls = () => {
             .on('broadcast', { event: 'call_request' }, ({ payload }) => {
               if (payload.targetId === user.id) {
                 console.log('Incoming call from:', payload.callerId);
+                callStartTimeRef.current = Date.now();
                 setIncomingCall({
                   callerId: payload.callerId,
                   callerUsername: payload.callerUsername,
                   callerDisplayName: payload.callerDisplayName,
                   callerAvatar: payload.callerAvatar,
-                  channelId
+                  channelId,
+                  isVideo: payload.isVideo !== false,
+                  startTime: Date.now()
                 });
               }
             })
             .on('broadcast', { event: 'call_end' }, ({ payload }) => {
               // Clear incoming call if the caller ended it
               if (incomingCall?.callerId === payload.callerId || payload.targetId === user.id) {
+                // If we had an incoming call that wasn't answered, mark as missed
+                if (incomingCall && callStartTimeRef.current) {
+                  sendCallMessage(incomingCall.callerId, 'missed', incomingCall.isVideo);
+                }
                 setIncomingCall(null);
+                callStartTimeRef.current = null;
+              }
+            })
+            .on('broadcast', { event: 'call_timeout' }, ({ payload }) => {
+              // Caller timed out waiting for answer
+              if (payload.targetId === user.id && incomingCall) {
+                sendCallMessage(payload.callerId, 'missed', true);
+                setIncomingCall(null);
+                callStartTimeRef.current = null;
               }
             })
             .subscribe((status) => {
@@ -107,7 +149,7 @@ export const useIncomingCalls = () => {
       channelsRef.current.clear();
       supabase.removeChannel(friendsChannel);
     };
-  }, [user?.id]);
+  }, [user?.id, sendCallMessage]);
 
   const clearIncomingCall = useCallback(() => {
     // Send rejection to the caller before clearing
@@ -118,14 +160,19 @@ export const useIncomingCalls = () => {
         event: 'call_rejected',
         payload: { targetId: incomingCall.callerId }
       });
+      
+      // Send declined message
+      sendCallMessage(incomingCall.callerId, 'declined', incomingCall.isVideo);
     }
     setIncomingCall(null);
-  }, [incomingCall]);
+    callStartTimeRef.current = null;
+  }, [incomingCall, sendCallMessage]);
 
   const acceptIncomingCall = useCallback(() => {
     // Just clear the state - the acceptance is handled in the VideoCallModal
+    callStartTimeRef.current = null;
     setIncomingCall(null);
   }, []);
 
-  return { incomingCall, clearIncomingCall, acceptIncomingCall };
+  return { incomingCall, clearIncomingCall, acceptIncomingCall, sendCallMessage };
 };

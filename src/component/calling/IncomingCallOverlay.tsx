@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, PhoneOff, Volume2 } from 'lucide-react';
+import { Phone, PhoneOff, Volume2, Video } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Button } from '@/component/ui/button';
 
@@ -8,6 +8,7 @@ interface IncomingCallOverlayProps {
   open: boolean;
   callerName: string;
   callerAvatar?: string | null;
+  isVideoCall?: boolean;
   onAccept: () => void;
   onReject: () => void;
 }
@@ -16,6 +17,7 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
   open,
   callerName,
   callerAvatar,
+  isVideoCall = true,
   onAccept,
   onReject
 }) => {
@@ -108,8 +110,8 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="text-muted-foreground flex items-center justify-center gap-2"
               >
-                <Phone className="h-4 w-4" />
-                Incoming video call...
+                {isVideoCall ? <Video className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                Incoming {isVideoCall ? 'video' : 'voice'} call...
               </motion.p>
             </div>
 

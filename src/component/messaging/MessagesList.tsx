@@ -10,6 +10,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import PostPreview from '@/component/post/PostPreview';
 import GamePreview from '@/component/game/GamePreview';
 import { AudioPlayer } from '@/component/messaging/AudioPlayer';
+import CallMessage, { CallMessageData } from '@/component/messaging/CallMessage';
 
 interface Message {
   id: string;
@@ -48,6 +49,7 @@ interface MessagesListProps {
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
   onTogglePin?: (messageId: string, isPinned: boolean) => void;
+  onStartCall?: () => void;
 }
 
 const MessagesList: React.FC<MessagesListProps> = ({
@@ -60,7 +62,8 @@ const MessagesList: React.FC<MessagesListProps> = ({
   isGroupChat,
   onReply,
   onForward,
-  onTogglePin
+  onTogglePin,
+  onStartCall
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -409,7 +412,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     </div>
                   )}
 
-                  {/* Shared Game Preview */}
+                  {/* Game Preview */}
                   {message.content?.startsWith('[GAME:') && (() => {
                     // Parse game type and optional room code from [GAME:type:roomcode] or [GAME:type]
                     const match = message.content.match(/\[GAME:([^:\]]+)(?::([^\]]+))?\]/);
@@ -427,6 +430,28 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     );
                   })()}
 
+                  {/* Call Message */}
+                  {message.content?.startsWith('[CALL:') && (() => {
+                    // Parse call data from [CALL:type:isVideo:duration]
+                    const match = message.content.match(/\[CALL:([^:\]]+):([^:\]]+):?([^\]]*)\]/);
+                    if (!match) return null;
+                    const callType = match[1] as CallMessageData['type'];
+                    const isVideo = match[2] === 'true';
+                    const duration = match[3] ? parseInt(match[3]) : undefined;
+                    return (
+                      <CallMessage 
+                        data={{
+                          type: callType,
+                          isVideo,
+                          duration,
+                          timestamp: message.created_at
+                        }}
+                        isOwn={isOwn}
+                        onCallBack={onStartCall}
+                      />
+                    );
+                  })()}
+
                   {/* Voice Message */}
                   {message.media_url && message.media_type === 'audio' && (
                     <div className="mb-2">
@@ -434,7 +459,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                     </div>
                   )}
                   
-                    {message.content && !message.shared_post_id && !message.content?.startsWith('[GAME:') && (
+                    {message.content && !message.shared_post_id && !message.content?.startsWith('[GAME:') && !message.content?.startsWith('[CALL:') && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {message.content}
                       </p>

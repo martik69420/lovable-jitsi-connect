@@ -14,6 +14,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { DataTable } from '@/components/ui/data-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import AdBanner from '@/component/ads/AdBanner';
 
 // Helper function to safely parse dates
 const safeParseDate = (dateString: string | null): Date => {
@@ -522,6 +523,9 @@ const Search = () => {
               </div>
             </TabsContent>
           </Tabs>
+          
+          {/* Ad placement */}
+          <AdBanner adSlot="2813542194" className="mt-6" />
         </div>
       </div>
     </AppLayout>
