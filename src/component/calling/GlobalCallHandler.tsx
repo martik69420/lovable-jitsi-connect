@@ -4,7 +4,7 @@ import IncomingCallOverlay from './IncomingCallOverlay';
 import VideoCallModal from '@/component/messaging/VideoCallModal';
 
 const GlobalCallHandler: React.FC = () => {
-  const { incomingCall, clearIncomingCall, acceptIncomingCall } = useIncomingCalls();
+  const { incomingCall, clearIncomingCall, acceptIncomingCall, sendCallMessage } = useIncomingCalls();
   const [showCallModal, setShowCallModal] = useState(false);
   const [acceptedCall, setAcceptedCall] = useState<{
     callerId: string;
@@ -12,6 +12,7 @@ const GlobalCallHandler: React.FC = () => {
     callerDisplayName?: string;
     callerAvatar?: string | null;
     channelId: string;
+    isVideo?: boolean;
   } | null>(null);
 
   const handleAcceptCall = useCallback(() => {
@@ -31,6 +32,12 @@ const GlobalCallHandler: React.FC = () => {
     setAcceptedCall(null);
   }, []);
 
+  const handleCallEnd = useCallback((type: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer', duration?: number) => {
+    if (acceptedCall) {
+      sendCallMessage(acceptedCall.callerId, type, acceptedCall.isVideo !== false, duration);
+    }
+  }, [acceptedCall, sendCallMessage]);
+
   return (
     <>
       {/* Incoming call overlay - shows fullscreen when receiving a call */}
@@ -38,6 +45,7 @@ const GlobalCallHandler: React.FC = () => {
         open={!!incomingCall}
         callerName={incomingCall?.callerDisplayName || incomingCall?.callerUsername || 'Unknown'}
         callerAvatar={incomingCall?.callerAvatar}
+        isVideoCall={incomingCall?.isVideo !== false}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
       />
@@ -60,6 +68,7 @@ const GlobalCallHandler: React.FC = () => {
             displayName: acceptedCall.callerDisplayName,
             avatar: acceptedCall.callerAvatar
           }}
+          onCallEnd={handleCallEnd}
         />
       )}
     </>

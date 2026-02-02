@@ -33,7 +33,7 @@ const Home: React.FC = () => {
     );
   }
 
-  // Authenticated user view
+  // Authenticated user view - ads enabled
   return (
     <AppLayout>
       <motion.div 
@@ -60,6 +60,9 @@ const Home: React.FC = () => {
               </CardContent>
             </Card>
           </motion.div>
+          
+          {/* Ad placement for authenticated users */}
+          <AdBanner adSlot="2813542194" className="hidden md:block" />
         </motion.div>
         
         <motion.div 
@@ -69,6 +72,9 @@ const Home: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <Index />
+          
+          {/* Mobile ad placement */}
+          <AdBanner adSlot="2813542194" className="md:hidden mt-6" />
         </motion.div>
       </motion.div>
     </AppLayout>

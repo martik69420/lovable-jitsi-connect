@@ -20,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ShareGameModal from '@/component/game/ShareGameModal';
+import AdBanner from '@/component/ads/AdBanner';
 
 const Games = () => {
   const navigate = useNavigate();
@@ -223,8 +224,11 @@ const Games = () => {
               <p className="text-sm text-muted-foreground">{t('games.bestScore')}</p>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+        
+        {/* Ad placement */}
+        <AdBanner adSlot="2813542194" className="my-6" />
       
       <ShareGameModal 
         open={shareModalOpen} 
