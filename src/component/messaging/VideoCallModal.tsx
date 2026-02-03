@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { 
   Phone, PhoneOff, Mic, MicOff, Video, VideoOff, 
   Maximize, Minimize, MonitorUp, FlipHorizontal2, Users,
-  MoreVertical
+  MoreVertical, Grid, Columns, Square, RectangleVertical,
+  Move
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
@@ -15,7 +16,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/component/ui/dropdown-menu';
+import { Slider } from '@/component/ui/slider';
 
 interface Participant {
   id: string;
@@ -48,7 +52,10 @@ interface VideoCallModalProps {
   isGroupCall?: boolean;
   groupMembers?: Participant[];
   onCallEnd?: (type: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer', duration?: number) => void;
+  isJoiningActiveCall?: boolean;
 }
+
+type LayoutMode = 'spotlight' | 'grid' | 'sidebar';
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -65,7 +72,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   callerInfo,
   isGroupCall = false,
   groupMembers = [],
-  onCallEnd
+  onCallEnd,
+  isJoiningActiveCall = false
 }) => {
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
@@ -78,6 +86,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const [participants, setParticipants] = useState<Map<string, Participant>>(new Map());
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   
+  // Layout controls
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('spotlight');
+  const [selfVideoSize, setSelfVideoSize] = useState(30); // percentage 20-50
+  const [remoteVideoSize, setRemoteVideoSize] = useState(100); // percentage
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -86,6 +99,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const channelRef = useRef<any>(null);
+  const groupCallChannelRef = useRef<any>(null);
   const callTimerRef = useRef<NodeJS.Timeout | null>(null);
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidate[]>([]);
@@ -135,12 +149,23 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+
+    if (groupCallChannelRef.current) {
+      // Notify others that we're leaving
+      groupCallChannelRef.current.send({
+        type: 'broadcast',
+        event: 'group_call_left',
+        payload: { userId: user?.id }
+      });
+      supabase.removeChannel(groupCallChannelRef.current);
+      groupCallChannelRef.current = null;
+    }
     
     pendingCandidatesRef.current = [];
     hasSetRemoteDescRef.current = false;
     setParticipants(new Map());
     setIsScreenSharing(false);
-  }, []);
+  }, [user?.id]);
 
   const startCallTimer = useCallback(() => {
     if (callTimerRef.current) return;
@@ -218,13 +243,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
     
     try {
-      // Stop current video track
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.stop();
       }
 
-      // Get new stream with different camera
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: newFacingMode },
         audio: false
@@ -232,7 +255,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
       const newVideoTrack = newStream.getVideoTracks()[0];
       
-      // Replace track in peer connection
       if (peerConnectionRef.current) {
         const sender = peerConnectionRef.current.getSenders().find(s => s.track?.kind === 'video');
         if (sender) {
@@ -240,7 +262,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         }
       }
 
-      // Update local stream
       localStreamRef.current.removeTrack(videoTrack);
       localStreamRef.current.addTrack(newVideoTrack);
 
@@ -262,13 +283,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
     try {
       if (isScreenSharing) {
-        // Stop screen sharing, switch back to camera
         if (screenStreamRef.current) {
           screenStreamRef.current.getTracks().forEach(track => track.stop());
           screenStreamRef.current = null;
         }
 
-        // Get camera stream again
         const cameraStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode },
           audio: false
@@ -280,7 +299,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           await sender.replaceTrack(videoTrack);
         }
 
-        // Update local stream
         const oldVideoTrack = localStreamRef.current?.getVideoTracks()[0];
         if (oldVideoTrack && localStreamRef.current) {
           localStreamRef.current.removeTrack(oldVideoTrack);
@@ -294,7 +312,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         setIsScreenSharing(false);
         toast.success('Stopped screen sharing');
       } else {
-        // Start screen sharing
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: true
@@ -308,12 +325,10 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           await sender.replaceTrack(videoTrack);
         }
 
-        // Update local video preview
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = screenStream;
         }
 
-        // Handle when user stops sharing via browser UI
         videoTrack.onended = () => {
           toggleScreenShare();
         };
@@ -359,6 +374,42 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [open, callStatus]);
 
+  // Broadcast group call status for others to join
+  useEffect(() => {
+    if (!open || !isGroupCall || !user?.id || !contact.id) return;
+
+    const groupChannel = supabase.channel(`group_call_${contact.id}`, {
+      config: { broadcast: { self: true } }
+    });
+
+    groupChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        // Announce that we've started/joined the call
+        const eventType = isJoiningActiveCall ? 'group_call_joined' : 'group_call_started';
+        groupChannel.send({
+          type: 'broadcast',
+          event: eventType,
+          payload: {
+            callerId: user.id,
+            userId: user.id,
+            callerUsername: user.username,
+            callerDisplayName: user.displayName,
+            callerAvatar: user.avatar,
+            username: user.username,
+            displayName: user.displayName,
+            avatar: user.avatar
+          }
+        });
+      }
+    });
+
+    groupCallChannelRef.current = groupChannel;
+
+    return () => {
+      // Will be cleaned up in cleanup()
+    };
+  }, [open, isGroupCall, user, contact.id, isJoiningActiveCall]);
+
   useEffect(() => {
     if (!open || !user?.id || !targetId || !channelId) return;
 
@@ -366,9 +417,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
     const setupCall = async () => {
       try {
-        console.log('Setting up call, isIncoming:', isIncoming, 'isGroupCall:', isGroupCall);
+        console.log('Setting up call, isIncoming:', isIncoming, 'isGroupCall:', isGroupCall, 'isJoiningActiveCall:', isJoiningActiveCall);
         
-        // Get local media
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: true
@@ -380,17 +430,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           localVideoRef.current.srcObject = stream;
         }
 
-        // Setup WebRTC peer connection
         const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         peerConnectionRef.current = pc;
 
-        // Add local tracks to the connection
         stream.getTracks().forEach(track => {
           pc.addTrack(track, stream);
           console.log('Added local track:', track.kind);
         });
 
-        // Handle incoming remote tracks
         pc.ontrack = (event) => {
           console.log('Received remote track:', event.track.kind);
           if (remoteVideoRef.current && event.streams[0]) {
@@ -402,7 +449,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           }
         };
 
-        // Monitor connection state
         pc.onconnectionstatechange = () => {
           console.log('Connection state:', pc.connectionState);
           if (pc.connectionState === 'connected') {
@@ -418,7 +464,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           console.log('ICE connection state:', pc.iceConnectionState);
         };
 
-        // Setup signaling channel
         const channel = supabase.channel(`call_${channelId}`, {
           config: { broadcast: { self: false } }
         });
@@ -483,7 +528,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             console.log('Call accepted by:', payload.accepterId);
             if (payload.targetId !== user.id) return;
             
-            // Create and send offer
             try {
               const offer = await pc.createOffer();
               await pc.setLocalDescription(offer);
@@ -515,8 +559,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             if (status === 'SUBSCRIBED') {
               isSetupComplete = true;
               
-              if (!isIncoming) {
-                // Send call request
+              if (!isIncoming && !isJoiningActiveCall) {
                 setCallStatus('calling');
                 channel.send({
                   type: 'broadcast',
@@ -531,16 +574,22 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                   }
                 });
                 
-                // Timeout after 30 seconds
                 callTimeoutRef.current = setTimeout(() => {
                   if (callStatus === 'calling') {
                     toast.error('Call not answered');
                     handleEndCall(false);
                   }
                 }, 30000);
+              } else if (isJoiningActiveCall) {
+                // Joining an active group call - immediately connect
+                setCallStatus('connecting');
+                channel.send({
+                  type: 'broadcast',
+                  event: 'call_accepted',
+                  payload: { accepterId: user.id, targetId: contact.id }
+                });
               } else {
-                // For incoming calls that were already accepted from the overlay,
-                // immediately send acceptance and start connecting
+                // For incoming calls that were already accepted from the overlay
                 setCallStatus('connecting');
                 channel.send({
                   type: 'broadcast',
@@ -553,7 +602,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
         channelRef.current = channel;
 
-        // Handle ICE candidates
         pc.onicecandidate = (event) => {
           if (event.candidate && channelRef.current) {
             channelRef.current.send({
@@ -578,7 +626,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         cleanup();
       }
     };
-  }, [open, user?.id, targetId, channelId, isIncoming, isGroupCall]);
+  }, [open, user?.id, targetId, channelId, isIncoming, isGroupCall, isJoiningActiveCall]);
 
   const handleAcceptCall = useCallback(async () => {
     console.log('Accepting call from:', callerId);
@@ -633,6 +681,16 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   const participantCount = isGroupCall ? participants.size + 1 : 2;
 
+  // Get local video size based on slider
+  const getLocalVideoStyle = () => {
+    if (layoutMode === 'grid') {
+      return {}; // Grid handles its own sizing
+    }
+    const width = `${selfVideoSize * 1.5}%`;
+    const maxWidth = '200px';
+    return { width, maxWidth };
+  };
+
   return (
     <Dialog open={open} onOpenChange={() => handleEndCall()}>
       <DialogContent className="max-w-4xl w-[95vw] h-[85vh] max-h-[700px] p-0 bg-gray-900 border-gray-800 overflow-hidden rounded-xl">
@@ -641,39 +699,115 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         <div ref={containerRef} className="relative w-full h-full bg-gray-900 flex flex-col">
           {/* Remote Video Area */}
           <div className="flex-1 relative min-h-0 bg-gray-800">
-            {isGroupCall && participants.size > 1 ? (
-              // Grid layout for group calls
-              <div className={`w-full h-full grid gap-1 p-1 ${
-                participantCount <= 2 ? 'grid-cols-1' :
-                participantCount <= 4 ? 'grid-cols-2' :
+            {layoutMode === 'grid' ? (
+              // Grid layout - equal sized videos
+              <div className={`w-full h-full grid gap-2 p-2 ${
+                participantCount <= 2 ? 'grid-cols-2' :
+                participantCount <= 4 ? 'grid-cols-2 grid-rows-2' :
                 participantCount <= 9 ? 'grid-cols-3' : 'grid-cols-4'
               }`}>
-                {Array.from(participants.values()).map(participant => (
-                  <div key={participant.id} className="relative bg-gray-700 rounded-lg overflow-hidden">
-                    <video
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-cover"
-                      ref={el => {
-                        if (el && participant.stream) {
-                          el.srcObject = participant.stream;
-                        }
-                      }}
-                    />
-                    <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
-                      {participant.displayName || participant.username}
-                    </div>
+                {/* Remote video in grid */}
+                <div className="relative bg-gray-700 rounded-lg overflow-hidden">
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+                    {displayName}
                   </div>
-                ))}
+                </div>
+                {/* Local video in grid */}
+                <div className={`relative bg-gray-700 rounded-lg overflow-hidden ${isCameraFlipped ? 'scale-x-[-1]' : ''}`}>
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+                    You
+                  </div>
+                  {isVideoOff && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <VideoOff className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : layoutMode === 'sidebar' ? (
+              // Sidebar layout - remote on left, self on right
+              <div className="w-full h-full flex gap-2 p-2">
+                <div className="flex-1 relative bg-gray-700 rounded-lg overflow-hidden">
+                  <video
+                    ref={remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+                    {displayName}
+                  </div>
+                </div>
+                <div 
+                  className={`relative bg-gray-700 rounded-lg overflow-hidden ${isCameraFlipped ? 'scale-x-[-1]' : ''}`}
+                  style={{ width: `${selfVideoSize}%` }}
+                >
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-xs text-white">
+                    You
+                  </div>
+                  {isVideoOff && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <VideoOff className="h-6 w-6 text-gray-400" />
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
-              // Single remote video for 1:1 calls
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
+              // Spotlight layout - remote full, self PiP
+              <>
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Local Video (PiP style) */}
+                <div 
+                  className={`absolute bottom-16 right-3 aspect-[4/3] rounded-lg overflow-hidden bg-gray-700 shadow-lg border border-gray-600 cursor-move ${
+                    isCameraFlipped ? 'scale-x-[-1]' : ''
+                  }`}
+                  style={getLocalVideoStyle()}
+                >
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  {isVideoOff && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <VideoOff className="h-6 w-6 text-gray-400" />
+                    </div>
+                  )}
+                  {isScreenSharing && (
+                    <div className="absolute top-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">
+                      Screen
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             
             {/* Top bar */}
@@ -763,31 +897,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 )}
               </div>
             )}
-            
-            {/* Local Video (PiP style) */}
-            <div 
-              className={`absolute bottom-16 right-3 w-28 sm:w-36 aspect-[4/3] rounded-lg overflow-hidden bg-gray-700 shadow-lg border border-gray-600 ${
-                isCameraFlipped ? 'scale-x-[-1]' : ''
-              }`}
-            >
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              {isVideoOff && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                  <VideoOff className="h-6 w-6 text-gray-400" />
-                </div>
-              )}
-              {isScreenSharing && (
-                <div className="absolute top-1 left-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded">
-                  Screen
-                </div>
-              )}
-            </div>
           </div>
           
           {/* Bottom controls bar */}
@@ -836,7 +945,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
               <MonitorUp className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
 
-            {/* More options dropdown */}
+            {/* Layout & more options dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -847,7 +956,53 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                   <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700">
+              <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700 w-56">
+                <DropdownMenuLabel className="text-gray-400 text-xs">Layout</DropdownMenuLabel>
+                <DropdownMenuItem 
+                  onClick={() => setLayoutMode('spotlight')}
+                  className={`text-white hover:bg-gray-700 cursor-pointer ${layoutMode === 'spotlight' ? 'bg-gray-700' : ''}`}
+                >
+                  <RectangleVertical className="h-4 w-4 mr-2" />
+                  Spotlight (PiP)
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLayoutMode('grid')}
+                  className={`text-white hover:bg-gray-700 cursor-pointer ${layoutMode === 'grid' ? 'bg-gray-700' : ''}`}
+                >
+                  <Grid className="h-4 w-4 mr-2" />
+                  Equal Grid
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLayoutMode('sidebar')}
+                  className={`text-white hover:bg-gray-700 cursor-pointer ${layoutMode === 'sidebar' ? 'bg-gray-700' : ''}`}
+                >
+                  <Columns className="h-4 w-4 mr-2" />
+                  Side by Side
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator className="bg-gray-700" />
+                
+                {layoutMode !== 'grid' && (
+                  <>
+                    <DropdownMenuLabel className="text-gray-400 text-xs">Your Video Size</DropdownMenuLabel>
+                    <div className="px-2 py-2">
+                      <Slider
+                        value={[selfVideoSize]}
+                        onValueChange={(v) => setSelfVideoSize(v[0])}
+                        min={15}
+                        max={50}
+                        step={5}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Smaller</span>
+                        <span>Larger</span>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                  </>
+                )}
+                
                 <DropdownMenuItem 
                   onClick={switchCamera}
                   className="text-white hover:bg-gray-700 cursor-pointer"
