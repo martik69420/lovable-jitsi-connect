@@ -20,6 +20,7 @@ import { ThemeSelector } from '@/component/messaging/ThemeSelectorDialog';
 import PinnedMessages from '@/component/messaging/PinnedMessages';
 import ForwardMessageDialog from '@/component/messaging/ForwardMessageDialog';
 import VideoCallModal from '@/component/messaging/VideoCallModal';
+import ActiveGroupCallBanner from '@/component/messaging/ActiveGroupCallBanner';
 import { useIncomingCalls } from '@/hooks/use-incoming-calls';
 
 const Messages = () => {
@@ -37,6 +38,7 @@ const Messages = () => {
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<any | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [isJoiningActiveCall, setIsJoiningActiveCall] = useState(false);
   
   // Incoming calls
   const { incomingCall, clearIncomingCall, sendCallMessage } = useIncomingCalls();
@@ -285,9 +287,25 @@ const Messages = () => {
                         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
                       onOpenThemeSelector={() => setShowThemeSelector(true)}
-                      onStartVideoCall={() => setShowVideoCall(true)}
+                      onStartVideoCall={() => {
+                        setIsJoiningActiveCall(false);
+                        setShowVideoCall(true);
+                      }}
                     />
                   </div>
+                  
+                  {/* Active Group Call Banner */}
+                  {isGroupChat && selectedUserId && (
+                    <ActiveGroupCallBanner
+                      groupId={selectedUserId}
+                      groupName={(selectedUser as any)?.name || 'Group'}
+                      onJoinCall={() => {
+                        setIsJoiningActiveCall(true);
+                        setShowVideoCall(true);
+                      }}
+                    />
+                  )}
+                  
                   <div 
                     className="flex-1 min-h-0 flex flex-col"
                     data-theme={preferences.theme}
@@ -391,7 +409,10 @@ const Messages = () => {
       {selectedUser && (
         <VideoCallModal
           open={showVideoCall}
-          onClose={() => setShowVideoCall(false)}
+          onClose={() => {
+            setShowVideoCall(false);
+            setIsJoiningActiveCall(false);
+          }}
           contact={{
             id: selectedUser.id,
             username: selectedUser.username,
@@ -401,6 +422,7 @@ const Messages = () => {
             memberCount: (selectedUser as any).memberCount
           }}
           isGroupCall={isGroupChat}
+          isJoiningActiveCall={isJoiningActiveCall}
           onCallEnd={(type, duration) => {
             if (selectedUserId && !isGroupChat) {
               sendCallMessage(selectedUserId, type, true, duration);
