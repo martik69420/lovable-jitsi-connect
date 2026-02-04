@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX, UserCheck, ExternalLink, ClipboardList } from 'lucide-react';
+import { Shield, Users, Flag, Settings, Search, Trash2, Ban, CheckCircle, BarChart3, MessageSquare, Bell, Database, Activity, Eye, UserX, UserCheck, ExternalLink, ClipboardList, TestTube2, Heart, UserPlus, Gamepad2, AtSign, Share2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useNotification } from '@/context/NotificationContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,6 +112,7 @@ const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { isAdmin, loading: adminLoading, grantAdminRole, revokeAdminRole, checkUserIsAdmin, banUser, unbanUser, isUserBanned, adminDeletePost, getAuditLogs } = useAdmin();
+  const { triggerTestToast } = useNotification();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
@@ -1011,6 +1013,71 @@ const AdminPanel: React.FC = () => {
                     <h3 className="font-medium mb-2">Content Moderation</h3>
                     <p className="text-sm text-muted-foreground mb-3">Set up automated content filtering</p>
                     <Button variant="outline">Configure Moderation</Button>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <h3 className="font-medium mb-2 flex items-center gap-2">
+                      <TestTube2 className="h-4 w-4" />
+                      Test Notifications
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-3">Test the notification toast system with different notification types</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('message')}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                        Message
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('friend')}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Friend Request
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('like')}
+                      >
+                        <Heart className="h-4 w-4 mr-1" />
+                        Like
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('comment')}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-1" />
+                        Comment
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('mention')}
+                      >
+                        <AtSign className="h-4 w-4 mr-1" />
+                        Mention
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('game')}
+                      >
+                        <Gamepad2 className="h-4 w-4 mr-1" />
+                        Game Invite
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => triggerTestToast('share')}
+                      >
+                        <Share2 className="h-4 w-4 mr-1" />
+                        Share
+                      </Button>
+                    </div>
                   </div>
                   <div className="p-4 border rounded-lg">
                     <h3 className="font-medium mb-2">Notification Settings</h3>

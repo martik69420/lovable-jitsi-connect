@@ -17,8 +17,8 @@ const NotificationToastContainer: React.FC = () => {
 
   // Add a new toast
   const addToast = useCallback((notification: Notification) => {
-    // Don't add if already shown
-    if (shownIdsRef.current.has(notification.id)) return;
+    // Don't add if already shown (unless it's a test notification)
+    if (shownIdsRef.current.has(notification.id) && !notification.id.startsWith('test-')) return;
     
     const toastId = `${notification.id}-${Date.now()}`;
     shownIdsRef.current.add(notification.id);
@@ -40,7 +40,9 @@ const NotificationToastContainer: React.FC = () => {
 
   // Handle mark as read
   const handleMarkAsRead = useCallback((notification: ToastNotification) => {
-    markAsRead(notification.id);
+    if (!notification.id.startsWith('test-')) {
+      markAsRead(notification.id);
+    }
     removeToast(notification.toastId);
   }, [markAsRead, removeToast]);
 
@@ -60,13 +62,28 @@ const NotificationToastContainer: React.FC = () => {
         console.error('Error accepting friend request:', error);
       }
     }
-    markAsRead(notification.id);
+    if (!notification.id.startsWith('test-')) {
+      markAsRead(notification.id);
+    }
     removeToast(notification.toastId);
   }, [markAsRead, removeToast]);
 
+  // Listen for test notifications
+  useEffect(() => {
+    const handleTestNotification = (event: CustomEvent<Notification>) => {
+      console.log('Test notification received:', event.detail);
+      addToast(event.detail);
+    };
+
+    window.addEventListener('test-notification', handleTestNotification as EventListener);
+    return () => {
+      window.removeEventListener('test-notification', handleTestNotification as EventListener);
+    };
+  }, [addToast]);
+
   // Set up real-time listener for new notifications directly from DB
   useEffect(() => {
-    let channel: any = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     
     const setupRealtimeListener = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -83,11 +100,11 @@ const NotificationToastContainer: React.FC = () => {
             filter: `user_id=eq.${session.user.id}`
           },
           async (payload) => {
-            const newNotification = payload.new as any;
+            const newNotification = payload.new as Record<string, unknown>;
             console.log('New notification received:', newNotification);
             
             // Skip if already shown
-            if (shownIdsRef.current.has(newNotification.id)) return;
+            if (shownIdsRef.current.has(newNotification.id as string)) return;
             
             // Get sender info if available
             let sender = undefined;
@@ -95,7 +112,7 @@ const NotificationToastContainer: React.FC = () => {
               const { data: userData } = await supabase
                 .from('profiles')
                 .select('id, display_name, avatar_url')
-                .eq('id', newNotification.related_id)
+                .eq('id', newNotification.related_id as string)
                 .maybeSingle();
 
               if (userData) {
@@ -108,13 +125,13 @@ const NotificationToastContainer: React.FC = () => {
             }
 
             const notification: Notification = {
-              id: newNotification.id,
-              type: newNotification.type,
-              message: newNotification.content,
-              timestamp: newNotification.created_at,
-              read: newNotification.is_read,
-              relatedId: newNotification.related_id,
-              url: newNotification.url,
+              id: newNotification.id as string,
+              type: newNotification.type as Notification['type'],
+              message: newNotification.content as string,
+              timestamp: newNotification.created_at as string,
+              read: newNotification.is_read as boolean,
+              relatedId: newNotification.related_id as string | undefined,
+              url: newNotification.url as string | undefined,
               sender
             };
 
@@ -143,7 +160,7 @@ const NotificationToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-3">
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-3 pointer-events-auto">
       {toasts.map(toast => (
         <NotificationToast
           key={toast.toastId}

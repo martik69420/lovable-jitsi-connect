@@ -51,6 +51,7 @@ export interface NotificationContextProps {
   enableAutomaticNotifications: (enable: boolean) => void;
   deleteNotification: (id: string) => Promise<void>;
   isLoading: boolean;
+  triggerTestToast: (type?: Notification['type']) => void;
 }
 
 // Create the context with a default value
@@ -464,6 +465,39 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowSystemNotifications((prev) => !prev);
   };
 
+  // Trigger a test toast notification
+  const triggerTestToast = useCallback((type: Notification['type'] = 'message') => {
+    const sender = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+    
+    const messages: Record<Notification['type'], string> = {
+      message: `${sender.name} sent you a new message`,
+      like: `${sender.name} liked your post`,
+      friend: `${sender.name} sent you a friend request`,
+      comment: `${sender.name} commented on your post`,
+      mention: `${sender.name} mentioned you in a post`,
+      system: 'System notification test',
+      coin: 'You earned 50 coins!',
+      game: `${sender.name} invited you to play a game`,
+      share: `${sender.name} shared a post with you`,
+      save: `${sender.name} saved your post`,
+    };
+
+    const testNotification: Notification = {
+      id: `test-${Date.now()}`,
+      type,
+      message: messages[type],
+      timestamp: new Date().toISOString(),
+      read: false,
+      relatedId: type === 'friend' ? sender.id : `post-${Date.now()}`,
+      sender
+    };
+
+    // Dispatch a custom event that NotificationToastContainer will listen for
+    window.dispatchEvent(new CustomEvent('test-notification', { 
+      detail: testNotification 
+    }));
+  }, []);
+
   // Modified version of the provider that safely handles navigation
   const safeNavigate = useCallback((path: string, options?: { replace?: boolean }) => {
     if (navigate.current) {
@@ -494,7 +528,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       isNotificationPermissionGranted,
       enableAutomaticNotifications,
       deleteNotification,
-      isLoading
+      isLoading,
+      triggerTestToast
     }}>
       {children}
     </NotificationContext.Provider>
