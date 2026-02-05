@@ -10,9 +10,11 @@ interface ToastNotification extends Notification {
 const NotificationToastContainer: React.FC = () => {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const shownIdsRef = useRef<Set<string>>(new Set());
+  const lastSeenNotificationIdsRef = useRef<Set<string>>(new Set());
   const { 
     markAsRead,
-    fetchNotifications 
+    fetchNotifications,
+    notifications,
   } = useNotification();
 
   // Add a new toast
@@ -80,6 +82,35 @@ const NotificationToastContainer: React.FC = () => {
       window.removeEventListener('test-notification', handleTestNotification as EventListener);
     };
   }, [addToast]);
+
+  // Fallback: show toast for any newly fetched/added unread notification.
+  // This ensures toasts work even if Realtime INSERT events are not delivered.
+  useEffect(() => {
+    if (!notifications || notifications.length === 0) return;
+
+    // Track all ids we know about to detect "new" ones.
+    const knownIds = lastSeenNotificationIdsRef.current;
+
+    // We want newest-first behavior.
+    const sorted = [...notifications].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    const newlyArrived = sorted.filter((n) => !knownIds.has(n.id));
+
+    // Mark current list as known.
+    for (const n of notifications) {
+      knownIds.add(n.id);
+    }
+
+    // Show toasts for new unread notifications.
+    for (const n of newlyArrived) {
+      if (n.id.startsWith('test-')) continue; // test handled by explicit event
+      if (!n.read) {
+        addToast(n);
+      }
+    }
+  }, [notifications, addToast]);
 
   // Set up real-time listener for new notifications directly from DB
   useEffect(() => {
