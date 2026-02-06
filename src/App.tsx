@@ -14,14 +14,14 @@ import NotificationToastContainer from '@/component/notifications/NotificationTo
 import GlobalCallHandler from '@/component/calling/GlobalCallHandler';
 
 // Error boundary for catching render errors
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -31,12 +31,19 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-          <div className="text-center p-6">
-            <h1 className="text-xl font-bold mb-2">Something went wrong</h1>
+        <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#0f172a' }}>
+          <div className="text-center p-6" style={{ color: 'white' }}>
+            <h1 className="text-xl font-bold mb-4">Something went wrong</h1>
+            <p className="mb-4 text-gray-300 text-sm max-w-md">
+              {this.state.error?.message || 'An unexpected error occurred'}
+            </p>
             <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }} 
+              className="px-4 py-2 rounded-md"
+              style={{ backgroundColor: '#6366f1', color: 'white' }}
             >
               Reload Page
             </button>
@@ -92,12 +99,24 @@ const PageLoader = () => (
 function useGlobalErrorHandler() {
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
+      // Log but don't crash the app
+      console.warn('Unhandled promise rejection:', event.reason);
+      event.preventDefault();
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      // Log but don't crash the app
+      console.warn('Unhandled error:', event.message);
       event.preventDefault();
     };
 
     window.addEventListener('unhandledrejection', handleRejection);
-    return () => window.removeEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('error', handleError);
+    
+    return () => {
+      window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener('error', handleError);
+    };
   }, []);
 }
 
