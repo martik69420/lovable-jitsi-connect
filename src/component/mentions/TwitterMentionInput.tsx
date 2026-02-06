@@ -208,7 +208,8 @@ const TwitterMentionInput: React.FC<TwitterMentionInputProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[9999] bg-popover border border-border rounded-xl shadow-2xl overflow-hidden w-80 left-0 bottom-full mb-2"
+            className="absolute z-[99999] bg-popover border border-border rounded-xl shadow-2xl overflow-hidden w-80 left-0 bottom-full mb-2"
+            style={{ transform: 'translateY(-4px)' }}
           >
             <Command className="rounded-xl" shouldFilter={false}>
               <div className="px-4 py-2.5 text-xs font-medium text-muted-foreground border-b border-border bg-muted/30 flex items-center gap-2">

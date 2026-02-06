@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, Component, ReactNode } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -12,6 +12,41 @@ import { TooltipProvider } from '@/component/ui/tooltip';
 import UnreadMessagesTitle from '@/component/system/UnreadMessagesTitle';
 import NotificationToastContainer from '@/component/notifications/NotificationToastContainer';
 import GlobalCallHandler from '@/component/calling/GlobalCallHandler';
+
+// Error boundary for catching render errors
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('App Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <div className="text-center p-6">
+            <h1 className="text-xl font-bold mb-2">Something went wrong</h1>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import('./pages/Home'));
@@ -53,21 +88,37 @@ const PageLoader = () => (
   </div>
 );
 
+// Hook for global unhandled promise rejections
+function useGlobalErrorHandler() {
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      event.preventDefault();
+    };
+
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => window.removeEventListener('unhandledrejection', handleRejection);
+  }, []);
+}
+
 function App() {
+  useGlobalErrorHandler();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <AuthProvider>
-            <LanguageProvider>
-              <GameProvider>
-                <NotificationProvider>
-                  <PostProvider>
-                    <UnreadMessagesTitle />
-                    <NotificationToastContainer />
-                    <GlobalCallHandler />
-                    <Suspense fallback={<PageLoader />}>
-                      <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <AuthProvider>
+              <LanguageProvider>
+                <GameProvider>
+                  <NotificationProvider>
+                    <PostProvider>
+                      <UnreadMessagesTitle />
+                      <NotificationToastContainer />
+                      <GlobalCallHandler />
+                      <Suspense fallback={<PageLoader />}>
+                        <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
@@ -99,7 +150,8 @@ function App() {
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
