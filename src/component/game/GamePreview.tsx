@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/component/ui/card';
 import { Badge } from '@/component/ui/badge';
 import { Button } from '@/component/ui/button';
 import { 
@@ -9,7 +8,8 @@ import {
   Rocket, 
   Circle,
   Play,
-  ExternalLink
+  Swords,
+  Users
 } from 'lucide-react';
 
 interface GamePreviewProps {
@@ -23,40 +23,50 @@ const gameData = {
     name: 'Snake',
     description: 'Classic snake game - eat food and grow!',
     icon: Terminal,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
+    gradient: 'from-emerald-500/20 to-green-600/10',
+    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-500',
+    buttonClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
     route: '/games/snake'
   },
   tetris: {
     name: 'Tetris',
     description: 'Stack blocks and clear lines!',
     icon: Gamepad,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
+    gradient: 'from-purple-500/20 to-violet-600/10',
+    iconBg: 'bg-purple-500/20',
+    iconColor: 'text-purple-500',
+    buttonClass: 'bg-purple-600 hover:bg-purple-700 text-white',
     route: '/games/tetris'
   },
   pong: {
     name: 'Pong',
-    description: 'Classic 2-player ping pong game',
+    description: 'Classic 2-player ping pong',
     icon: Circle,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    gradient: 'from-blue-500/20 to-cyan-600/10',
+    iconBg: 'bg-blue-500/20',
+    iconColor: 'text-blue-500',
+    buttonClass: 'bg-blue-600 hover:bg-blue-700 text-white',
     route: '/games/pong'
   },
   asteroids: {
     name: 'Asteroids',
     description: 'Team up to destroy asteroids!',
     icon: Rocket,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-500/10',
+    gradient: 'from-orange-500/20 to-amber-600/10',
+    iconBg: 'bg-orange-500/20',
+    iconColor: 'text-orange-500',
+    buttonClass: 'bg-orange-600 hover:bg-orange-700 text-white',
     route: '/games/asteroids'
   },
   geometrydash: {
     name: 'Geometry Dash',
     description: 'Rhythm-based platformer!',
     icon: Gamepad,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-500/10',
+    gradient: 'from-yellow-500/20 to-amber-500/10',
+    iconBg: 'bg-yellow-500/20',
+    iconColor: 'text-yellow-500',
+    buttonClass: 'bg-yellow-600 hover:bg-yellow-700 text-white',
     route: '/games/geometry-dash'
   }
 };
@@ -67,19 +77,17 @@ const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true, roo
   
   if (!game) {
     return (
-      <Card className="w-full max-w-sm border-destructive/20">
-        <CardContent className="p-3 text-center">
-          <p className="text-destructive text-xs">Game not found</p>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-destructive/20 p-3 text-center">
+        <p className="text-destructive text-xs">Game not found</p>
+      </div>
     );
   }
 
   const Icon = game.icon;
+  const isInvite = !!roomCode;
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // If there's a room code, join as guest
     if (roomCode) {
       navigate(`${game.route}?room=${roomCode}`);
     } else {
@@ -88,41 +96,51 @@ const GamePreview: React.FC<GamePreviewProps> = ({ gameType, compact = true, roo
   };
 
   return (
-    <Card 
-      className={`w-full max-w-sm cursor-pointer hover:bg-accent/50 transition-all duration-200 border-primary/20 group ${game.bgColor}`}
+    <div
+      className={`w-full max-w-[280px] rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg border border-border/50`}
       onClick={handlePlay}
     >
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-lg ${game.bgColor}`}>
-              <Icon className={`h-4 w-4 ${game.color}`} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">{game.name}</h4>
-              <p className="text-[10px] text-muted-foreground">
-                {roomCode ? 'You\'re invited to play!' : game.description}
-              </p>
-            </div>
+      {/* Header gradient strip */}
+      <div className={`bg-gradient-to-r ${game.gradient} px-4 py-3 flex items-center gap-3`}>
+        <div className={`p-2 rounded-xl ${game.iconBg} backdrop-blur-sm`}>
+          <Icon className={`h-5 w-5 ${game.iconColor}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-sm">{game.name}</h4>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {game.description}
+          </p>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3 bg-card/80 backdrop-blur-sm">
+        {isInvite ? (
+          <div className="flex items-center gap-2 mb-3">
+            <Swords className={`h-4 w-4 ${game.iconColor} shrink-0`} />
+            <p className="text-xs font-medium">
+              You've been challenged!
+            </p>
           </div>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-            {roomCode ? 'Invite' : 'Game'}
-          </Badge>
-        </div>
-        
-        <div className="flex items-center justify-between mt-3">
-          <Button 
-            size="sm" 
-            className="h-7 text-xs gap-1"
-            onClick={handlePlay}
-          >
-            <Play className="h-3 w-3" />
-            {roomCode ? 'Join Game' : 'Play Now'}
-          </Button>
-          <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-      </CardContent>
-    </Card>
+        ) : (
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              {gameType === 'pong' ? '2 players' : gameType === 'tetris' ? 'Single player' : 'Multiplayer'}
+            </p>
+          </div>
+        )}
+
+        <Button 
+          size="sm" 
+          className={`w-full h-8 text-xs font-semibold gap-1.5 rounded-lg ${game.buttonClass}`}
+          onClick={handlePlay}
+        >
+          <Play className="h-3.5 w-3.5" fill="currentColor" />
+          {isInvite ? 'Join Game' : 'Play Now'}
+        </Button>
+      </div>
+    </div>
   );
 };
 
