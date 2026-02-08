@@ -45,5 +45,6 @@ export default defineConfig(({ mode }) => ({
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "./src") },
     ],
+    dedupe: ['react', 'react-dom'],
   },
 }));
