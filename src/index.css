@@ -1,3 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Merriweather&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,7 +26,7 @@
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 186 70% 30%;
-    --radius: 1.5rem;
+    --radius: 1.375rem;
     --chart-1: 328 85% 70%;
     --chart-2: 351 94% 71%;
     --chart-3: 327 87% 81%;
@@ -93,6 +96,7 @@
     --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --radius: 1.375rem;
   }
 }
 
