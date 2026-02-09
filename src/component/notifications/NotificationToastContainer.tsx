@@ -115,32 +115,46 @@ const NotificationToastContainer: React.FC = () => {
   // Set up real-time listener for new notifications directly from DB
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    let userId: string | null = null;
     
     const setupRealtimeListener = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) return;
-      userId = session.user.id;
 
       channel = supabase
-        .channel('notification-toasts-realtime', {
-          config: { broadcast: { self: true } }
-        })
+        .channel('notification-toasts-realtime')
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'notifications',
-            filter: `user_id=eq.${userId}`
+            filter: `user_id=eq.${session.user.id}`
           },
-          (payload) => {
+          async (payload) => {
             const newNotification = payload.new as Record<string, unknown>;
+            console.log('New notification received:', newNotification);
             
             // Skip if already shown
             if (shownIdsRef.current.has(newNotification.id as string)) return;
+            
+            // Get sender info if available
+            let sender = undefined;
+            if (newNotification.related_id) {
+              const { data: userData } = await supabase
+                .from('profiles')
+                .select('id, display_name, avatar_url')
+                .eq('id', newNotification.related_id as string)
+                .maybeSingle();
 
-            // Build notification immediately without waiting for sender lookup
+              if (userData) {
+                sender = {
+                  id: userData.id,
+                  name: userData.display_name,
+                  avatar: userData.avatar_url || undefined
+                };
+              }
+            }
+
             const notification: Notification = {
               id: newNotification.id as string,
               type: newNotification.type as Notification['type'],
@@ -149,43 +163,20 @@ const NotificationToastContainer: React.FC = () => {
               read: newNotification.is_read as boolean,
               relatedId: newNotification.related_id as string | undefined,
               url: newNotification.url as string | undefined,
-              sender: undefined
+              sender
             };
 
-            // Show toast immediately for unread notifications
+            // Show toast for unread notifications
             if (!notification.read) {
               addToast(notification);
-              // Refresh notifications list for the bell icon count
+              // Also refresh notifications list for the bell icon
               fetchNotifications();
-            }
-
-            // Fetch sender info async and update if needed (non-blocking)
-            if (newNotification.related_id) {
-              supabase
-                .from('profiles')
-                .select('id, display_name, avatar_url')
-                .eq('id', newNotification.related_id as string)
-                .maybeSingle()
-                .then(({ data: userData }) => {
-                  if (userData) {
-                    setToasts(prev => prev.map(t => 
-                      t.id === notification.id 
-                        ? { 
-                            ...t, 
-                            sender: {
-                              id: userData.id,
-                              name: userData.display_name,
-                              avatar: userData.avatar_url || undefined
-                            }
-                          }
-                        : t
-                    ));
-                  }
-                });
             }
           }
         )
-        .subscribe();
+        .subscribe((status: string) => {
+          console.log('Notification realtime subscription status:', status);
+        });
     };
 
     setupRealtimeListener();
@@ -195,7 +186,7 @@ const NotificationToastContainer: React.FC = () => {
         supabase.removeChannel(channel);
       }
     };
-  }, [addToast, fetchNotifications, setToasts]);
+  }, [addToast, fetchNotifications]);
 
   if (toasts.length === 0) return null;
 

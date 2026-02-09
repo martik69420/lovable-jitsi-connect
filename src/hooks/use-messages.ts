@@ -335,14 +335,6 @@ const useMessages = (): UseMessagesResult => {
         return;
       }
 
-      // Also mark message notifications as read for this sender
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('type', 'message')
-        .eq('is_read', false);
-
       // Update local state
       setMessages(prev => prev.map(msg => 
         msg.sender_id === senderId && msg.receiver_id === user.id && !msg.is_read

@@ -204,24 +204,27 @@ const TwitterMentionInput: React.FC<TwitterMentionInputProps> = ({
         {showSuggestions && (
           <motion.div 
             ref={suggestionsRef}
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: 5, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            exit={{ opacity: 0, y: 5, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[99999] bg-popover border border-border rounded-xl shadow-2xl overflow-hidden w-80 left-0 bottom-full mb-2"
-            style={{ transform: 'translateY(-4px)' }}
+            className="absolute z-[100] bg-popover border border-border rounded-lg shadow-xl overflow-hidden w-72 left-0"
+            style={{ 
+              top: '100%',
+              marginTop: '4px'
+            }}
           >
-            <Command className="rounded-xl" shouldFilter={false}>
-              <div className="px-4 py-2.5 text-xs font-medium text-muted-foreground border-b border-border bg-muted/30 flex items-center gap-2">
-                <AtSign className="h-3.5 w-3.5 text-primary" />
-                <span>{mentionQuery ? `Searching for "${mentionQuery}"` : 'Type to search users'}</span>
+            <Command className="rounded-lg" shouldFilter={false}>
+              <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-muted/20 flex items-center">
+                <AtSign className="h-3 w-3 mr-1" />
+                {mentionQuery ? `Searching for "${mentionQuery}"` : 'Type to search users'}
               </div>
               
-              <CommandList className="max-h-64 overflow-y-auto">
+              <CommandList className="max-h-48 overflow-y-auto">
                 <CommandGroup>
                   {loading ? (
-                    <div className="p-6 text-center">
-                      <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin text-primary" />
+                    <div className="p-4 text-center">
+                      <Loader2 className="h-5 w-5 mx-auto mb-2 animate-spin text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">Searching...</p>
                     </div>
                   ) : users.length > 0 ? (
@@ -230,19 +233,19 @@ const TwitterMentionInput: React.FC<TwitterMentionInputProps> = ({
                         key={user.id}
                         value={user.username}
                         onSelect={() => insertMention(user)}
-                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-150 ${
-                          index === selectedIndex ? 'bg-accent' : 'hover:bg-muted/50'
+                        className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                          index === selectedIndex ? 'bg-accent' : ''
                         }`}
                         onMouseEnter={() => setSelectedIndex(index)}
                       >
-                        <Avatar className="h-9 w-9 ring-2 ring-border">
+                        <Avatar className="h-8 w-8 border">
                           <AvatarImage src={user.avatar_url || '/placeholder.svg'} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
                             {user.display_name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
-                          <p className="text-sm font-semibold truncate text-foreground">
+                          <p className="text-sm font-medium truncate">
                             {user.display_name}
                           </p>
                           <p className="text-xs text-muted-foreground">@{user.username}</p>
@@ -250,8 +253,8 @@ const TwitterMentionInput: React.FC<TwitterMentionInputProps> = ({
                       </CommandItem>
                     ))
                   ) : mentionQuery ? (
-                    <div className="p-6 text-center">
-                      <p className="text-sm text-muted-foreground">No users found matching "{mentionQuery}"</p>
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No users found matching "{mentionQuery}"
                     </div>
                   ) : null}
                 </CommandGroup>

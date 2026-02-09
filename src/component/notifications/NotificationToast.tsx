@@ -330,7 +330,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
   return (
     <div
       className={cn(
-        "relative w-80 sm:w-[340px] bg-card border border-border rounded-lg shadow-lg overflow-hidden transition-all duration-200 ease-out",
+        "relative w-72 bg-card border border-border rounded-lg shadow-lg overflow-hidden transition-all duration-300 ease-out",
         isVisible && !isExiting 
           ? "translate-x-0 opacity-100" 
           : "translate-x-full opacity-0"
