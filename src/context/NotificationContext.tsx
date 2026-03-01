@@ -59,14 +59,6 @@ const NotificationContext = createContext<NotificationContextProps | undefined>(
   undefined
 );
 
-// Mock users for sender data to make it look more real
-const mockUsers = [
-  { id: 'user1', name: 'Emma Johnson', avatar: 'https://i.pravatar.cc/150?img=1' },
-  { id: 'user2', name: 'Liam Wilson', avatar: 'https://i.pravatar.cc/150?img=2' },
-  { id: 'user3', name: 'Olivia Smith', avatar: 'https://i.pravatar.cc/150?img=3' },
-  { id: 'user4', name: 'Noah Davis', avatar: 'https://i.pravatar.cc/150?img=4' },
-  { id: 'user5', name: 'Ava Brown', avatar: 'https://i.pravatar.cc/150?img=5' },
-];
 
 // Notification Provider component
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -126,47 +118,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     pushNotificationService.setAutomaticNotifications(enable);
   };
 
-  // Generate a random notification to make the system look real
-  const generateRandomNotification = (id: string): Notification => {
-    const types: Array<Notification['type']> = ['message', 'like', 'friend', 'comment', 'mention'];
-    const type = types[Math.floor(Math.random() * types.length)];
-    const sender = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-    const minutesAgo = Math.floor(Math.random() * 60 * 24); // Random time within last 24h
-    
-    let message = '';
-    let relatedId = `post${Math.floor(Math.random() * 100)}`;
-    
-    switch (type) {
-      case 'message':
-        message = `${sender.name} sent you a new message`;
-        break;
-      case 'like':
-        message = `${sender.name} liked your post`;
-        break;
-      case 'friend':
-        message = `${sender.name} sent you a friend request`;
-        relatedId = sender.id;
-        break;
-      case 'comment':
-        message = `${sender.name} commented on your post`;
-        break;
-      case 'mention':
-        message = `${sender.name} mentioned you in a comment`;
-        break;
-      default:
-        message = `New notification from ${sender.name}`;
-    }
-    
-    return {
-      id,
-      type,
-      message,
-      timestamp: new Date(Date.now() - minutesAgo * 60000).toISOString(),
-      read: Math.random() > 0.7, // 30% chance of being unread
-      relatedId,
-      sender
-    };
-  };
 
   // Function to fetch notifications (replace with your actual data fetching logic)
   const fetchNotifications = useCallback(async () => {
@@ -226,33 +177,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Generate mock notifications if no authenticated user or no data
-      const mockNotifications: Notification[] = Array.from({ length: 8 }).map((_, i) => 
-        generateRandomNotification(`mock-${i}`)
-      );
-      
-      // Sort by date, newest first
-      mockNotifications.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-      
-      setNotifications(mockNotifications);
+      // No authenticated user - set empty
+      setNotifications([]);
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      // Fall back to mock data in case of error
-      const mockNotifications: Notification[] = Array.from({ length: 5 }).map((_, i) => 
-        generateRandomNotification(`error-fallback-${i}`)
-      );
-      setNotifications(mockNotifications);
+      setNotifications([]);
     } finally {
       // Ensure loading state is set to false regardless of success or failure
       setIsLoading(false);
     }
   }, []);
 
-  // Fetch notifications on component mount
+  // Fetch notifications on component mount + poll every 10 seconds
   useEffect(() => {
     fetchNotifications();
+
+    // Poll every 10 seconds for new notifications
+    const pollInterval = setInterval(() => {
+      fetchNotifications();
+    }, 10000);
 
     // Set up subscription for realtime notifications
     const notificationsChannel = supabase
@@ -272,6 +215,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       .subscribe();
 
     return () => {
+      clearInterval(pollInterval);
       supabase.removeChannel(notificationsChannel);
     };
   }, [fetchNotifications]);
@@ -465,9 +409,27 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     setShowSystemNotifications((prev) => !prev);
   };
 
-  // Trigger a test toast notification
-  const triggerTestToast = useCallback((type: Notification['type'] = 'message') => {
-    const sender = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+  // Trigger a test toast notification using the logged-in user's own data
+  const triggerTestToast = useCallback(async (type: Notification['type'] = 'message') => {
+    // Get current user's profile for realistic test data
+    const { data: { session } } = await supabase.auth.getSession();
+    let sender = { id: 'test-user', name: 'You (Test)', avatar: undefined as string | undefined };
+    
+    if (session?.user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profile) {
+        sender = {
+          id: profile.id,
+          name: profile.display_name,
+          avatar: profile.avatar_url || undefined
+        };
+      }
+    }
     
     const messages: Record<Notification['type'], string> = {
       message: `${sender.name} sent you a new message`,
@@ -492,7 +454,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       sender
     };
 
-    // Dispatch a custom event that NotificationToastContainer will listen for
     window.dispatchEvent(new CustomEvent('test-notification', { 
       detail: testNotification 
     }));
