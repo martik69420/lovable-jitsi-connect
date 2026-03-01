@@ -40,8 +40,8 @@ const Messages = () => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [isJoiningActiveCall, setIsJoiningActiveCall] = useState(false);
   
-  // Incoming calls
-  const { incomingCall, clearIncomingCall, sendCallMessage } = useIncomingCalls();
+  // Call message helper (incoming calls handled globally by GlobalCallHandler)
+  const { sendCallMessage } = useIncomingCalls();
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
   
@@ -431,26 +431,7 @@ const Messages = () => {
         />
       )}
 
-      {/* Incoming Call Modal - Available for all users */}
-      {incomingCall && (
-        <VideoCallModal
-          open={!!incomingCall}
-          onClose={clearIncomingCall}
-          contact={{
-            id: incomingCall.callerId,
-            username: incomingCall.callerUsername,
-            displayName: incomingCall.callerDisplayName,
-            avatar: incomingCall.callerAvatar
-          }}
-          isIncoming
-          callerId={incomingCall.callerId}
-          callerInfo={{
-            username: incomingCall.callerUsername,
-            displayName: incomingCall.callerDisplayName,
-            avatar: incomingCall.callerAvatar
-          }}
-        />
-      )}
+      {/* Incoming calls are handled globally by GlobalCallHandler */}
     </AppLayout>
   );
 };

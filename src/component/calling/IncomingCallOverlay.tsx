@@ -23,67 +23,54 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
   onReject
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [ringVolume, setRingVolume] = useState(0.5);
+  const [ringVolume, setRingVolume] = useState(() => {
+    const saved = localStorage.getItem('call_ringtone_volume');
+    return saved ? parseFloat(saved) : 0.5;
+  });
   const [isMuted, setIsMuted] = useState(false);
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
-  // Load volume from localStorage
-  useEffect(() => {
-    const savedVolume = localStorage.getItem('call_ringtone_volume');
-    if (savedVolume) {
-      setRingVolume(parseFloat(savedVolume));
-    }
-  }, []);
-
-  // Save volume to localStorage
   useEffect(() => {
     localStorage.setItem('call_ringtone_volume', ringVolume.toString());
   }, [ringVolume]);
 
-  // Play ringtone when call comes in
   useEffect(() => {
-    if (open) {
-      // Create audio element for ringtone
-      audioRef.current = new Audio('/ringtone.mp3');
-      audioRef.current.loop = true;
-      audioRef.current.volume = isMuted ? 0 : ringVolume;
-      
-      audioRef.current.play().catch(err => {
-        console.log('Could not play ringtone:', err);
-      });
+    if (!open) return;
 
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current = null;
-        }
-      };
-    }
-  }, [open, ringVolume, isMuted]);
+    const audio = new Audio('/ringtone.mp3');
+    audio.loop = true;
+    audio.volume = isMuted ? 0 : ringVolume;
+    audioRef.current = audio;
 
-  // Update volume when slider changes
+    audio.play().catch(err => console.log('Could not play ringtone:', err));
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      audioRef.current = null;
+    };
+  }, [open]);
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : ringVolume;
     }
   }, [ringVolume, isMuted]);
 
-  const handleAccept = () => {
+  const stopAudio = () => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
+  };
+
+  const handleAccept = () => {
+    stopAudio();
     onAccept();
   };
 
   const handleReject = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    stopAudio();
     onReject();
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
   };
 
   return (
@@ -101,7 +88,7 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
             exit={{ scale: 0.9, y: 20 }}
             className="flex flex-col items-center gap-8 p-8 w-full max-w-sm"
           >
-            {/* Pulsing ring effect */}
+            {/* Pulsing ring */}
             <div className="relative">
               <motion.div
                 animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
@@ -138,7 +125,6 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
 
             {/* Call actions */}
             <div className="flex items-center gap-10 mt-6">
-              {/* Reject button */}
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -155,7 +141,6 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
                 <span className="text-sm text-muted-foreground font-medium">Decline</span>
               </motion.div>
 
-              {/* Accept button */}
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -181,7 +166,7 @@ const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
                   variant="ghost"
                   size="icon"
                   className="h-10 w-10 rounded-full"
-                  onClick={toggleMute}
+                  onClick={() => setIsMuted(!isMuted)}
                 >
                   {isMuted ? (
                     <VolumeX className="h-5 w-5 text-muted-foreground" />
