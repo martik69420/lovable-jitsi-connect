@@ -16,10 +16,13 @@ export const useIncomingCalls = () => {
   const { user } = useAuth();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const channelsRef = useRef<Map<string, any>>(new Map());
-  const friendsRef = useRef<string[]>([]);
-  const callStartTimeRef = useRef<number | null>(null);
+  const incomingCallRef = useRef<IncomingCall | null>(null);
 
-  // Helper to send a call message to the chat
+  // Keep ref in sync
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
+
   const sendCallMessage = useCallback(async (
     receiverId: string,
     callType: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer',
@@ -37,6 +40,7 @@ export const useIncomingCalls = () => {
         content,
         is_read: false
       });
+      console.log('Call message sent:', content);
     } catch (error) {
       console.error('Error sending call message:', error);
     }
@@ -45,10 +49,8 @@ export const useIncomingCalls = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Fetch friends to set up call listeners for each potential caller
     const setupCallListeners = async () => {
       try {
-        // Get all friends (accepted friend requests in either direction)
         const { data: friendsData } = await supabase
           .from('friends')
           .select('user_id, friend_id')
@@ -57,18 +59,13 @@ export const useIncomingCalls = () => {
 
         if (!friendsData) return;
 
-        // Extract friend IDs
         const friendIds = friendsData.map(f => 
           f.user_id === user.id ? f.friend_id : f.user_id
         ).filter(Boolean) as string[];
 
-        friendsRef.current = friendIds;
-
-        // Create a channel for each friend to listen for their calls
         friendIds.forEach(friendId => {
           const channelId = [user.id, friendId].sort().join('_');
           
-          // Skip if already listening
           if (channelsRef.current.has(channelId)) return;
 
           const channel = supabase.channel(`call_${channelId}`, {
@@ -79,7 +76,6 @@ export const useIncomingCalls = () => {
             .on('broadcast', { event: 'call_request' }, ({ payload }) => {
               if (payload.targetId === user.id) {
                 console.log('Incoming call from:', payload.callerId);
-                callStartTimeRef.current = Date.now();
                 setIncomingCall({
                   callerId: payload.callerId,
                   callerUsername: payload.callerUsername,
@@ -92,22 +88,19 @@ export const useIncomingCalls = () => {
               }
             })
             .on('broadcast', { event: 'call_end' }, ({ payload }) => {
-              // Clear incoming call if the caller ended it
-              if (incomingCall?.callerId === payload.callerId || payload.targetId === user.id) {
-                // If we had an incoming call that wasn't answered, mark as missed
-                if (incomingCall && callStartTimeRef.current) {
-                  sendCallMessage(incomingCall.callerId, 'missed', incomingCall.isVideo);
+              const current = incomingCallRef.current;
+              if (current?.callerId === payload.callerId || payload.targetId === user.id) {
+                if (current) {
+                  sendCallMessage(current.callerId, 'missed', current.isVideo !== false);
                 }
                 setIncomingCall(null);
-                callStartTimeRef.current = null;
               }
             })
             .on('broadcast', { event: 'call_timeout' }, ({ payload }) => {
-              // Caller timed out waiting for answer
-              if (payload.targetId === user.id && incomingCall) {
+              const current = incomingCallRef.current;
+              if (payload.targetId === user.id && current) {
                 sendCallMessage(payload.callerId, 'missed', true);
                 setIncomingCall(null);
-                callStartTimeRef.current = null;
               }
             })
             .subscribe((status) => {
@@ -123,7 +116,6 @@ export const useIncomingCalls = () => {
 
     setupCallListeners();
 
-    // Also listen for friend list changes to update listeners
     const friendsChannel = supabase
       .channel('friends_changes_for_calls')
       .on(
@@ -134,15 +126,11 @@ export const useIncomingCalls = () => {
           table: 'friends',
           filter: `or(user_id.eq.${user.id},friend_id.eq.${user.id})`
         },
-        () => {
-          // Refresh listeners when friends change
-          setupCallListeners();
-        }
+        () => setupCallListeners()
       )
       .subscribe();
 
     return () => {
-      // Clean up all channels
       channelsRef.current.forEach(channel => {
         supabase.removeChannel(channel);
       });
@@ -152,25 +140,20 @@ export const useIncomingCalls = () => {
   }, [user?.id, sendCallMessage]);
 
   const clearIncomingCall = useCallback(() => {
-    // Send rejection to the caller before clearing
-    if (incomingCall && channelsRef.current.has(incomingCall.channelId)) {
-      const channel = channelsRef.current.get(incomingCall.channelId);
+    const current = incomingCallRef.current;
+    if (current && channelsRef.current.has(current.channelId)) {
+      const channel = channelsRef.current.get(current.channelId);
       channel?.send({
         type: 'broadcast',
         event: 'call_rejected',
-        payload: { targetId: incomingCall.callerId }
+        payload: { targetId: current.callerId }
       });
-      
-      // Send declined message
-      sendCallMessage(incomingCall.callerId, 'declined', incomingCall.isVideo);
+      sendCallMessage(current.callerId, 'declined', current.isVideo !== false);
     }
     setIncomingCall(null);
-    callStartTimeRef.current = null;
-  }, [incomingCall, sendCallMessage]);
+  }, [sendCallMessage]);
 
   const acceptIncomingCall = useCallback(() => {
-    // Just clear the state - the acceptance is handled in the VideoCallModal
-    callStartTimeRef.current = null;
     setIncomingCall(null);
   }, []);
 

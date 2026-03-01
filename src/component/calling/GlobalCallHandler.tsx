@@ -1,46 +1,52 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useIncomingCalls } from '@/hooks/use-incoming-calls';
 import IncomingCallOverlay from './IncomingCallOverlay';
 import VideoCallModal from '@/component/messaging/VideoCallModal';
 
+interface AcceptedCall {
+  callerId: string;
+  callerUsername?: string;
+  callerDisplayName?: string;
+  callerAvatar?: string | null;
+  channelId: string;
+  isVideo?: boolean;
+}
+
 const GlobalCallHandler: React.FC = () => {
   const { incomingCall, clearIncomingCall, acceptIncomingCall, sendCallMessage } = useIncomingCalls();
   const [showCallModal, setShowCallModal] = useState(false);
-  const [acceptedCall, setAcceptedCall] = useState<{
-    callerId: string;
-    callerUsername?: string;
-    callerDisplayName?: string;
-    callerAvatar?: string | null;
-    channelId: string;
-    isVideo?: boolean;
-  } | null>(null);
+  const [acceptedCall, setAcceptedCall] = useState<AcceptedCall | null>(null);
+  const acceptedCallRef = useRef<AcceptedCall | null>(null);
 
   const handleAcceptCall = useCallback(() => {
     if (incomingCall) {
-      setAcceptedCall(incomingCall);
+      const call = { ...incomingCall };
+      setAcceptedCall(call);
+      acceptedCallRef.current = call;
       setShowCallModal(true);
-      acceptIncomingCall(); // Don't send rejection, just clear
+      acceptIncomingCall();
     }
   }, [incomingCall, acceptIncomingCall]);
 
   const handleRejectCall = useCallback(() => {
-    clearIncomingCall(); // This sends rejection message
+    clearIncomingCall();
   }, [clearIncomingCall]);
 
   const handleCloseCallModal = useCallback(() => {
     setShowCallModal(false);
     setAcceptedCall(null);
+    acceptedCallRef.current = null;
   }, []);
 
   const handleCallEnd = useCallback((type: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer', duration?: number) => {
-    if (acceptedCall) {
-      sendCallMessage(acceptedCall.callerId, type, acceptedCall.isVideo !== false, duration);
+    const call = acceptedCallRef.current;
+    if (call) {
+      sendCallMessage(call.callerId, type, call.isVideo !== false, duration);
     }
-  }, [acceptedCall, sendCallMessage]);
+  }, [sendCallMessage]);
 
   return (
     <>
-      {/* Incoming call overlay - shows fullscreen when receiving a call */}
       <IncomingCallOverlay
         open={!!incomingCall}
         callerName={incomingCall?.callerDisplayName || incomingCall?.callerUsername || 'Unknown'}
@@ -50,7 +56,6 @@ const GlobalCallHandler: React.FC = () => {
         onReject={handleRejectCall}
       />
 
-      {/* Video call modal - opens after accepting the call */}
       {acceptedCall && (
         <VideoCallModal
           open={showCallModal}
