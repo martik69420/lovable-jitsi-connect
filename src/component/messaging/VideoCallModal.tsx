@@ -113,6 +113,12 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const displayName = displayInfo?.displayName || displayInfo?.username || (contact as any)?.name || 'User';
   const channelId = user?.id && targetId ? (isGroupCall ? `group_${contact.id}` : [user.id, targetId].sort().join('_')) : null;
 
+  // Keep callStatusRef in sync
+  const updateCallStatus = useCallback((status: 'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended') => {
+    callStatusRef.current = status;
+    setCallStatus(status);
+  }, []);
+
   const cleanup = useCallback(() => {
     console.log('Cleaning up call resources...');
     
