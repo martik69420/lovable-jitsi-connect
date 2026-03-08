@@ -216,7 +216,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="border-t p-2 sm:p-3 dark:border-gray-800 bg-background/95 backdrop-blur-sm">
+    <div className="border-t p-2 sm:p-3 bg-background/95 backdrop-blur-sm">
       {/* Reply Preview */}
       {replyingTo && (
         <div className="mb-2 flex items-center gap-2 p-2 bg-muted rounded-lg">

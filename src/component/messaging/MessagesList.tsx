@@ -198,7 +198,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
       case 'sent':
         return <Check className={`${iconClass} text-muted-foreground`} />;
       case 'delivered':
-        return <CheckCheck className={`${iconClass} text-gray-500 dark:text-gray-400`} />;
+        return <CheckCheck className={`${iconClass} text-muted-foreground`} />;
       case 'read':
         return (
           <div className="flex items-center gap-1" title={readTime ? `Read at ${readTime}` : undefined}>
