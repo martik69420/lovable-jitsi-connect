@@ -55,6 +55,7 @@ interface ChatHeaderProps {
   isCreator?: boolean;
   onOpenThemeSelector?: () => void;
   onStartVideoCall?: () => void;
+  onStartVoiceCall?: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
