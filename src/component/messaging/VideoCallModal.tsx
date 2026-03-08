@@ -640,7 +640,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   const handleAcceptCall = useCallback(async () => {
     console.log('Accepting call from:', callerId);
-    setCallStatus('connecting');
+    updateCallStatus('connecting');
     
     if (channelRef.current && callerId) {
       channelRef.current.send({
