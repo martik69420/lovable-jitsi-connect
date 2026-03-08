@@ -349,7 +349,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
       }));
 
       // Host manages asteroids
-      if (isHost) {
+      if (isHostRef.current) {
         setAsteroids(prev => {
           const updated = prev.map(a => ({
             ...a,
