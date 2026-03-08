@@ -466,18 +466,22 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
   }, []);
 
   // Auto-join room from URL parameters
+  const hasAutoJoined = useRef(false);
   useEffect(() => {
-    if (!user || !initialRoomCode) return;
+    if (!user || !initialRoomCode || hasAutoJoined.current) return;
+    hasAutoJoined.current = true;
     
     if (initialIsHost) {
-      // Host: create the room with the specified code
       setRoomId(initialRoomCode);
       setIsHost(true);
+      isHostRef.current = true;
       setWaiting(true);
       joinChannel(initialRoomCode, true);
     } else {
-      // Guest: join the room
-      joinRoom(initialRoomCode);
+      setRoomId(initialRoomCode);
+      setIsHost(false);
+      isHostRef.current = false;
+      joinChannel(initialRoomCode, false);
     }
   }, [user, initialRoomCode, initialIsHost]);
 
