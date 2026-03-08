@@ -961,9 +961,9 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full h-10 w-10 sm:h-11 sm:w-11 bg-gray-700 text-white hover:bg-gray-600"
+                  className="rounded-full h-12 w-12 sm:h-11 sm:w-11 bg-gray-700 text-white hover:bg-gray-600"
                 >
-                  <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <MoreVertical className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700 w-56">
