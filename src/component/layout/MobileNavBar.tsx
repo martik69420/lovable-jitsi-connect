@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Bell, 
   Home, 
   MessageSquare, 
   User, 
@@ -12,23 +11,17 @@ import {
   Gamepad2, 
   Search,
   Users,
-  Trophy,
-  Heart,
-  Award,
-  X,
-  UserPlus
+  UserPlus,
+  Award
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth';
-import { useNotification } from '@/context/NotificationContext';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 const MobileNavBar: React.FC = () => {
   const { user, logout } = useAuth();
-  const { unreadCount } = useNotification();
   const { unreadCount: unreadMessages } = useUnreadMessages();
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,7 +37,6 @@ const MobileNavBar: React.FC = () => {
     { icon: <Users className="h-5 w-5" />, label: 'Friends', path: '/friends' },
     { icon: <UserPlus className="h-5 w-5" />, label: 'Add Friends', path: '/add-friends' },
     { icon: <Award className="h-5 w-5" />, label: 'Achievements', path: '/achievements' },
-    { icon: <Heart className="h-5 w-5" />, label: 'Earn', path: '/earn' },
     { icon: <User className="h-5 w-5" />, label: 'Profile', path: user ? `/profile/${user.username}` : '/profile' },
     { icon: <Settings className="h-5 w-5" />, label: 'Settings', path: '/settings' },
   ];
@@ -61,13 +53,12 @@ const MobileNavBar: React.FC = () => {
     { icon: Home, label: 'Home', path: '/', badge: 0 },
     { icon: MessageSquare, label: 'Chat', path: '/messages', badge: unreadMessages },
     { icon: Gamepad2, label: 'Games', path: '/games', badge: 0 },
-    { icon: Bell, label: 'Alerts', path: '/notifications', badge: unreadCount },
+    { icon: Search, label: 'Search', path: '/search', badge: 0 },
   ];
   
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-40 sm:hidden pb-safe">
       <div className="flex items-center h-14">
-        {/* Main tab items */}
         {bottomTabs.map((tab) => {
           const Icon = tab.icon;
           const active = isActive(tab.path);
@@ -95,7 +86,6 @@ const MobileNavBar: React.FC = () => {
           );
         })}
         
-        {/* Menu button */}
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <button className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1">
@@ -105,13 +95,11 @@ const MobileNavBar: React.FC = () => {
               <span className="text-[10px] leading-tight text-muted-foreground">More</span>
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-auto max-h-[75vh] rounded-t-2xl px-4 pb-safe">
-            {/* Handle bar */}
+          <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-2xl px-4 pb-safe">
             <div className="flex justify-center pt-2 pb-3">
               <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
             </div>
             
-            {/* User profile card */}
             {user && (
               <div 
                 className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 mb-4 active:bg-muted"
@@ -127,14 +115,9 @@ const MobileNavBar: React.FC = () => {
                   <p className="font-semibold text-sm truncate">{user.displayName}</p>
                   <p className="text-xs text-muted-foreground truncate">@{user.username}</p>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full">
-                  <Trophy className="h-3 w-3" />
-                  <span className="font-medium">{user.coins || 0}</span>
-                </div>
               </div>
             )}
             
-            {/* Menu items */}
             <div className="space-y-1">
               {menuItems.map((item) => (
                 <button
@@ -156,7 +139,6 @@ const MobileNavBar: React.FC = () => {
             
             <Separator className="my-3" />
             
-            {/* Logout */}
             <button
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-destructive active:bg-destructive/10 mb-2"
               onClick={handleLogout}
