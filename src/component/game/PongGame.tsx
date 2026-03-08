@@ -293,7 +293,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     if (!gameState.gameStarted || gameState.gameOver) return;
     
     // Only the host calculates ball physics
-    if (!isHost && roomId) return;
+    if (!isHostRef.current && roomId) return;
 
     let lastTime = performance.now();
     
