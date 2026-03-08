@@ -11,8 +11,7 @@ import {
   Gamepad2, 
   Search,
   Users,
-  UserPlus,
-  Award
+  UserPlus
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,7 +35,6 @@ const MobileNavBar: React.FC = () => {
     { icon: <Search className="h-5 w-5" />, label: 'Search', path: '/search' },
     { icon: <Users className="h-5 w-5" />, label: 'Friends', path: '/friends' },
     { icon: <UserPlus className="h-5 w-5" />, label: 'Add Friends', path: '/add-friends' },
-    { icon: <Award className="h-5 w-5" />, label: 'Achievements', path: '/achievements' },
     { icon: <User className="h-5 w-5" />, label: 'Profile', path: user ? `/profile/${user.username}` : '/profile' },
     { icon: <Settings className="h-5 w-5" />, label: 'Settings', path: '/settings' },
   ];

@@ -19,7 +19,6 @@ import {
   LogOut,
   Gamepad
 } from 'lucide-react';
-import { Badge } from '@/component/ui/badge';
 import { Sheet, SheetTrigger } from '@/component/ui/sheet';
 import { useAuth } from '@/context/auth';
 import { useNotification } from '@/context/NotificationContext';
@@ -36,19 +35,14 @@ const Navbar = () => {
   const [notificationMenuOpen, setNotificationMenuOpen] = React.useState(false);
   const isMobile = useIsMobile();
   
-  // Fetch notifications periodically to ensure count is always accurate
   useEffect(() => {
     fetchNotifications();
-    
-    // Set up interval to refresh notifications every 30 seconds
     const intervalId = setInterval(() => {
       fetchNotifications();
     }, 30000);
-    
     return () => clearInterval(intervalId);
   }, [fetchNotifications]);
 
-  // Fetch notifications when notification menu opens
   useEffect(() => {
     if (notificationMenuOpen) {
       fetchNotifications();
@@ -68,16 +62,37 @@ const Navbar = () => {
   
   return (
     <>
-      {/* Top navigation bar for mobile and desktop */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <Link to="/" className="mr-6 flex items-center space-x-2">
-            {!isMobile ? (
+        <div className="container flex h-14 items-center px-3 sm:px-6">
+          {/* Mobile: notification bell on the left */}
+          {isMobile && isAuthenticated && user && (
+            <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="relative mr-2"
+                >
+                  <Bell className="h-5 w-5" />
+                  {isLoading ? (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-t-transparent border-primary animate-spin" />
+                  ) : unreadCount > 0 ? (
+                    <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Button>
+              </SheetTrigger>
+              <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />
+            </Sheet>
+          )}
+
+          {/* Desktop: logo */}
+          {!isMobile && (
+            <Link to="/" className="mr-6 flex items-center space-x-2">
               <span className="font-bold text-xl">Campus Connect</span>
-            ) : (
-              <span className="font-bold text-lg">CC</span>
-            )}
-          </Link>
+            </Link>
+          )}
           
           {/* Desktop Nav */}
           {!isMobile && (
@@ -99,29 +114,35 @@ const Navbar = () => {
               ))}
             </nav>
           )}
+
+          {/* Mobile: spacer to push avatar right */}
+          {isMobile && <div className="flex-1" />}
           
           <div className="flex items-center ml-auto space-x-2">
             {isAuthenticated && user ? (
               <>
-                <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="relative"
-                    >
-                      <Bell className="h-5 w-5" />
-                      {isLoading ? (
-                        <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full border-2 border-t-transparent border-primary animate-spin" />
-                      ) : unreadCount > 0 ? (
-                        <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center bg-red-500 text-white rounded-full text-xs font-medium">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      ) : null}
-                    </Button>
-                  </SheetTrigger>
-                  {!isMobile && <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />}
-                </Sheet>
+                {/* Desktop: notification bell */}
+                {!isMobile && (
+                  <Sheet open={notificationMenuOpen} onOpenChange={setNotificationMenuOpen}>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="relative"
+                      >
+                        <Bell className="h-5 w-5" />
+                        {isLoading ? (
+                          <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full border-2 border-t-transparent border-primary animate-spin" />
+                        ) : unreadCount > 0 ? (
+                          <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center bg-destructive text-destructive-foreground rounded-full text-xs font-medium">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                        ) : null}
+                      </Button>
+                    </SheetTrigger>
+                    <NotificationMenu onClose={() => setNotificationMenuOpen(false)} />
+                  </Sheet>
+                )}
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -165,7 +186,6 @@ const Navbar = () => {
         </div>
       </header>
       
-      {/* Bottom navigation bar for mobile */}
       {isMobile && <MobileNavBar />}
     </>
   );
