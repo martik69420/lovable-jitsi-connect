@@ -910,7 +910,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           </div>
           
           {/* Bottom controls bar */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 p-3 bg-gray-900 border-t border-gray-800">
+          <div className="flex items-center justify-center gap-3 sm:gap-3 px-4 py-4 sm:p-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gray-900/90 backdrop-blur-sm border-t border-gray-800">
             {/* Mute button */}
             <Button
               variant="ghost"
