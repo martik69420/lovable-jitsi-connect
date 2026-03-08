@@ -53,6 +53,7 @@ interface VideoCallModalProps {
   groupMembers?: Participant[];
   onCallEnd?: (type: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer', duration?: number) => void;
   isJoiningActiveCall?: boolean;
+  initialVoiceOnly?: boolean;
 }
 
 type LayoutMode = 'spotlight' | 'grid' | 'sidebar';
