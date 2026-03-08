@@ -496,7 +496,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 payload: { answer, targetId: payload.callerId, answererId: user.id }
               });
               
-              setCallStatus('connecting');
+              updateCallStatus('connecting');
             } catch (e) {
               console.error('Error handling offer:', e);
             }
