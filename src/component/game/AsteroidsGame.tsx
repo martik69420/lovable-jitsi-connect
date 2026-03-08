@@ -507,48 +507,63 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
       {!gameStarted && (
         <div className="flex flex-col items-center gap-4">
           {waiting ? (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-3">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Waiting for players...</span>
               </div>
-              <div className="bg-muted/50 px-4 py-2 rounded-lg">
+              <div className="bg-muted/50 px-4 py-2 rounded-lg flex items-center gap-2">
                 <span className="text-sm">Room Code: </span>
-                <span className="font-mono font-bold text-primary">{roomId?.replace('ast_', '')}</span>
+                <span className="font-mono font-bold text-primary text-lg">{roomId?.replace('ast_', '')}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyRoomCode}>
+                  {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Share this code with friends • Players: {players.size}</p>
-              <Button onClick={startGame} variant="secondary" className="mt-2">
-                Start with Current Players
-              </Button>
+              <p className="text-xs text-muted-foreground">Players in lobby: {players.size}</p>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowInvite(true)} variant="outline" className="gap-2">
+                  <Share2 className="h-4 w-4" />
+                  Invite Friend
+                </Button>
+                <Button onClick={startGame} className="gap-2">
+                  <Play className="h-4 w-4" />
+                  Start Game
+                </Button>
+              </div>
             </div>
           ) : (
-            <>
-              <div className="flex gap-4">
-                <Button onClick={createRoom} className="gap-2">
+            <Card className="p-6 flex flex-col items-center gap-4 bg-card/80 backdrop-blur-sm max-w-sm w-full">
+              <Rocket className="h-10 w-10 text-primary" />
+              <h3 className="text-lg font-semibold">Asteroids Multiplayer</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Destroy asteroids and compete with friends in real-time!
+              </p>
+              <div className="flex flex-col gap-2 w-full">
+                <Button onClick={createRoom} className="gap-2 w-full">
                   <Play className="h-4 w-4" />
                   Create Room
                 </Button>
+                <div className="flex items-center gap-2 w-full">
+                  <input
+                    type="text"
+                    placeholder="Enter room code"
+                    className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        joinRoom((e.target as HTMLInputElement).value);
+                      }
+                    }}
+                  />
+                  <Button variant="outline" onClick={(e) => {
+                    const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                    if (input.value) joinRoom(input.value);
+                  }}>
+                    <Users className="h-4 w-4 mr-1" />
+                    Join
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter room code"
-                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm w-40"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      joinRoom((e.target as HTMLInputElement).value);
-                    }
-                  }}
-                />
-                <Button variant="outline" size="sm" onClick={(e) => {
-                  const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                  if (input.value) joinRoom(input.value);
-                }}>
-                  <Users className="h-4 w-4 mr-1" />
-                  Join
-                </Button>
-              </div>
-            </>
+            </Card>
           )}
         </div>
       )}
@@ -556,6 +571,12 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
       <div className="text-sm text-muted-foreground text-center">
         <p>Arrow keys or WASD to move • Space to shoot</p>
       </div>
+
+      <ShareGameModal
+        open={showInvite}
+        onOpenChange={setShowInvite}
+        gameType="asteroids"
+      />
     </div>
   );
 };
