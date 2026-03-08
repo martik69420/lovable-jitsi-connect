@@ -416,7 +416,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [gameStarted, gameOver, isHost, createAsteroid, asteroids, user?.id]);
+  }, [gameStarted, gameOver, createAsteroid, asteroids, user?.id]);
 
   // Render
   useEffect(() => {
