@@ -205,7 +205,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
       onCallEnd(type, duration);
     }
     
-    setCallStatus('ended');
+    updateCallStatus('ended');
     cleanup();
     onClose();
   }, [cleanup, onClose, targetId, user?.id, callStatus, callDuration, isIncoming, isGroupCall, onCallEnd]);
