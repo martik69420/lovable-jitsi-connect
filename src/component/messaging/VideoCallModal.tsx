@@ -703,7 +703,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={() => handleEndCall()}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[85vh] max-h-[700px] p-0 bg-gray-900 border-gray-800 overflow-hidden rounded-xl">
+      <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-none sm:max-h-[700px] p-0 bg-gray-900 border-0 sm:border sm:border-gray-800 overflow-hidden rounded-none sm:rounded-xl [&>button]:hidden sm:[&>button]:flex">
         <DialogTitle className="sr-only">Video Call with {displayName}</DialogTitle>
         
         <div ref={containerRef} className="relative w-full h-full bg-gray-900 flex flex-col">
@@ -794,7 +794,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 
                 {/* Local Video (PiP style) */}
                 <div 
-                  className={`absolute bottom-16 right-3 aspect-[4/3] rounded-lg overflow-hidden bg-gray-700 shadow-lg border border-gray-600 cursor-move ${
+                  className={`absolute bottom-20 sm:bottom-16 right-3 aspect-[3/4] sm:aspect-[4/3] w-[28vw] sm:w-auto rounded-xl sm:rounded-lg overflow-hidden bg-gray-700 shadow-lg border-2 border-white/20 sm:border sm:border-gray-600 ${
                     isCameraFlipped ? 'scale-x-[-1]' : ''
                   }`}
                   style={getLocalVideoStyle()}
@@ -859,14 +859,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             {/* Calling/Connecting overlay */}
             {(callStatus === 'calling' || callStatus === 'ringing' || callStatus === 'connecting' || callStatus === 'idle') && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/95">
-                <Avatar className="h-20 w-20 mb-3">
+                <Avatar className="h-24 w-24 sm:h-20 sm:w-20 mb-4 sm:mb-3">
                   <AvatarImage src={displayInfo?.avatar || undefined} />
-                  <AvatarFallback className="text-xl bg-primary">
+                  <AvatarFallback className="text-2xl sm:text-xl bg-primary">
                     {displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-xl font-semibold text-white mb-1">{displayName}</h2>
-                <p className="text-gray-400 text-sm">
+                <h2 className="text-2xl sm:text-xl font-semibold text-white mb-2 sm:mb-1">{displayName}</h2>
+                <p className="text-gray-400 text-base sm:text-sm">
                   {callStatus === 'idle' && 'Starting...'}
                   {callStatus === 'calling' && 'Calling...'}
                   {callStatus === 'ringing' && 'Incoming call...'}
@@ -874,34 +874,34 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 </p>
                 
                 {isIncoming && callStatus === 'ringing' && (
-                  <div className="flex gap-4 mt-6">
+                  <div className="flex gap-8 sm:gap-4 mt-10 sm:mt-6">
                     <Button
                       size="lg"
                       variant="destructive"
-                      className="rounded-full h-14 w-14"
+                      className="rounded-full h-16 w-16 sm:h-14 sm:w-14"
                       onClick={handleRejectCall}
                     >
-                      <PhoneOff className="h-5 w-5" />
+                      <PhoneOff className="h-6 w-6 sm:h-5 sm:w-5" />
                     </Button>
                     <Button
                       size="lg"
-                      className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600"
+                      className="rounded-full h-16 w-16 sm:h-14 sm:w-14 bg-green-500 hover:bg-green-600"
                       onClick={handleAcceptCall}
                     >
-                      <Phone className="h-5 w-5" />
+                      <Phone className="h-6 w-6 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
                 )}
                 
                 {!isIncoming && callStatus === 'calling' && (
-                  <div className="flex gap-4 mt-6">
+                  <div className="flex gap-4 mt-10 sm:mt-6">
                     <Button
                       size="lg"
                       variant="destructive"
-                      className="rounded-full h-14 w-14"
+                      className="rounded-full h-16 w-16 sm:h-14 sm:w-14"
                       onClick={() => handleEndCall()}
                     >
-                      <PhoneOff className="h-5 w-5" />
+                      <PhoneOff className="h-6 w-6 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
                 )}
@@ -910,49 +910,49 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           </div>
           
           {/* Bottom controls bar */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 p-3 bg-gray-900 border-t border-gray-800">
+          <div className="flex items-center justify-center gap-3 sm:gap-3 px-4 py-4 sm:p-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gray-900/90 backdrop-blur-sm border-t border-gray-800">
             {/* Mute button */}
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`rounded-full h-12 w-12 sm:h-11 sm:w-11 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleMute}
               title={isMuted ? 'Unmute' : 'Mute'}
             >
-              {isMuted ? <MicOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Mic className="h-4 w-4 sm:h-5 sm:w-5" />}
+              {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </Button>
             
             {/* Video toggle button */}
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`rounded-full h-12 w-12 sm:h-11 sm:w-11 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleVideo}
               title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
             >
-              {isVideoOff ? <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Video className="h-4 w-4 sm:h-5 sm:w-5" />}
+              {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
             </Button>
 
             {/* Flip camera button */}
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isCameraFlipped ? 'bg-primary text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`rounded-full h-12 w-12 sm:h-11 sm:w-11 ${isCameraFlipped ? 'bg-primary text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleCameraFlip}
               title="Flip camera view"
             >
-              <FlipHorizontal2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <FlipHorizontal2 className="h-5 w-5" />
             </Button>
 
-            {/* Screen share button */}
+            {/* Screen share button - hide on mobile */}
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isScreenSharing ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`hidden sm:flex rounded-full h-11 w-11 ${isScreenSharing ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleScreenShare}
               title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
             >
-              <MonitorUp className="h-4 w-4 sm:h-5 sm:w-5" />
+              <MonitorUp className="h-5 w-5" />
             </Button>
 
             {/* Layout & more options dropdown */}
@@ -961,9 +961,9 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full h-10 w-10 sm:h-11 sm:w-11 bg-gray-700 text-white hover:bg-gray-600"
+                  className="rounded-full h-12 w-12 sm:h-11 sm:w-11 bg-gray-700 text-white hover:bg-gray-600"
                 >
-                  <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <MoreVertical className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="bg-gray-800 border-gray-700 w-56">
@@ -1026,11 +1026,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             {/* Hang up button */}
             <Button
               size="icon"
-              className="rounded-full h-11 w-11 sm:h-12 sm:w-12 bg-red-500 hover:bg-red-600 text-white"
+              className="rounded-full h-14 w-14 sm:h-12 sm:w-12 bg-red-500 hover:bg-red-600 text-white ml-1"
               onClick={() => handleEndCall()}
               title="End call"
             >
-              <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
+              <PhoneOff className="h-6 w-6" />
             </Button>
           </div>
         </div>
