@@ -100,7 +100,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
       return bt - at; // most recent first
     });
   return <div className="h-full flex flex-col min-h-0">
-      <div className="border-b p-3 sm:p-4 dark:border-gray-800 sticky top-0 bg-background z-10">
+      <div className="border-b p-3 sm:p-4 sticky top-0 bg-background z-10">
         <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Messages</h2>
         <div className="flex items-center gap-2 mb-2 sm:mb-3">
           <div className="relative flex-1 min-w-0">
