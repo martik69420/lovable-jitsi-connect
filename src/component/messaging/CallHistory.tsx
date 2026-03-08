@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
+import { Button } from '@/component/ui/button';
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneOff, PhoneMissed, Video } from 'lucide-react';
-import { format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { Skeleton } from '@/component/ui/skeleton';
 
 interface CallRecord {
@@ -18,8 +20,14 @@ interface CallRecord {
   contactUsername: string;
 }
 
+interface GroupedCalls {
+  label: string;
+  calls: CallRecord[];
+}
+
 const CallHistory: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +41,6 @@ const CallHistory: React.FC = () => {
     setLoading(true);
 
     try {
-      // Get messages that are call records (content starts with [CALL:)
       const { data, error } = await supabase
         .from('messages')
         .select('id, content, created_at, sender_id, receiver_id')
@@ -47,14 +54,12 @@ const CallHistory: React.FC = () => {
         return;
       }
 
-      // Get unique contact IDs
       const contactIds = new Set<string>();
       data.forEach(msg => {
         const cId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         if (cId) contactIds.add(cId);
       });
 
-      // Fetch profiles
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, display_name, avatar_url, username')
@@ -88,6 +93,32 @@ const CallHistory: React.FC = () => {
     }
   };
 
+  const groupCallsByDate = (calls: CallRecord[]): GroupedCalls[] => {
+    const groups: Map<string, CallRecord[]> = new Map();
+
+    calls.forEach(call => {
+      const date = new Date(call.timestamp);
+      let label: string;
+
+      if (isToday(date)) {
+        label = 'Today';
+      } else if (isYesterday(date)) {
+        label = 'Yesterday';
+      } else if (isThisWeek(date)) {
+        label = 'This Week';
+      } else if (isThisMonth(date)) {
+        label = 'This Month';
+      } else {
+        label = format(date, 'MMMM yyyy');
+      }
+
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(call);
+    });
+
+    return Array.from(groups.entries()).map(([label, calls]) => ({ label, calls }));
+  };
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -98,9 +129,7 @@ const CallHistory: React.FC = () => {
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    if (isToday(date)) return format(date, 'HH:mm');
-    if (isYesterday(date)) return 'Yesterday';
-    return format(date, 'MMM d');
+    return format(date, 'HH:mm');
   };
 
   const getCallIcon = (call: CallRecord) => {
@@ -114,6 +143,10 @@ const CallHistory: React.FC = () => {
       return <PhoneOutgoing className="h-4 w-4 text-green-500" />;
     }
     return <PhoneIncoming className="h-4 w-4 text-green-500" />;
+  };
+
+  const handleCallback = (call: CallRecord) => {
+    navigate(`/messages?userId=${call.contactId}`);
   };
 
   if (loading) {
@@ -144,33 +177,51 @@ const CallHistory: React.FC = () => {
     );
   }
 
+  const grouped = groupCallsByDate(calls);
+
   return (
     <div className="flex-1 overflow-y-auto">
-      {calls.map(call => (
-        <div
-          key={call.id}
-          className="flex items-center gap-3 p-4 hover:bg-muted/50 border-b transition-colors dark:border-gray-800"
-        >
-          <Avatar className="h-10 w-10 flex-shrink-0">
-            <AvatarImage src={call.contactAvatar || undefined} />
-            <AvatarFallback>{call.contactName.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{call.contactName}</p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              {getCallIcon(call)}
-              <span className="capitalize">{call.type === 'no_answer' ? 'No answer' : call.type}</span>
-              {call.isVideo && <Video className="h-3 w-3" />}
-              {call.duration != null && call.duration > 0 && (
-                <span>· {formatDuration(call.duration)}</span>
-              )}
-            </div>
+      {grouped.map(group => (
+        <div key={group.label}>
+          <div className="sticky top-0 bg-muted/80 backdrop-blur-sm px-4 py-1.5 z-[1]">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {group.label}
+            </span>
           </div>
+          {group.calls.map(call => (
+            <div
+              key={call.id}
+              className="flex items-center gap-3 p-3 px-4 hover:bg-muted/50 border-b transition-colors dark:border-gray-800"
+            >
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                <AvatarImage src={call.contactAvatar || undefined} />
+                <AvatarFallback>{call.contactName.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
 
-          <span className="text-xs text-muted-foreground flex-shrink-0">
-            {formatTime(call.timestamp)}
-          </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{call.contactName}</p>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {getCallIcon(call)}
+                  <span className="capitalize">{call.type === 'no_answer' ? 'No answer' : call.type}</span>
+                  {call.isVideo && <Video className="h-3 w-3" />}
+                  {call.duration != null && call.duration > 0 && (
+                    <span>· {formatDuration(call.duration)}</span>
+                  )}
+                  <span>· {formatTime(call.timestamp)}</span>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-shrink-0 text-muted-foreground hover:text-primary h-9 w-9"
+                onClick={() => handleCallback(call)}
+                title={`Call ${call.contactName}`}
+              >
+                {call.isVideo ? <Video className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+              </Button>
+            </div>
+          ))}
         </div>
       ))}
     </div>
