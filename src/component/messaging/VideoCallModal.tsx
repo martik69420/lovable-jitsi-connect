@@ -1026,11 +1026,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             {/* Hang up button */}
             <Button
               size="icon"
-              className="rounded-full h-11 w-11 sm:h-12 sm:w-12 bg-red-500 hover:bg-red-600 text-white"
+              className="rounded-full h-14 w-14 sm:h-12 sm:w-12 bg-red-500 hover:bg-red-600 text-white ml-1"
               onClick={() => handleEndCall()}
               title="End call"
             >
-              <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
+              <PhoneOff className="h-6 w-6" />
             </Button>
           </div>
         </div>
