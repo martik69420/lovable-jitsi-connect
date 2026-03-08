@@ -180,7 +180,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
           <button 
             key={contact.id} 
             className={cn(
-              'flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 hover:bg-muted/50 w-full text-left border-b relative transition-colors dark:border-gray-800',
+              'flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 hover:bg-muted/50 w-full text-left border-b relative transition-colors',
               contact.id === activeContactId && 'bg-muted'
             )} 
             onClick={() => setActiveContact(contact, isGroup)}

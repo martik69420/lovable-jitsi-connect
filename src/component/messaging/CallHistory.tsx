@@ -191,7 +191,7 @@ const CallHistory: React.FC = () => {
           {group.calls.map(call => (
             <div
               key={call.id}
-              className="flex items-center gap-3 p-3 px-4 hover:bg-muted/50 border-b transition-colors dark:border-gray-800"
+              className="flex items-center gap-3 p-3 px-4 hover:bg-muted/50 border-b transition-colors"
             >
               <Avatar className="h-10 w-10 flex-shrink-0">
                 <AvatarImage src={call.contactAvatar || undefined} />
