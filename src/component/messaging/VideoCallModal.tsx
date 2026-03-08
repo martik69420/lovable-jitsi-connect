@@ -859,14 +859,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             {/* Calling/Connecting overlay */}
             {(callStatus === 'calling' || callStatus === 'ringing' || callStatus === 'connecting' || callStatus === 'idle') && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/95">
-                <Avatar className="h-20 w-20 mb-3">
+                <Avatar className="h-24 w-24 sm:h-20 sm:w-20 mb-4 sm:mb-3">
                   <AvatarImage src={displayInfo?.avatar || undefined} />
-                  <AvatarFallback className="text-xl bg-primary">
+                  <AvatarFallback className="text-2xl sm:text-xl bg-primary">
                     {displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <h2 className="text-xl font-semibold text-white mb-1">{displayName}</h2>
-                <p className="text-gray-400 text-sm">
+                <h2 className="text-2xl sm:text-xl font-semibold text-white mb-2 sm:mb-1">{displayName}</h2>
+                <p className="text-gray-400 text-base sm:text-sm">
                   {callStatus === 'idle' && 'Starting...'}
                   {callStatus === 'calling' && 'Calling...'}
                   {callStatus === 'ringing' && 'Incoming call...'}
@@ -874,34 +874,34 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 </p>
                 
                 {isIncoming && callStatus === 'ringing' && (
-                  <div className="flex gap-4 mt-6">
+                  <div className="flex gap-8 sm:gap-4 mt-10 sm:mt-6">
                     <Button
                       size="lg"
                       variant="destructive"
-                      className="rounded-full h-14 w-14"
+                      className="rounded-full h-16 w-16 sm:h-14 sm:w-14"
                       onClick={handleRejectCall}
                     >
-                      <PhoneOff className="h-5 w-5" />
+                      <PhoneOff className="h-6 w-6 sm:h-5 sm:w-5" />
                     </Button>
                     <Button
                       size="lg"
-                      className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600"
+                      className="rounded-full h-16 w-16 sm:h-14 sm:w-14 bg-green-500 hover:bg-green-600"
                       onClick={handleAcceptCall}
                     >
-                      <Phone className="h-5 w-5" />
+                      <Phone className="h-6 w-6 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
                 )}
                 
                 {!isIncoming && callStatus === 'calling' && (
-                  <div className="flex gap-4 mt-6">
+                  <div className="flex gap-4 mt-10 sm:mt-6">
                     <Button
                       size="lg"
                       variant="destructive"
-                      className="rounded-full h-14 w-14"
+                      className="rounded-full h-16 w-16 sm:h-14 sm:w-14"
                       onClick={() => handleEndCall()}
                     >
-                      <PhoneOff className="h-5 w-5" />
+                      <PhoneOff className="h-6 w-6 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
                 )}
