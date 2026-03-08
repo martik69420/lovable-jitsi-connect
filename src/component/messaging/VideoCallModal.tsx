@@ -703,7 +703,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={() => handleEndCall()}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[85vh] max-h-[700px] p-0 bg-gray-900 border-gray-800 overflow-hidden rounded-xl">
+      <DialogContent className="max-w-4xl w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-[85vh] max-h-none sm:max-h-[700px] p-0 bg-gray-900 border-0 sm:border sm:border-gray-800 overflow-hidden rounded-none sm:rounded-xl [&>button]:hidden sm:[&>button]:flex">
         <DialogTitle className="sr-only">Video Call with {displayName}</DialogTitle>
         
         <div ref={containerRef} className="relative w-full h-full bg-gray-900 flex flex-col">
