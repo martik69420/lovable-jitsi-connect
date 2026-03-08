@@ -73,8 +73,23 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   // Auto-join from URL params
   useEffect(() => {
     const roomFromUrl = searchParams.get('room');
-    if (roomFromUrl && user && !roomId) {
-      joinRoom(roomFromUrl);
+    if (roomFromUrl && user && !hasAutoJoined.current) {
+      hasAutoJoined.current = true;
+      const hostParam = searchParams.get('host') === 'true';
+      if (hostParam) {
+        setRoomId(roomFromUrl.startsWith('ast_') ? roomFromUrl : `ast_${roomFromUrl}`);
+        setIsHost(true);
+        isHostRef.current = true;
+        setWaiting(true);
+        const ship = initShip();
+        if (ship) {
+          shipRef.current = ship;
+          setPlayers(new Map([[user.id, ship]]));
+        }
+        joinChannel(roomFromUrl.startsWith('ast_') ? roomFromUrl : `ast_${roomFromUrl}`, true);
+      } else {
+        joinRoom(roomFromUrl);
+      }
     }
   }, [searchParams, user]);
 
