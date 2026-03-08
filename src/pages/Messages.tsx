@@ -430,9 +430,10 @@ const Messages = () => {
           }}
           isGroupCall={isGroupChat}
           isJoiningActiveCall={isJoiningActiveCall}
+          initialVoiceOnly={isVoiceOnly}
           onCallEnd={(type, duration) => {
             if (selectedUserId && !isGroupChat) {
-              sendCallMessage(selectedUserId, type, true, duration);
+              sendCallMessage(selectedUserId, type, !isVoiceOnly, duration);
             }
           }}
         />
