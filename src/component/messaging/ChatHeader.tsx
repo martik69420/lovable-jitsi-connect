@@ -73,7 +73,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMuted = false,
   isCreator = false,
   onOpenThemeSelector,
-  onStartVideoCall
+  onStartVideoCall,
+  onStartVoiceCall
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
