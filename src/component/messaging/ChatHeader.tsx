@@ -7,7 +7,7 @@ import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
 import ChatStreak from './ChatStreak';
 import { useChatStreak } from '@/hooks/use-chat-streak';
-import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette, Video } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette, Video, Phone } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
