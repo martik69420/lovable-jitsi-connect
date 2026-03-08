@@ -176,7 +176,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Video call button - Available for all users */}
+        {/* Voice call button */}
+        {onStartVoiceCall && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-primary"
+            onClick={onStartVoiceCall}
+            title={isGroup ? "Start group voice call" : "Start voice call"}
+          >
+            <Phone className="h-5 w-5" />
+          </Button>
+        )}
+        {/* Video call button */}
         {onStartVideoCall && (
           <Button
             variant="ghost"
