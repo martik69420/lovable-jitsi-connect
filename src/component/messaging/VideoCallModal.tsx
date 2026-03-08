@@ -569,7 +569,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
               isSetupComplete = true;
               
               if (!isIncoming && !isJoiningActiveCall) {
-                setCallStatus('calling');
+                updateCallStatus('calling');
                 channel.send({
                   type: 'broadcast',
                   event: 'call_request',
@@ -579,14 +579,15 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                     callerDisplayName: user.displayName,
                     callerAvatar: user.avatar,
                     targetId,
-                    isGroupCall
+                    isGroupCall,
+                    isVideo: !initialVoiceOnly
                   }
                 });
                 
                 callTimeoutRef.current = setTimeout(() => {
-                  if (callStatus === 'calling') {
+                  if (callStatusRef.current === 'calling') {
                     toast.error('Call not answered');
-                    handleEndCall(false);
+                    handleEndCall(false, 'no_answer');
                   }
                 }, 30000);
               } else if (isJoiningActiveCall) {
