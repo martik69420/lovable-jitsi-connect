@@ -49,20 +49,20 @@ const Home: React.FC = () => {
           <AdBanner adSlot="2813542194" className="lg:hidden mt-4" />
         </motion.div>
 
-        {/* Sidebar — below feed on mobile, right side on desktop */}
+        {/* Sidebar — hidden on mobile, shown on desktop */}
         <motion.div 
-          className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4 order-1 lg:order-1" 
+          className="hidden lg:block w-80 xl:w-96 flex-shrink-0 space-y-4 order-1" 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <Card className="shadow-sm">
-            <CardHeader className="pb-3 hidden lg:block" />
-            <CardContent className="p-3 sm:p-4">
+            <CardHeader className="pb-3" />
+            <CardContent className="p-4">
               <FriendsForYou />
             </CardContent>
           </Card>
-          <AdBanner adSlot="2813542194" className="hidden lg:block" />
+          <AdBanner adSlot="2813542194" />
         </motion.div>
       </motion.div>
     </AppLayout>

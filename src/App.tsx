@@ -84,7 +84,7 @@ function App() {
                         <Route path="/games/pong" element={<Pong />} />
                         <Route path="/games/asteroids" element={<Asteroids />} />
                         <Route path="/games/geometrydash" element={<GeometryDash />} />
-                        <Route path="/achievements" element={<Achievements />} />
+                        <Route path="/post/:postId" element={<Post />} />
                         <Route path="/post/:postId" element={<Post />} />
                         <Route path="/profile/:username" element={<Profile />} />
                         <Route path="/admin" element={<AdminPanel />} />
