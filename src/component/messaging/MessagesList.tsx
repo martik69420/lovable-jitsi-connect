@@ -257,7 +257,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
-        <div className="p-4 space-y-6">
+        <div className="px-2 py-3 sm:p-4 space-y-4 sm:space-y-6">
         {Object.entries(groupedMessages).map(([date, messages]) => (
           <div key={date} className="space-y-1">
             {/* Date separator */}
@@ -315,16 +315,16 @@ const MessagesList: React.FC<MessagesListProps> = ({
                 </div>
               )}
               
-              <div className="flex items-end gap-1.5 max-w-[65%]">
+              <div className="flex items-end gap-1.5 max-w-[82vw] sm:max-w-[65%]">
                 {isOwn && (
-                  <span className="text-xs text-muted-foreground self-end mb-1 whitespace-nowrap">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground self-end mb-1 whitespace-nowrap">
                     {format(new Date(message.created_at), 'HH:mm')}
                   </span>
                 )}
                 
-                <div className="flex flex-col space-y-0.5">
+                <div className="flex flex-col space-y-0.5 min-w-0">
                   {showName && !isOwn && (
-                    <span className="text-xs font-semibold text-foreground px-3">
+                    <span className="text-[10px] sm:text-xs font-semibold text-foreground px-2 sm:px-3">
                       {message.sender?.display_name || message.sender?.username || 'Unknown'}
                     </span>
                   )}
@@ -335,7 +335,7 @@ const MessagesList: React.FC<MessagesListProps> = ({
                         ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-sm'
                         : 'bg-muted text-foreground rounded-2xl rounded-bl-sm'
                     } ${getMessageStatus(message, isOwn) === 'sending' ? 'opacity-70' : 'opacity-100'}
-                    px-3 py-2 max-w-full break-words transition-all duration-200`}
+                    px-2.5 sm:px-3 py-2 max-w-full break-words transition-all duration-200`}
                   >
                     {/* Reply indicator */}
                     {message.reply_to && (

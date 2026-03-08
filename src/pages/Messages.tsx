@@ -224,11 +224,11 @@ const Messages = () => {
 
   return (
     <AppLayout>
-      <div className="w-full max-w-6xl mx-auto h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] flex flex-col min-h-0">
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="w-full max-w-6xl mx-auto h-[calc(100dvh-8.5rem)] sm:h-[calc(100dvh-9.5rem)] flex flex-col min-h-0">
+        <div className="flex flex-1 min-h-0 overflow-hidden gap-0 lg:gap-4">
           {/* Contacts List */}
           <div className={`w-full sm:w-72 md:w-80 flex-shrink-0 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
-            <Card className="h-full">
+            <Card className="h-full rounded-xl lg:rounded-2xl">
               <ContactsList
                 contacts={friends}
                 groups={groups}
@@ -245,9 +245,9 @@ const Messages = () => {
           </div>
 
           {/* Chat Area */}
-          <div className={`flex-1 min-h-0 min-w-0 lg:ml-4 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
+          <div className={`flex-1 min-h-0 min-w-0 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card 
-              className="h-full flex flex-col overflow-hidden"
+              className="h-full flex flex-col overflow-hidden rounded-xl lg:rounded-2xl"
               style={{
                 background: preferences.background || undefined,
                 backgroundSize: 'cover',

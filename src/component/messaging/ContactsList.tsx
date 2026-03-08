@@ -99,20 +99,20 @@ const ContactsList: React.FC<ContactsListProps> = ({
       const bt = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
       return bt - at; // most recent first
     });
-  return <div className="h-full flex flex-col">
-      <div className="border-b p-4 dark:border-gray-800 sticky top-0 bg-background z-10">
-        <h2 className="text-xl font-bold mb-3">Messages</h2>
-        <div className="flex items-center gap-2 mb-3">
+  return <div className="h-full flex flex-col min-h-0">
+      <div className="border-b p-3 sm:p-4 dark:border-gray-800 sticky top-0 bg-background z-10">
+        <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Messages</h2>
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search contacts" className="pl-9 w-full" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            <Input placeholder="Search contacts" className="pl-9 w-full h-9" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
           <GroupChatCreator createGroup={createGroup} onGroupCreated={onGroupCreated} />
         </div>
         <div className="flex rounded-lg bg-muted p-1 gap-1">
           <button
             className={cn(
-              "flex-1 text-sm font-medium py-1.5 rounded-md transition-colors",
+              "flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-colors",
               activeTab === 'chats' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
             onClick={() => setActiveTab('chats')}
@@ -121,7 +121,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
           </button>
           <button
             className={cn(
-              "flex-1 text-sm font-medium py-1.5 rounded-md transition-colors flex items-center justify-center gap-1.5",
+              "flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-colors flex items-center justify-center gap-1.5",
               activeTab === 'calls' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
             onClick={() => setActiveTab('calls')}
@@ -180,30 +180,30 @@ const ContactsList: React.FC<ContactsListProps> = ({
           <button 
             key={contact.id} 
             className={cn(
-              'flex items-center gap-3 p-4 hover:bg-muted/50 w-full text-left border-b relative transition-colors dark:border-gray-800',
+              'flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 hover:bg-muted/50 w-full text-left border-b relative transition-colors dark:border-gray-800',
               contact.id === activeContactId && 'bg-muted'
             )} 
             onClick={() => setActiveContact(contact, isGroup)}
           >
             <div className="relative flex-shrink-0">
-              <Avatar className="h-12 w-12">
+              <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
                 <AvatarImage src={avatar || "/placeholder.svg"} alt={displayName} />
                 <AvatarFallback className={isGroup ? 'bg-primary/10' : ''}>
-                  {isGroup ? <Users className="h-6 w-6" /> : displayName.charAt(0).toUpperCase()}
+                  {isGroup ? <Users className="h-5 w-5 sm:h-6 sm:w-6" /> : displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               {!isGroup && <OnlineStatus userId={contact.id} className="absolute -bottom-1 -right-1" />}
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-baseline gap-2 mb-1">
-                <h3 className="font-semibold text-base truncate">
+              <div className="flex justify-between items-baseline gap-2 mb-0.5 sm:mb-1">
+                <h3 className="font-semibold text-sm sm:text-base truncate">
                   {displayName}
                 </h3>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {contact.lastMessageTime && (
                     <span className={cn(
-                      "text-xs",
+                      "text-[11px] sm:text-xs",
                       hasUnread ? "text-primary font-medium" : "text-muted-foreground"
                     )}>
                       {formatLastMessageTime(contact.lastMessageTime)}
@@ -217,7 +217,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
                 </div>
               </div>
               <p className={cn(
-                "text-sm truncate",
+                "text-xs sm:text-sm truncate",
                 hasUnread ? "text-foreground font-medium" : "text-muted-foreground"
               )}>
                 {contact.lastMessage || (isGroup ? "New group chat" : "Start a conversation")}

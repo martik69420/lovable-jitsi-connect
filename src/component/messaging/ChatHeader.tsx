@@ -124,20 +124,20 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   };
 
   return (
-    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 flex justify-between items-center dark:border-gray-800 sticky top-0 z-10">
-      <div className="flex items-center gap-3">
+    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-2.5 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center dark:border-gray-800 sticky top-0 z-10">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="lg:hidden h-8 w-8"
           onClick={onBack || (() => navigate(-1))}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="relative">
-          <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+        <div className="relative flex-shrink-0">
+          <Avatar className="h-9 w-9 sm:h-12 sm:w-12 border-2 border-background shadow-sm">
             <AvatarImage src={contact.avatar || "/placeholder.svg"} alt={displayName} />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
               {displayName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -147,9 +147,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </div>
           )}
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg line-clamp-1">
+            <h3 className="font-semibold text-sm sm:text-lg line-clamp-1">
               {displayName}
             </h3>
             {/* Streak indicator for direct messages */}
@@ -161,12 +161,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               />
             )}
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
             {isGroup ? (
               <span>{contact.memberCount || 0} members</span>
             ) : (
               <>
-                <span>@{contact.username}</span>
+                <span className="truncate">@{contact.username}</span>
                 <span>•</span>
                 <OnlineStatus userId={contact.id} showLastActive showLabel />
               </>
@@ -175,17 +175,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
       
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
         {/* Voice call button */}
         {onStartVoiceCall && (
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
             onClick={onStartVoiceCall}
             title={isGroup ? "Start group voice call" : "Start voice call"}
           >
-            <Phone className="h-5 w-5" />
+            <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         )}
         {/* Video call button */}
@@ -193,18 +193,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
             onClick={onStartVideoCall}
             title={isGroup ? "Start group video call" : "Start video call"}
           >
-            <Video className="h-5 w-5" />
+            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         )}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-              <MoreVertical className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10">
+              <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">

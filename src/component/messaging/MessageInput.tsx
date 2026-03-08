@@ -216,7 +216,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="border-t p-3 dark:border-gray-800 bg-background/95 backdrop-blur-sm">
+    <div className="border-t p-2 sm:p-3 dark:border-gray-800 bg-background/95 backdrop-blur-sm">
       {/* Reply Preview */}
       {replyingTo && (
         <div className="mb-2 flex items-center gap-2 p-2 bg-muted rounded-lg">
@@ -240,13 +240,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
       )}
       
       {/* Media Previews */}
-      <div className="flex gap-3 mb-3">
+      <div className="flex gap-2 sm:gap-3 mb-2 sm:mb-3">
         {imagePreview && (
           <div className="relative inline-block animate-bounce-in">
             <img 
               src={imagePreview} 
               alt="Preview" 
-              className="max-w-32 max-h-32 rounded-lg object-cover border shadow-lg"
+              className="max-w-24 max-h-24 sm:max-w-32 sm:max-h-32 rounded-lg object-cover border shadow-lg"
             />
             <Button
               type="button"
@@ -265,7 +265,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             <img 
               src={selectedGif} 
               alt="Selected GIF" 
-              className="max-w-32 max-h-32 rounded-lg object-cover border shadow-lg"
+              className="max-w-24 max-h-24 sm:max-w-32 sm:max-h-32 rounded-lg object-cover border shadow-lg"
             />
             <Button
               type="button"
@@ -280,8 +280,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
         )}
       </div>
 
-      <div className="flex gap-2 items-end">
-        <div className="flex gap-1 items-center">
+      <div className="flex gap-1.5 sm:gap-2 items-end">
+        <div className="flex gap-0.5 sm:gap-1 items-center">
           <TooltipProvider>
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
@@ -289,15 +289,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-primary"
+                  className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
                   disabled={isSending || disabled}
                   onClick={() => setShowEmojiPicker(true)}
                 >
-                  <Smile className="h-5 w-5" />
+                  <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="sr-only">Add emoji</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" side="top" align="start">
+              <PopoverContent className="w-[90vw] max-w-80 p-0" side="top" align="start">
                 <EnhancedEmojiPicker onEmojiSelect={insertEmoji} />
               </PopoverContent>
             </Popover>
@@ -308,11 +308,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-primary"
+                  className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
                   disabled={isSending || disabled}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Image className="h-5 w-5" />
+                  <Image className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="sr-only">Attach image</span>
                 </Button>
               </TooltipTrigger>
@@ -325,11 +325,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-primary"
+                  className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
                   disabled={isSending || disabled}
                   onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
                 >
-                  <Mic className="h-5 w-5" />
+                  <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="sr-only">Record voice</span>
                 </Button>
               </TooltipTrigger>
