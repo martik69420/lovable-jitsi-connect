@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Badge } from '@/component/ui/badge';
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { Skeleton } from '@/component/ui/skeleton';
 import OnlineStatus from '@/component/OnlineStatus';
-import { Search, PlusCircle, User, Users } from 'lucide-react';
+import { Search, PlusCircle, User, Users, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import GroupChatCreator from './GroupChatCreator';
-
+import CallHistory from './CallHistory';
 interface Contact {
   id: string;
   username?: string;
