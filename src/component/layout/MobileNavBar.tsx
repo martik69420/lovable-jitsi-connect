@@ -13,7 +13,7 @@ import {
   Users,
   UserPlus
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Drawer, DrawerContent, DrawerTrigger } from '@/component/ui/drawer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth';
