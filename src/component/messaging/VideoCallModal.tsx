@@ -592,7 +592,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 }, 30000);
               } else if (isJoiningActiveCall) {
                 // Joining an active group call - immediately connect
-                setCallStatus('connecting');
+                updateCallStatus('connecting');
                 channel.send({
                   type: 'broadcast',
                   event: 'call_accepted',
