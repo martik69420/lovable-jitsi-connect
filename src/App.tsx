@@ -28,7 +28,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Tetris = lazy(() => import('@/pages/games/Tetris'));
 const Post = lazy(() => import('@/pages/Post'));
 const FriendRequests = lazy(() => import('./pages/FriendRequests'));
-const Achievements = lazy(() => import('./pages/Achievements'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const TicTacToe = lazy(() => import('./pages/games/TicTacToe'));
