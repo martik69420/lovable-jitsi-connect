@@ -127,10 +127,10 @@ const Index = () => {
   return (
     <MentionsProvider>
       <motion.div 
-        className="container mx-auto py-4 md:py-8"
-        initial={{ opacity: 0, y: 20 }}
+        className="w-full"
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
         {/* Main content - no sidebar here since it's handled in Home.tsx */}
         <div className="w-full">
