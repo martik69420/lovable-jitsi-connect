@@ -13,7 +13,7 @@ import {
   Users,
   UserPlus
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Drawer, DrawerContent, DrawerTrigger } from '@/component/ui/drawer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/context/auth';
@@ -84,16 +84,16 @@ const MobileNavBar: React.FC = () => {
           );
         })}
         
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetTrigger asChild>
+        <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+          <DrawerTrigger asChild>
             <button className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1">
               <div className="p-1 text-muted-foreground">
                 <Menu className="h-5 w-5" />
               </div>
               <span className="text-[10px] leading-tight text-muted-foreground">More</span>
             </button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-2xl px-4 pb-safe">
+          </DrawerTrigger>
+          <DrawerContent className="px-4 pb-safe">
             <div className="flex justify-center pt-2 pb-3">
               <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
             </div>
@@ -144,8 +144,8 @@ const MobileNavBar: React.FC = () => {
               <LogOut className="h-5 w-5" />
               <span className="text-sm font-medium">Log out</span>
             </button>
-          </SheetContent>
-        </Sheet>
+          </DrawerContent>
+        </Drawer>
       </div>
     </div>
   );
