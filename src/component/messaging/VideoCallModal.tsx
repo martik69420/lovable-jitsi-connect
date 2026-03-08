@@ -510,7 +510,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
                 hasSetRemoteDescRef.current = true;
                 await processPendingCandidates();
-                setCallStatus('connecting');
+                updateCallStatus('connecting');
               }
             } catch (e) {
               console.error('Error handling answer:', e);
