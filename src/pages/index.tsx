@@ -159,7 +159,7 @@ const Index = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <TabsList className="grid grid-cols-2 w-[200px] md:w-[300px]">
+              <TabsList className="grid grid-cols-2 w-[180px] sm:w-[280px]">
                 <TabsTrigger value="for-you" className="text-sm flex items-center">
                   <motion.div
                     animate={{ scale: activeTab === 'for-you' ? [1, 1.2, 1] : 1 }}
