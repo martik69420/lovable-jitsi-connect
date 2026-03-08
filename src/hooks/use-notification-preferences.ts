@@ -9,10 +9,7 @@ export interface NotificationPreferences {
   mentions: boolean;
   messages: boolean;
   system: boolean;
-  quietHoursEnabled: boolean;
-  quietHoursStart: string;
-  quietHoursEnd: string;
-  soundEnabled: boolean;
+  mobileEnabled: boolean;
 }
 
 const defaultPreferences: NotificationPreferences = {
@@ -22,10 +19,7 @@ const defaultPreferences: NotificationPreferences = {
   mentions: true,
   messages: true,
   system: true,
-  quietHoursEnabled: false,
-  quietHoursStart: '22:00',
-  quietHoursEnd: '08:00',
-  soundEnabled: true,
+  mobileEnabled: true,
 };
 
 export function useNotificationPreferences() {
@@ -59,20 +53,14 @@ export function useNotificationPreferences() {
             mentions: data.notif_mentions ?? true,
             messages: data.notif_messages ?? true,
             system: data.notif_announcements ?? true,
-            quietHoursEnabled: false,
-            quietHoursStart: '22:00',
-            quietHoursEnd: '08:00',
-            soundEnabled: true,
+            mobileEnabled: true,
           };
           
-          // Merge with localStorage preferences for quiet hours and sound
+          // Merge with localStorage for mobile toggle
           const localSaved = localStorage.getItem('notificationPreferences');
           if (localSaved) {
             const localPrefs = JSON.parse(localSaved);
-            dbPrefs.quietHoursEnabled = localPrefs.quietHoursEnabled ?? false;
-            dbPrefs.quietHoursStart = localPrefs.quietHoursStart ?? '22:00';
-            dbPrefs.quietHoursEnd = localPrefs.quietHoursEnd ?? '08:00';
-            dbPrefs.soundEnabled = localPrefs.soundEnabled ?? true;
+            dbPrefs.mobileEnabled = localPrefs.mobileEnabled ?? true;
           }
           
           setPreferences(dbPrefs);
@@ -114,30 +102,10 @@ export function useNotificationPreferences() {
     }
   };
 
-  // Check if we're in quiet hours
-  const isInQuietHours = useCallback(() => {
-    if (!preferences.quietHoursEnabled) return false;
-
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    
-    const [startHour, startMin] = preferences.quietHoursStart.split(':').map(Number);
-    const [endHour, endMin] = preferences.quietHoursEnd.split(':').map(Number);
-    
-    const startTime = startHour * 60 + startMin;
-    const endTime = endHour * 60 + endMin;
-
-    // Handle overnight quiet hours (e.g., 22:00 to 08:00)
-    if (startTime > endTime) {
-      return currentTime >= startTime || currentTime < endTime;
-    }
-    
-    return currentTime >= startTime && currentTime < endTime;
-  }, [preferences.quietHoursEnabled, preferences.quietHoursStart, preferences.quietHoursEnd]);
-
   // Check if a notification type is enabled
   const isNotificationEnabled = useCallback((type: string) => {
-    if (isInQuietHours()) return false;
+    // If on mobile and mobile notifications are disabled, block all
+    if (!preferences.mobileEnabled && window.innerWidth < 768) return false;
 
     switch (type) {
       case 'like': return preferences.likes;
@@ -148,21 +116,13 @@ export function useNotificationPreferences() {
       case 'system': return preferences.system;
       default: return true;
     }
-  }, [preferences, isInQuietHours]);
-
-  // Check if sound is enabled
-  const isSoundEnabled = useCallback(() => {
-    if (isInQuietHours()) return false;
-    return preferences.soundEnabled;
-  }, [preferences.soundEnabled, isInQuietHours]);
+  }, [preferences]);
 
   return {
     preferences,
     savePreferences,
     isLoading,
-    isInQuietHours,
     isNotificationEnabled,
-    isSoundEnabled,
     loadPreferences,
   };
 }

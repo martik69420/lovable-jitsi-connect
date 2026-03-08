@@ -145,7 +145,7 @@ const Index = () => {
                 <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-2 pt-3 px-3 sm:px-6 sm:pt-4 sm:pb-3">
                   <CardTitle className="text-base sm:text-lg">Create Post</CardTitle>
                 </CardHeader>
-                <CardContent className="p-3 sm:p-4">
+                <CardContent className="p-2 sm:p-4">
                   <PostForm />
                 </CardContent>
               </Card>

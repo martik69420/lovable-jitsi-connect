@@ -219,19 +219,19 @@ const PostForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="flex gap-3">
-        <Avatar className="h-10 w-10">
+    <form onSubmit={handleSubmit} className="w-full min-w-0">
+      <div className="flex gap-2 sm:gap-3 w-full min-w-0">
+        <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
           <AvatarImage src={user?.avatar} alt={user?.displayName || "User"} />
           <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
         </Avatar>
         
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 min-w-0 space-y-3">
           <TwitterMentionInput
             value={content}
             onChange={setContent}
             placeholder="What's on your mind? Use @ to mention friends"
-            className="min-h-[80px] resize-none"
+            className="min-h-[70px] sm:min-h-[80px] resize-none w-full"
             rows={3}
             disabled={isSubmitting}
           />
@@ -244,7 +244,7 @@ const PostForm: React.FC = () => {
                   <img
                     src={preview}
                     alt={`Preview ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg border"
+                    className="w-full h-24 sm:h-32 object-cover rounded-lg border"
                   />
                   <Button
                     type="button"
@@ -263,39 +263,40 @@ const PostForm: React.FC = () => {
           {/* Poll Creator - shown when poll is active */}
           {poll && <PollCreator poll={poll} onPollChange={setPoll} />}
           
-          <div className="flex justify-between items-center rounded-none">
-            <div className="flex gap-2">
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground"
+                className="text-muted-foreground h-8 px-2 sm:px-3 text-xs sm:text-sm"
                 onClick={handleAddMention}
               >
-                <AtSign className="h-4 w-4 mr-2" />
-                Mention
+                <AtSign className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Mention</span>
               </Button>
               {!poll && <PollCreator poll={poll} onPollChange={setPoll} />}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground"
+                className="text-muted-foreground h-8 px-2 sm:px-3 text-xs sm:text-sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={selectedImages.length >= 4}
               >
-                <ImageIcon className="h-4 w-4 mr-2" />
-                Add Image ({selectedImages.length}/4)
+                <ImageIcon className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Image ({selectedImages.length}/4)</span>
               </Button>
             </div>
             
             <Button
               type="submit"
+              size="sm"
               disabled={isSubmitting || (content.trim() === '' && selectedImages.length === 0 && !poll)}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   Posting...
                 </>
               ) : (
