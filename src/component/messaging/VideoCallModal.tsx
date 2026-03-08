@@ -915,11 +915,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`rounded-full h-12 w-12 sm:h-11 sm:w-11 ${isMuted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleMute}
               title={isMuted ? 'Unmute' : 'Mute'}
             >
-              {isMuted ? <MicOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Mic className="h-4 w-4 sm:h-5 sm:w-5" />}
+              {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
             </Button>
             
             {/* Video toggle button */}
