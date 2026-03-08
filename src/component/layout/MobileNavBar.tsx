@@ -11,8 +11,7 @@ import {
   Gamepad2, 
   Search,
   Users,
-  UserPlus,
-  Award
+  UserPlus
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
