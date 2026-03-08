@@ -127,10 +127,10 @@ const Index = () => {
   return (
     <MentionsProvider>
       <motion.div 
-        className="container mx-auto py-4 md:py-8"
-        initial={{ opacity: 0, y: 20 }}
+        className="w-full"
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
         {/* Main content - no sidebar here since it's handled in Home.tsx */}
         <div className="w-full">
@@ -141,11 +141,11 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               whileHover={{ scale: 1.01 }}
             >
-              <Card className="mb-4 md:mb-6 shadow-md border-primary/10 overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-3">
-                  <CardTitle className="text-lg">Create Post</CardTitle>
+              <Card className="mb-3 md:mb-6 shadow-sm border-primary/10 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-2 pt-3 px-3 sm:px-6 sm:pt-4 sm:pb-3">
+                  <CardTitle className="text-base sm:text-lg">Create Post</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <PostForm />
                 </CardContent>
               </Card>
@@ -159,7 +159,7 @@ const Index = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <TabsList className="grid grid-cols-2 w-[200px] md:w-[300px]">
+              <TabsList className="grid grid-cols-2 w-[180px] sm:w-[280px]">
                 <TabsTrigger value="for-you" className="text-sm flex items-center">
                   <motion.div
                     animate={{ scale: activeTab === 'for-you' ? [1, 1.2, 1] : 1 }}

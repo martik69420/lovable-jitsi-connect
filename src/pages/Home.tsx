@@ -1,7 +1,7 @@
 import React from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import Index from './index';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import FriendsForYou from '@/components/users/FriendsForYou';
 import PublicLanding from '@/component/public/PublicLanding';
 import { useAuth } from '@/context/auth';
@@ -11,7 +11,6 @@ import AdBanner from '@/components/ads/AdBanner';
 const Home: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  // Show loading state
   if (isLoading) {
     return (
       <AppLayout>
@@ -22,59 +21,48 @@ const Home: React.FC = () => {
     );
   }
 
-  // Show public landing for non-authenticated users
   if (!isAuthenticated) {
     return (
       <AppLayout>
         <PublicLanding />
-        {/* Ad placement for non-authenticated users */}
         <AdBanner adSlot="2813542194" className="mt-8" />
       </AppLayout>
     );
   }
 
-  // Authenticated user view - ads enabled
   return (
     <AppLayout>
       <motion.div 
-        className="flex flex-col md:flex-row gap-6" 
+        className="flex flex-col lg:flex-row gap-4 md:gap-6" 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         transition={{ duration: 0.5 }}
       >
+        {/* Feed — show first on mobile for better UX */}
         <motion.div 
-          className="w-full md:w-80 lg:w-96 space-y-6 flex-shrink-0" 
-          initial={{ opacity: 0, x: -50 }} 
-          animate={{ opacity: 1, x: 0 }} 
+          className="flex-1 min-w-0 order-2 lg:order-2" 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <motion.div 
-            whileHover={{ scale: 1.02 }} 
-            transition={{ duration: 0.2 }}
-          >
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="pb-3">
-              </CardHeader>
-              <CardContent>
-                <FriendsForYou />
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          {/* Ad placement for authenticated users */}
-          <AdBanner adSlot="2813542194" className="hidden md:block" />
+          <Index />
+          <AdBanner adSlot="2813542194" className="lg:hidden mt-4" />
         </motion.div>
-        
+
+        {/* Sidebar — below feed on mobile, right side on desktop */}
         <motion.div 
-          className="flex-1" 
-          initial={{ opacity: 0, x: 50 }} 
-          animate={{ opacity: 1, x: 0 }} 
+          className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4 order-1 lg:order-1" 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <Index />
-          
-          {/* Mobile ad placement */}
-          <AdBanner adSlot="2813542194" className="md:hidden mt-6" />
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3 hidden lg:block" />
+            <CardContent className="p-3 sm:p-4">
+              <FriendsForYou />
+            </CardContent>
+          </Card>
+          <AdBanner adSlot="2813542194" className="hidden lg:block" />
         </motion.div>
       </motion.div>
     </AppLayout>

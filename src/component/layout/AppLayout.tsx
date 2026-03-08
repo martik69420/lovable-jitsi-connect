@@ -35,7 +35,7 @@ const AppLayout = ({ children }: { children?: React.ReactNode }) => {
           <div className="sticky top-0 z-40 w-full">
             {!isMobile ? <TopBar /> : <Navbar />}
           </div>
-          <main className="flex-1 container mx-auto py-3 md:py-6 pb-16 md:pb-6">
+          <main className="flex-1 container mx-auto px-3 sm:px-6 py-2 md:py-6 pb-20 md:pb-6">
             <AnimatePresence mode="wait">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
