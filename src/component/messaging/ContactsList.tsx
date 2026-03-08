@@ -227,6 +227,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
         );
       })}
       </div>
+      )}
     </div>;
 };
 export default ContactsList;
