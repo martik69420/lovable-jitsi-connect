@@ -53,20 +53,14 @@ export function useNotificationPreferences() {
             mentions: data.notif_mentions ?? true,
             messages: data.notif_messages ?? true,
             system: data.notif_announcements ?? true,
-            quietHoursEnabled: false,
-            quietHoursStart: '22:00',
-            quietHoursEnd: '08:00',
-            soundEnabled: true,
+            mobileEnabled: true,
           };
           
-          // Merge with localStorage preferences for quiet hours and sound
+          // Merge with localStorage for mobile toggle
           const localSaved = localStorage.getItem('notificationPreferences');
           if (localSaved) {
             const localPrefs = JSON.parse(localSaved);
-            dbPrefs.quietHoursEnabled = localPrefs.quietHoursEnabled ?? false;
-            dbPrefs.quietHoursStart = localPrefs.quietHoursStart ?? '22:00';
-            dbPrefs.quietHoursEnd = localPrefs.quietHoursEnd ?? '08:00';
-            dbPrefs.soundEnabled = localPrefs.soundEnabled ?? true;
+            dbPrefs.mobileEnabled = localPrefs.mobileEnabled ?? true;
           }
           
           setPreferences(dbPrefs);
