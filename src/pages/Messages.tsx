@@ -289,6 +289,12 @@ const Messages = () => {
                       }}
                       onOpenThemeSelector={() => setShowThemeSelector(true)}
                       onStartVideoCall={() => {
+                        setIsVoiceOnly(false);
+                        setIsJoiningActiveCall(false);
+                        setShowVideoCall(true);
+                      }}
+                      onStartVoiceCall={() => {
+                        setIsVoiceOnly(true);
                         setIsJoiningActiveCall(false);
                         setShowVideoCall(true);
                       }}
