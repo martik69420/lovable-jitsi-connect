@@ -3,15 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Bell, Heart, MessageSquare, UserPlus, AtSign, Megaphone, Clock, Volume2 } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, AtSign, Megaphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNotificationPreferences, NotificationPreferences as NotifPrefs } from '@/hooks/use-notification-preferences';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function NotificationPreferences() {
   const { preferences, savePreferences, isLoading } = useNotificationPreferences();
   const { toast } = useToast();
   const [localPrefs, setLocalPrefs] = useState<NotifPrefs>(preferences);
   const [isSaving, setIsSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setLocalPrefs(preferences);
@@ -49,14 +51,40 @@ export function NotificationPreferences() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* Mobile-only: Enable/Disable notifications entirely */}
+      {isMobile && (
+        <>
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Notifications</h3>
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Bell className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <Label htmlFor="enableNotifications" className="text-sm font-medium">Enable Notifications</Label>
+                  <p className="text-xs text-muted-foreground">Turn on/off all notifications on mobile</p>
+                </div>
+              </div>
+              <Switch
+                id="enableNotifications"
+                checked={localPrefs.mobileEnabled !== false}
+                onCheckedChange={(checked) => updatePreference('mobileEnabled', checked)}
+              />
+            </div>
+          </div>
+          <Separator />
+        </>
+      )}
+
       <div>
         <h3 className="text-lg font-semibold mb-2">Notification Types</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Choose which notifications you want to receive
         </p>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-red-500/10">
@@ -158,78 +186,6 @@ export function NotificationPreferences() {
               onCheckedChange={(checked) => updatePreference('system', checked)}
             />
           </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Sound & Quiet Hours</h3>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-primary/10">
-                <Volume2 className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <Label htmlFor="sound" className="text-sm font-medium">Notification Sound</Label>
-                <p className="text-xs text-muted-foreground">Play sound for new notifications</p>
-              </div>
-            </div>
-            <Switch
-              id="sound"
-              checked={localPrefs.soundEnabled}
-              onCheckedChange={(checked) => updatePreference('soundEnabled', checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-muted">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <Label htmlFor="quietHours" className="text-sm font-medium">Quiet Hours</Label>
-                <p className="text-xs text-muted-foreground">Mute all notifications during these hours</p>
-              </div>
-            </div>
-            <Switch
-              id="quietHours"
-              checked={localPrefs.quietHoursEnabled}
-              onCheckedChange={(checked) => updatePreference('quietHoursEnabled', checked)}
-            />
-          </div>
-
-          {localPrefs.quietHoursEnabled && (
-            <div className="ml-4 p-4 bg-muted/50 rounded-lg border space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="quietStart" className="text-xs text-muted-foreground">Start Time</Label>
-                  <input
-                    id="quietStart"
-                    type="time"
-                    value={localPrefs.quietHoursStart}
-                    onChange={(e) => updatePreference('quietHoursStart', e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-background border rounded-md text-sm"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="quietEnd" className="text-xs text-muted-foreground">End Time</Label>
-                  <input
-                    id="quietEnd"
-                    type="time"
-                    value={localPrefs.quietHoursEnd}
-                    onChange={(e) => updatePreference('quietHoursEnd', e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-background border rounded-md text-sm"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                No notifications will be shown during quiet hours
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
