@@ -64,6 +64,22 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const channelRef = useRef<any>(null);
   const shipRef = useRef<Ship | null>(null);
 
+  // Auto-join from URL params
+  useEffect(() => {
+    const roomFromUrl = searchParams.get('room');
+    if (roomFromUrl && user && !roomId) {
+      joinRoom(roomFromUrl);
+    }
+  }, [searchParams, user]);
+
+  const copyRoomCode = () => {
+    if (!roomId) return;
+    const code = roomId.replace('ast_', '');
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const createAsteroid = useCallback(() => {
     const side = Math.floor(Math.random() * 4);
     let x, y, vx, vy;
