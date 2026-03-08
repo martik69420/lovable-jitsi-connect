@@ -926,33 +926,33 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`rounded-full h-12 w-12 sm:h-11 sm:w-11 ${isVideoOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleVideo}
               title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
             >
-              {isVideoOff ? <VideoOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Video className="h-4 w-4 sm:h-5 sm:w-5" />}
+              {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
             </Button>
 
             {/* Flip camera button */}
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isCameraFlipped ? 'bg-primary text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`rounded-full h-12 w-12 sm:h-11 sm:w-11 ${isCameraFlipped ? 'bg-primary text-white' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleCameraFlip}
               title="Flip camera view"
             >
-              <FlipHorizontal2 className="h-4 w-4 sm:h-5 sm:w-5" />
+              <FlipHorizontal2 className="h-5 w-5" />
             </Button>
 
-            {/* Screen share button */}
+            {/* Screen share button - hide on mobile */}
             <Button
               variant="ghost"
               size="icon"
-              className={`rounded-full h-10 w-10 sm:h-11 sm:w-11 ${isScreenSharing ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+              className={`hidden sm:flex rounded-full h-11 w-11 ${isScreenSharing ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
               onClick={toggleScreenShare}
               title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
             >
-              <MonitorUp className="h-4 w-4 sm:h-5 sm:w-5" />
+              <MonitorUp className="h-5 w-5" />
             </Button>
 
             {/* Layout & more options dropdown */}
