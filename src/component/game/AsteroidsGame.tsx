@@ -46,6 +46,7 @@ const CANVAS_HEIGHT = 500;
 const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [gameStarted, setGameStarted] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
@@ -55,6 +56,8 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const [bullets, setBullets] = useState<Bullet[]>([]);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const keysRef = useRef<Set<string>>(new Set());
   const gameLoopRef = useRef<number>();
