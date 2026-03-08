@@ -47,6 +47,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
   createGroup,
   onGroupCreated
 }) => {
+  const [activeTab, setActiveTab] = useState<'chats' | 'calls'>('chats');
   // Sort contacts by lastMessageTime, most recent first
   const sortedContacts = [...contacts].sort((a, b) => {
     const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
