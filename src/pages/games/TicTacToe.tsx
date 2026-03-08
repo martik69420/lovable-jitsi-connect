@@ -1,12 +1,13 @@
-
 import React from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import GameBreadcrumb from '@/component/game/GameBreadcrumb';
 
 const TicTacToe: React.FC = () => {
   return (
     <AppLayout>
-      <div className="container py-6">
+      <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
+        <GameBreadcrumb gameName="Tic Tac Toe" />
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Tic Tac Toe</CardTitle>
@@ -17,7 +18,7 @@ const TicTacToe: React.FC = () => {
                 {Array(9).fill(null).map((_, index) => (
                   <div 
                     key={index} 
-                    className="w-20 h-20 flex items-center justify-center bg-muted border border-border text-3xl font-bold cursor-pointer hover:bg-accent"
+                    className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-muted border border-border text-3xl font-bold cursor-pointer hover:bg-accent"
                   />
                 ))}
               </div>

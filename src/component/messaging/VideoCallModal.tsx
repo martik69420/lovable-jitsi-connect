@@ -79,6 +79,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 }) => {
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
+  const callStatusRef = useRef<string>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(initialVoiceOnly);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -111,6 +112,12 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const displayInfo = isIncoming ? callerInfo : contact;
   const displayName = displayInfo?.displayName || displayInfo?.username || (contact as any)?.name || 'User';
   const channelId = user?.id && targetId ? (isGroupCall ? `group_${contact.id}` : [user.id, targetId].sort().join('_')) : null;
+
+  // Keep callStatusRef in sync
+  const updateCallStatus = useCallback((status: 'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended') => {
+    callStatusRef.current = status;
+    setCallStatus(status);
+  }, []);
 
   const cleanup = useCallback(() => {
     console.log('Cleaning up call resources...');
@@ -198,7 +205,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
       onCallEnd(type, duration);
     }
     
-    setCallStatus('ended');
+    updateCallStatus('ended');
     cleanup();
     onClose();
   }, [cleanup, onClose, targetId, user?.id, callStatus, callDuration, isIncoming, isGroupCall, onCallEnd]);
@@ -444,8 +451,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           console.log('Received remote track:', event.track.kind);
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
-            if (callStatus !== 'connected') {
-              setCallStatus('connected');
+            if (callStatusRef.current !== 'connected') {
+              updateCallStatus('connected');
               startCallTimer();
             }
           }
@@ -454,7 +461,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         pc.onconnectionstatechange = () => {
           console.log('Connection state:', pc.connectionState);
           if (pc.connectionState === 'connected') {
-            setCallStatus('connected');
+            updateCallStatus('connected');
             startCallTimer();
           } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
             toast.error('Call disconnected');
@@ -489,7 +496,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 payload: { answer, targetId: payload.callerId, answererId: user.id }
               });
               
-              setCallStatus('connecting');
+              updateCallStatus('connecting');
             } catch (e) {
               console.error('Error handling offer:', e);
             }
@@ -503,7 +510,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
                 hasSetRemoteDescRef.current = true;
                 await processPendingCandidates();
-                setCallStatus('connecting');
+                updateCallStatus('connecting');
               }
             } catch (e) {
               console.error('Error handling answer:', e);
@@ -540,7 +547,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 payload: { offer, callerId: user.id, targetId }
               });
               
-              setCallStatus('connecting');
+              updateCallStatus('connecting');
             } catch (e) {
               console.error('Error creating offer:', e);
             }
@@ -562,7 +569,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
               isSetupComplete = true;
               
               if (!isIncoming && !isJoiningActiveCall) {
-                setCallStatus('calling');
+                updateCallStatus('calling');
                 channel.send({
                   type: 'broadcast',
                   event: 'call_request',
@@ -572,19 +579,20 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                     callerDisplayName: user.displayName,
                     callerAvatar: user.avatar,
                     targetId,
-                    isGroupCall
+                    isGroupCall,
+                    isVideo: !initialVoiceOnly
                   }
                 });
                 
                 callTimeoutRef.current = setTimeout(() => {
-                  if (callStatus === 'calling') {
+                  if (callStatusRef.current === 'calling') {
                     toast.error('Call not answered');
-                    handleEndCall(false);
+                    handleEndCall(false, 'no_answer');
                   }
                 }, 30000);
               } else if (isJoiningActiveCall) {
                 // Joining an active group call - immediately connect
-                setCallStatus('connecting');
+                updateCallStatus('connecting');
                 channel.send({
                   type: 'broadcast',
                   event: 'call_accepted',
@@ -592,7 +600,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 });
               } else {
                 // For incoming calls that were already accepted from the overlay
-                setCallStatus('connecting');
+                updateCallStatus('connecting');
                 channel.send({
                   type: 'broadcast',
                   event: 'call_accepted',
@@ -632,7 +640,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   const handleAcceptCall = useCallback(async () => {
     console.log('Accepting call from:', callerId);
-    setCallStatus('connecting');
+    updateCallStatus('connecting');
     
     if (channelRef.current && callerId) {
       channelRef.current.send({
