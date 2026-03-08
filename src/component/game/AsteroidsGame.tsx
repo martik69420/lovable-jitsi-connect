@@ -161,6 +161,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     const roomIdToJoin = id.startsWith('ast_') ? id : `ast_${id}`;
     setRoomId(roomIdToJoin);
     setIsHost(false);
+    isHostRef.current = false;
     
     const ship = initShip();
     if (ship) {
