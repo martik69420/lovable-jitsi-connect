@@ -47,13 +47,19 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     opponentPlayAgainRequested: false,
   });
   const WIN_SCORE = 10;
-  const [isHost, setIsHost] = useState(false);
-  const [roomId, setRoomId] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(initialIsHost || false);
+  const isHostRef = useRef(initialIsHost || false);
+  const [roomId, setRoomId] = useState<string | null>(initialRoomCode || null);
   const [opponent, setOpponent] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [localPaddle, setLocalPaddle] = useState(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
   const gameLoopRef = useRef<number>();
   const channelRef = useRef<any>(null);
+
+  // Keep isHostRef in sync
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
 
   const resetBall = useCallback(() => {
     return {
