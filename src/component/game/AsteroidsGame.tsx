@@ -50,6 +50,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const [gameStarted, setGameStarted] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
+  const isHostRef = useRef(false);
   const [waiting, setWaiting] = useState(false);
   const [players, setPlayers] = useState<Map<string, Ship>>(new Map());
   const [asteroids, setAsteroids] = useState<Asteroid[]>([]);
@@ -63,12 +64,32 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const gameLoopRef = useRef<number>();
   const channelRef = useRef<any>(null);
   const shipRef = useRef<Ship | null>(null);
+  const hasAutoJoined = useRef(false);
+
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
 
   // Auto-join from URL params
   useEffect(() => {
     const roomFromUrl = searchParams.get('room');
-    if (roomFromUrl && user && !roomId) {
-      joinRoom(roomFromUrl);
+    if (roomFromUrl && user && !hasAutoJoined.current) {
+      hasAutoJoined.current = true;
+      const hostParam = searchParams.get('host') === 'true';
+      if (hostParam) {
+        setRoomId(roomFromUrl.startsWith('ast_') ? roomFromUrl : `ast_${roomFromUrl}`);
+        setIsHost(true);
+        isHostRef.current = true;
+        setWaiting(true);
+        const ship = initShip();
+        if (ship) {
+          shipRef.current = ship;
+          setPlayers(new Map([[user.id, ship]]));
+        }
+        joinChannel(roomFromUrl.startsWith('ast_') ? roomFromUrl : `ast_${roomFromUrl}`, true);
+      } else {
+        joinRoom(roomFromUrl);
+      }
     }
   }, [searchParams, user]);
 
@@ -123,6 +144,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     const newRoomId = `ast_${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
+    isHostRef.current = true;
     setWaiting(true);
     
     const ship = initShip();
@@ -139,6 +161,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     const roomIdToJoin = id.startsWith('ast_') ? id : `ast_${id}`;
     setRoomId(roomIdToJoin);
     setIsHost(false);
+    isHostRef.current = false;
     
     const ship = initShip();
     if (ship) {
@@ -326,7 +349,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
       }));
 
       // Host manages asteroids
-      if (isHost) {
+      if (isHostRef.current) {
         setAsteroids(prev => {
           const updated = prev.map(a => ({
             ...a,
@@ -393,7 +416,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [gameStarted, gameOver, isHost, createAsteroid, asteroids, user?.id]);
+  }, [gameStarted, gameOver, createAsteroid, asteroids, user?.id]);
 
   // Render
   useEffect(() => {
