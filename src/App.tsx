@@ -84,7 +84,6 @@ function App() {
                         <Route path="/games/asteroids" element={<Asteroids />} />
                         <Route path="/games/geometrydash" element={<GeometryDash />} />
                         <Route path="/post/:postId" element={<Post />} />
-                        <Route path="/post/:postId" element={<Post />} />
                         <Route path="/profile/:username" element={<Profile />} />
                         <Route path="/admin" element={<AdminPanel />} />
                         <Route path="*" element={<NotFound />} />
