@@ -451,8 +451,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
           console.log('Received remote track:', event.track.kind);
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
-            if (callStatus !== 'connected') {
-              setCallStatus('connected');
+            if (callStatusRef.current !== 'connected') {
+              updateCallStatus('connected');
               startCallTimer();
             }
           }
