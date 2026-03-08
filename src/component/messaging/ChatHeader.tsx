@@ -175,17 +175,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
       
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
         {/* Voice call button */}
         {onStartVoiceCall && (
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
             onClick={onStartVoiceCall}
             title={isGroup ? "Start group voice call" : "Start voice call"}
           >
-            <Phone className="h-5 w-5" />
+            <Phone className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         )}
         {/* Video call button */}
@@ -193,18 +193,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="text-muted-foreground hover:text-primary"
+            className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10"
             onClick={onStartVideoCall}
             title={isGroup ? "Start group video call" : "Start video call"}
           >
-            <Video className="h-5 w-5" />
+            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         )}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-              <MoreVertical className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8 sm:h-10 sm:w-10">
+              <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
