@@ -38,6 +38,7 @@ const Messages = () => {
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<any | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [isVoiceOnly, setIsVoiceOnly] = useState(false);
   const [isJoiningActiveCall, setIsJoiningActiveCall] = useState(false);
   
   // Call message helper (incoming calls handled globally by GlobalCallHandler)
