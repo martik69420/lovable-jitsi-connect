@@ -144,6 +144,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
     const newRoomId = `ast_${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
+    isHostRef.current = true;
     setWaiting(true);
     
     const ship = initShip();
