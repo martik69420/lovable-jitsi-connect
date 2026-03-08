@@ -140,7 +140,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
       // Loading skeletons
       <>
             {Array.from({ length: 5 }).map((_, index) => 
-              <div key={index} className="flex items-center gap-3 p-4 border-b dark:border-gray-800">
+              <div key={index} className="flex items-center gap-3 p-4 border-b">
                 <Skeleton className="h-12 w-12 rounded-full" />
                 <div className="space-y-2 flex-1">
                   <Skeleton className="h-4 w-1/2" />
