@@ -600,7 +600,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 });
               } else {
                 // For incoming calls that were already accepted from the overlay
-                setCallStatus('connecting');
+                updateCallStatus('connecting');
                 channel.send({
                   type: 'broadcast',
                   event: 'call_accepted',
