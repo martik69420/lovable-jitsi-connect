@@ -47,13 +47,19 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     opponentPlayAgainRequested: false,
   });
   const WIN_SCORE = 10;
-  const [isHost, setIsHost] = useState(false);
-  const [roomId, setRoomId] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(initialIsHost || false);
+  const isHostRef = useRef(initialIsHost || false);
+  const [roomId, setRoomId] = useState<string | null>(initialRoomCode || null);
   const [opponent, setOpponent] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [localPaddle, setLocalPaddle] = useState(CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2);
   const gameLoopRef = useRef<number>();
   const channelRef = useRef<any>(null);
+
+  // Keep isHostRef in sync
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
 
   const resetBall = useCallback(() => {
     return {
@@ -111,6 +117,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     const newRoomId = `pong_${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
+    isHostRef.current = true;
     setWaiting(true);
     joinChannel(newRoomId, true);
   };
@@ -120,6 +127,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     const roomIdToJoin = id.startsWith('pong_') ? id : `pong_${id}`;
     setRoomId(roomIdToJoin);
     setIsHost(false);
+    isHostRef.current = false;
     joinChannel(roomIdToJoin, false);
   };
 
@@ -285,7 +293,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     if (!gameState.gameStarted || gameState.gameOver) return;
     
     // Only the host calculates ball physics
-    if (!isHost && roomId) return;
+    if (!isHostRef.current && roomId) return;
 
     let lastTime = performance.now();
     
@@ -386,7 +394,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [isHost, roomId, gameState.gameStarted, gameState.gameOver, resetBall]);
+  }, [roomId, gameState.gameStarted, gameState.gameOver, resetBall]);
 
   // Render
   useEffect(() => {
@@ -458,18 +466,22 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
   }, []);
 
   // Auto-join room from URL parameters
+  const hasAutoJoined = useRef(false);
   useEffect(() => {
-    if (!user || !initialRoomCode) return;
+    if (!user || !initialRoomCode || hasAutoJoined.current) return;
+    hasAutoJoined.current = true;
     
     if (initialIsHost) {
-      // Host: create the room with the specified code
       setRoomId(initialRoomCode);
       setIsHost(true);
+      isHostRef.current = true;
       setWaiting(true);
       joinChannel(initialRoomCode, true);
     } else {
-      // Guest: join the room
-      joinRoom(initialRoomCode);
+      setRoomId(initialRoomCode);
+      setIsHost(false);
+      isHostRef.current = false;
+      joinChannel(initialRoomCode, false);
     }
   }, [user, initialRoomCode, initialIsHost]);
 
