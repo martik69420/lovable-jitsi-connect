@@ -79,6 +79,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
 }) => {
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
+  const callStatusRef = useRef<string>('idle');
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(initialVoiceOnly);
   const [isFullscreen, setIsFullscreen] = useState(false);
