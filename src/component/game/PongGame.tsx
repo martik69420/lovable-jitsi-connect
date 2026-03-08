@@ -394,7 +394,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [isHost, roomId, gameState.gameStarted, gameState.gameOver, resetBall]);
+  }, [roomId, gameState.gameStarted, gameState.gameOver, resetBall]);
 
   // Render
   useEffect(() => {
