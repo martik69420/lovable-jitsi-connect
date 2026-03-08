@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/component/ui/avatar';
 import { Badge } from '@/component/ui/badge';
 import { Button } from '@/component/ui/button';
 import { Input } from '@/component/ui/input';
 import { Skeleton } from '@/component/ui/skeleton';
 import OnlineStatus from '@/component/OnlineStatus';
-import { Search, PlusCircle, User, Users } from 'lucide-react';
+import { Search, PlusCircle, User, Users, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import GroupChatCreator from './GroupChatCreator';
-
+import CallHistory from './CallHistory';
 interface Contact {
   id: string;
   username?: string;
@@ -47,6 +47,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
   createGroup,
   onGroupCreated
 }) => {
+  const [activeTab, setActiveTab] = useState<'chats' | 'calls'>('chats');
   // Sort contacts by lastMessageTime, most recent first
   const sortedContacts = [...contacts].sort((a, b) => {
     const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
@@ -101,15 +102,39 @@ const ContactsList: React.FC<ContactsListProps> = ({
   return <div className="h-full flex flex-col">
       <div className="border-b p-4 dark:border-gray-800 sticky top-0 bg-background z-10">
         <h2 className="text-xl font-bold mb-3">Messages</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search contacts" className="pl-9 w-full" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
           <GroupChatCreator createGroup={createGroup} onGroupCreated={onGroupCreated} />
         </div>
+        <div className="flex rounded-lg bg-muted p-1 gap-1">
+          <button
+            className={cn(
+              "flex-1 text-sm font-medium py-1.5 rounded-md transition-colors",
+              activeTab === 'chats' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab('chats')}
+          >
+            Chats
+          </button>
+          <button
+            className={cn(
+              "flex-1 text-sm font-medium py-1.5 rounded-md transition-colors flex items-center justify-center gap-1.5",
+              activeTab === 'calls' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+            onClick={() => setActiveTab('calls')}
+          >
+            <Phone className="h-3.5 w-3.5" />
+            Calls
+          </button>
+        </div>
       </div>
       
+      {activeTab === 'calls' ? (
+        <CallHistory />
+      ) : (
       <div className="flex-1 overflow-y-auto">
         {isLoading ?
       // Loading skeletons
@@ -202,6 +227,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
         );
       })}
       </div>
+      )}
     </div>;
 };
 export default ContactsList;

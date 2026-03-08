@@ -38,6 +38,7 @@ const Messages = () => {
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<any | null>(null);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [isVoiceOnly, setIsVoiceOnly] = useState(false);
   const [isJoiningActiveCall, setIsJoiningActiveCall] = useState(false);
   
   // Call message helper (incoming calls handled globally by GlobalCallHandler)
@@ -288,6 +289,12 @@ const Messages = () => {
                       }}
                       onOpenThemeSelector={() => setShowThemeSelector(true)}
                       onStartVideoCall={() => {
+                        setIsVoiceOnly(false);
+                        setIsJoiningActiveCall(false);
+                        setShowVideoCall(true);
+                      }}
+                      onStartVoiceCall={() => {
+                        setIsVoiceOnly(true);
                         setIsJoiningActiveCall(false);
                         setShowVideoCall(true);
                       }}
@@ -423,9 +430,10 @@ const Messages = () => {
           }}
           isGroupCall={isGroupChat}
           isJoiningActiveCall={isJoiningActiveCall}
+          initialVoiceOnly={isVoiceOnly}
           onCallEnd={(type, duration) => {
             if (selectedUserId && !isGroupChat) {
-              sendCallMessage(selectedUserId, type, true, duration);
+              sendCallMessage(selectedUserId, type, !isVoiceOnly, duration);
             }
           }}
         />

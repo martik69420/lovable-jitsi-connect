@@ -7,7 +7,7 @@ import { Button } from '@/component/ui/button';
 import OnlineStatus from '@/component/OnlineStatus';
 import ChatStreak from './ChatStreak';
 import { useChatStreak } from '@/hooks/use-chat-streak';
-import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette, Video } from 'lucide-react';
+import { ArrowLeft, MoreVertical, UserPlus, Info, Search, BellOff, Bell, LogOut, Pencil, Trash2, Palette, Video, Phone } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +55,7 @@ interface ChatHeaderProps {
   isCreator?: boolean;
   onOpenThemeSelector?: () => void;
   onStartVideoCall?: () => void;
+  onStartVoiceCall?: () => void;
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -72,7 +73,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMuted = false,
   isCreator = false,
   onOpenThemeSelector,
-  onStartVideoCall
+  onStartVideoCall,
+  onStartVoiceCall
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -174,7 +176,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-1">
-        {/* Video call button - Available for all users */}
+        {/* Voice call button */}
+        {onStartVoiceCall && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-primary"
+            onClick={onStartVoiceCall}
+            title={isGroup ? "Start group voice call" : "Start voice call"}
+          >
+            <Phone className="h-5 w-5" />
+          </Button>
+        )}
+        {/* Video call button */}
         {onStartVideoCall && (
           <Button
             variant="ghost"

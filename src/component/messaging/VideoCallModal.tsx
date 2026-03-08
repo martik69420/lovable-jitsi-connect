@@ -53,6 +53,7 @@ interface VideoCallModalProps {
   groupMembers?: Participant[];
   onCallEnd?: (type: 'outgoing' | 'incoming' | 'missed' | 'declined' | 'no_answer', duration?: number) => void;
   isJoiningActiveCall?: boolean;
+  initialVoiceOnly?: boolean;
 }
 
 type LayoutMode = 'spotlight' | 'grid' | 'sidebar';
@@ -73,12 +74,13 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   isGroupCall = false,
   groupMembers = [],
   onCallEnd,
-  isJoiningActiveCall = false
+  isJoiningActiveCall = false,
+  initialVoiceOnly = false
 }) => {
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(initialVoiceOnly);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isCameraFlipped, setIsCameraFlipped] = useState(false);
