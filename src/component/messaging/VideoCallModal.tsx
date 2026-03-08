@@ -794,7 +794,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 
                 {/* Local Video (PiP style) */}
                 <div 
-                  className={`absolute bottom-16 right-3 aspect-[4/3] rounded-lg overflow-hidden bg-gray-700 shadow-lg border border-gray-600 cursor-move ${
+                  className={`absolute bottom-20 sm:bottom-16 right-3 aspect-[3/4] sm:aspect-[4/3] w-[28vw] sm:w-auto rounded-xl sm:rounded-lg overflow-hidden bg-gray-700 shadow-lg border-2 border-white/20 sm:border sm:border-gray-600 ${
                     isCameraFlipped ? 'scale-x-[-1]' : ''
                   }`}
                   style={getLocalVideoStyle()}
