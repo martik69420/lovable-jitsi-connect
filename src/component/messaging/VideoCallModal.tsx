@@ -461,7 +461,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         pc.onconnectionstatechange = () => {
           console.log('Connection state:', pc.connectionState);
           if (pc.connectionState === 'connected') {
-            setCallStatus('connected');
+            updateCallStatus('connected');
             startCallTimer();
           } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
             toast.error('Call disconnected');
