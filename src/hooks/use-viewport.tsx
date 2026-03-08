@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 interface ViewportDimensions {
@@ -10,37 +9,53 @@ interface ViewportDimensions {
   orientation: 'portrait' | 'landscape';
 }
 
+const MOBILE_BREAKPOINT = 768;
+const TABLET_BREAKPOINT = 1024;
+
+const getViewportDimensions = (): ViewportDimensions => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  return {
+    width,
+    height,
+    isMobile: width < MOBILE_BREAKPOINT,
+    isTablet: width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT,
+    isDesktop: width >= TABLET_BREAKPOINT,
+    orientation: width > height ? 'landscape' : 'portrait',
+  };
+};
+
 export function useViewport(): ViewportDimensions {
-  const [dimensions, setDimensions] = useState<ViewportDimensions>({
-    width: window.innerWidth,
-    height: window.innerHeight,
-    isMobile: window.innerWidth < 640,
-    isTablet: window.innerWidth >= 640 && window.innerWidth < 1024,
-    isDesktop: window.innerWidth >= 1024,
-    orientation: window.innerWidth > window.innerHeight ? 'landscape' : 'portrait',
-  });
+  const [dimensions, setDimensions] = useState<ViewportDimensions>(() => getViewportDimensions());
 
   useEffect(() => {
+    let frameId: number | null = null;
+
     const handleResize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight,
-        isMobile: window.innerWidth < 640,
-        isTablet: window.innerWidth >= 640 && window.innerWidth < 1024,
-        isDesktop: window.innerWidth >= 1024,
-        orientation: window.innerWidth > window.innerHeight ? 'landscape' : 'portrait',
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        setDimensions(getViewportDimensions());
       });
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
+
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   return dimensions;
 }
 
-// Simpler hook for just checking if mobile
 export function useIsMobile(): boolean {
   const { isMobile } = useViewport();
   return isMobile;
 }
+
