@@ -224,15 +224,10 @@ const Messages = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">{t('messages.title')}</h1>
-          <p className="text-muted-foreground">{t('messages.chatWithFriends')}</p>
-        </div>
-
-        <div className="flex h-[calc(100vh-140px)] overflow-hidden">
-          {/* Contacts List - Fixed sidebar */}
-          <div className={`w-80 flex-shrink-0 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
+      <div className="w-full max-w-6xl mx-auto h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] flex flex-col min-h-0">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Contacts List */}
+          <div className={`w-full sm:w-72 md:w-80 flex-shrink-0 ${selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card className="h-full">
               <ContactsList
                 contacts={friends}
@@ -249,8 +244,8 @@ const Messages = () => {
             </Card>
           </div>
 
-          {/* Chat Area - Hidden on mobile when no chat selected */}
-          <div className={`flex-1 min-h-0 ml-6 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
+          {/* Chat Area */}
+          <div className={`flex-1 min-h-0 min-w-0 lg:ml-4 ${!selectedUser ? 'hidden lg:block' : 'block'}`}>
             <Card 
               className="h-full flex flex-col overflow-hidden"
               style={{
