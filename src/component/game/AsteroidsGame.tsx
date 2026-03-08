@@ -50,6 +50,7 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const [gameStarted, setGameStarted] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
+  const isHostRef = useRef(false);
   const [waiting, setWaiting] = useState(false);
   const [players, setPlayers] = useState<Map<string, Ship>>(new Map());
   const [asteroids, setAsteroids] = useState<Asteroid[]>([]);
@@ -63,6 +64,11 @@ const AsteroidsGame: React.FC<AsteroidsGameProps> = ({ onGameEnd }) => {
   const gameLoopRef = useRef<number>();
   const channelRef = useRef<any>(null);
   const shipRef = useRef<Ship | null>(null);
+  const hasAutoJoined = useRef(false);
+
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
 
   // Auto-join from URL params
   useEffect(() => {
