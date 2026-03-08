@@ -117,6 +117,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     const newRoomId = `pong_${shortName}${randomNum}`;
     setRoomId(newRoomId);
     setIsHost(true);
+    isHostRef.current = true;
     setWaiting(true);
     joinChannel(newRoomId, true);
   };
@@ -126,6 +127,7 @@ const PongGame: React.FC<PongGameProps> = ({ onGameEnd, initialRoomCode, initial
     const roomIdToJoin = id.startsWith('pong_') ? id : `pong_${id}`;
     setRoomId(roomIdToJoin);
     setIsHost(false);
+    isHostRef.current = false;
     joinChannel(roomIdToJoin, false);
   };
 
