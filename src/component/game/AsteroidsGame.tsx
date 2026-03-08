@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth';
-import { Play, Users, Loader2, Rocket } from 'lucide-react';
+import { Play, Users, Loader2, Rocket, Share2, Copy, Check } from 'lucide-react';
+import ShareGameModal from './ShareGameModal';
 
 interface AsteroidsGameProps {
   onGameEnd?: (score: number) => void;
