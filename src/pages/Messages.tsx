@@ -42,7 +42,7 @@ const Messages = () => {
   const [isJoiningActiveCall, setIsJoiningActiveCall] = useState(false);
   
   // Call message helper (incoming calls handled globally by GlobalCallHandler)
-  const { sendCallMessage } = useIncomingCalls();
+  const { sendCallMessage } = useSendCallMessage();
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
   
