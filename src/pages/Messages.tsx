@@ -21,7 +21,7 @@ import PinnedMessages from '@/component/messaging/PinnedMessages';
 import ForwardMessageDialog from '@/component/messaging/ForwardMessageDialog';
 import VideoCallModal from '@/component/messaging/VideoCallModal';
 import ActiveGroupCallBanner from '@/component/messaging/ActiveGroupCallBanner';
-import { useIncomingCalls } from '@/hooks/use-incoming-calls';
+import { useSendCallMessage } from '@/hooks/use-send-call-message';
 
 const Messages = () => {
   const { user, isAuthenticated } = useAuth();
