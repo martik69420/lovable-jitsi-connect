@@ -21,7 +21,7 @@ import PinnedMessages from '@/component/messaging/PinnedMessages';
 import ForwardMessageDialog from '@/component/messaging/ForwardMessageDialog';
 import VideoCallModal from '@/component/messaging/VideoCallModal';
 import ActiveGroupCallBanner from '@/component/messaging/ActiveGroupCallBanner';
-import { useIncomingCalls } from '@/hooks/use-incoming-calls';
+import { useSendCallMessage } from '@/hooks/use-send-call-message';
 
 const Messages = () => {
   const { user, isAuthenticated } = useAuth();
@@ -42,7 +42,7 @@ const Messages = () => {
   const [isJoiningActiveCall, setIsJoiningActiveCall] = useState(false);
   
   // Call message helper (incoming calls handled globally by GlobalCallHandler)
-  const { sendCallMessage } = useIncomingCalls();
+  const { sendCallMessage } = useSendCallMessage();
   
   const [replyingTo, setReplyingTo] = useState<{ id: string; content: string; sender: string } | null>(null);
   
